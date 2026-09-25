@@ -26,6 +26,23 @@ automatically. Prompts switch the moment you touch the other device.
 | Quick-cast slots 1–4 | 1 2 3 4 | D-pad ↑ → ↓ ← |
 | Pause / settings / customize | Esc | Start |
 
+## Menus
+
+The game opens on the title screen: **Trial of the Five Natures**,
+**Training Ground**, **Customize** and **Quit**. Move with the stick, D-pad,
+arrow keys or mouse. Confirm with A or Enter; B or Esc backs out. From the
+pause menu, **Title screen** leaves the current mode.
+
+## Fighting enemies
+
+- Enemies show their nature (kanji and name) and a health bar overhead.
+  Hit them with the nature that beats theirs for 1.5× damage (**WEAK!**).
+- **Seals above an enemy's head mean a jutsu is coming.** Hit it before the
+  last seal to interrupt. A kunai is enough for a genin, a chunin needs a
+  harder hit, and a jonin needs a jutsu or a strike combo.
+- A red **!** means a strike is winding up. Guard (E / RB) or dash away.
+- If your health hits zero the trial ends. Retry from the results screen.
+
 ## Weaving hand seals
 
 Hold **Weave** (right mouse / LT), enter seals, release to cast. You stand

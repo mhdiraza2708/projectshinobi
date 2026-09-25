@@ -19,6 +19,8 @@ var _chakra_text: Label
 var _buffs: Label
 var _name: Label
 var _banner: BrushBanner
+var _objective: Label
+var _hurt: ColorRect
 var _weave_panel: PaperPanel
 var _fuse: FuseBar
 var _instruction: HBoxContainer
@@ -46,6 +48,7 @@ func bind(p: Player) -> void:
 	player.weaver.finished.connect(func(_q: Array[int]) -> void: _refresh_weave())
 	player.weaver.cancelled.connect(_refresh_weave)
 	player.caster.cast_succeeded.connect(_on_cast)
+	player.stats.damaged.connect(func(amount: float, _e: int, _m: float) -> void: flash_hurt(amount))
 	player.feedback.connect(func(text: String, kind: StringName) -> void:
 		if kind != &"cast":
 			show_banner(text, kind))
@@ -106,6 +109,33 @@ func _build() -> void:
 	_banner.offset_top = 150
 	_banner.offset_bottom = 150 + BrushBanner.BAND_SIZE.y
 	root.add_child(_banner)
+
+	# --- Objective line (trials), top-right --------------------------------
+	_objective = UiKit.scene_label("", 26, UiKit.PAPER, &"display")
+	_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_objective.anchor_left = 1.0
+	_objective.anchor_right = 1.0
+	_objective.offset_left = -1100
+	_objective.offset_right = -44
+	_objective.offset_top = 36
+	_objective.visible = false
+	root.add_child(_objective)
+
+	# --- Red edge flash when hurt ------------------------------------------
+	_hurt = ColorRect.new()
+	_hurt.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_hurt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hurt.color = Color(UiKit.HEALTH, 0.0)
+	var vignette := ShaderMaterial.new()
+	vignette.shader = Shader.new()
+	vignette.shader.code = """shader_type canvas_item;
+void fragment() {
+	vec2 d = abs(UV - 0.5) * 2.0;
+	float edge = smoothstep(0.55, 1.15, length(d));
+	COLOR = vec4(COLOR.rgb, COLOR.a * edge);
+}"""
+	_hurt.material = vignette
+	root.add_child(_hurt)
 
 	# --- Weave panel, bottom-centre ------------------------------------------
 	_weave_panel = PaperPanel.new()
@@ -268,8 +298,23 @@ func _on_cast(jutsu: JutsuDefinition) -> void:
 	_banner.show_text(jutsu.display_name, &"cast", jutsu.element)
 
 
-func show_banner(text: String, kind: StringName = &"info") -> void:
-	_banner.show_text(text, kind)
+func show_banner(text: String, kind: StringName = &"info", element := Element.NONE) -> void:
+	_banner.show_text(text, kind, element)
+
+
+## A line of objective text at the top of the screen ("" hides it).
+func set_objective(text: String) -> void:
+	_objective.text = text
+	_objective.visible = text != ""
+
+
+func objective() -> String:
+	return _objective.text if _objective.visible else ""
+
+
+func flash_hurt(amount: float) -> void:
+	_hurt.color.a = clampf(0.25 + amount / 30.0, 0.3, 0.75)
+	_hurt.create_tween().tween_property(_hurt, "color:a", 0.0, 0.45)
 
 
 func _refresh_buffs() -> void:

@@ -35,6 +35,9 @@ func _ready() -> void:
 	Settings.load_from_disk()
 	Profile.persist = false
 	Profile.load_from_disk()
+	Game.persist = false
+	Game.load_records()
+	Game.start_mode = Game.Mode.TRAINING
 	var catcher := ScriptErrorCatcher.new()
 	OS.add_logger(catcher)
 
@@ -70,6 +73,8 @@ func _ready() -> void:
 			get_tree().paused = false
 			Settings.load_from_disk()
 			Profile.load_from_disk()
+			Game.load_records()
+			Game.start_mode = Game.Mode.TRAINING
 			for child in get_children():
 				child.queue_free()
 			await get_tree().process_frame

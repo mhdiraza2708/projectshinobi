@@ -9,6 +9,7 @@ extends CanvasLayer
 const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["巻", "Jutsu Scroll"]]
 
 signal customize_requested
+signal title_requested
 
 var player: Player
 
@@ -195,6 +196,9 @@ func _build() -> void:
 		_tabs.add_child(fresh)
 		_tabs.move_child(fresh, 1)
 		_notice.text = "Options reset to defaults."))
+	buttons.add_child(_button("Title screen", func() -> void:
+		close()
+		title_requested.emit()))
 	buttons.add_child(_button("Quit", func() -> void: get_tree().quit()))
 
 

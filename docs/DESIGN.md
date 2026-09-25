@@ -148,8 +148,8 @@ existing sequence.
 |---|---|---|
 | M0 Foundation | Input layer, seal weaving, jutsu data and validation, tests, CI | ✅ |
 | M1 Training ground | Playable third-person slice: movement, strikes, kunai, all 5 jutsu forms, dummies with element affinities, HUD, pause menu with rebinding and accessibility options | ✅ |
-| M2 Feel | Real animation (rigged character, ideally mocap/Mixamo-style clips), hit-stop, VFX pass, audio, camera polish | ⏳ |
-| M3 Opponent | One AI shinobi that weaves, guards, dashes and uses walls. The goal is to prove the combat loop is fun 1v1. | ⏳ |
+| M2 Feel | Real animation (rigged character, ideally mocap/Mixamo-style clips), hit-stop, VFX pass, audio, camera polish | 🟡 VRM characters, IK poses, Mixamo support and synthesised sound effects are done. Still needed: hit-stop, VFX and music. |
+| M3 Opponent | AI shinobi that weave (readable and interruptible), guard, dodge, throw and strike. The goal is to prove the combat loop is fun. | 🟡 Trial of the Five Natures (5 waves) is playable. Walls and heals for enemies, and a real 1v1 duel, are still to do. |
 | M4 Content | 30–50 jutsu, new forms (clone, substitution, summon), 2–3 arenas | ⏳ |
 | M5 Structure | Decide the game type: arena fighter, or action-RPG with a story. This decides everything after it. | ⏳ |
 

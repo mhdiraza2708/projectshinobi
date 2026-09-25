@@ -35,6 +35,9 @@ func _ready() -> void:
 	_bg.material = mat
 	add_child(_bg, false, Node.INTERNAL_MODE_FRONT)
 	resized.connect(_fit)
+	# The container lays out every child, the paper included, inside the
+	# content margins; re-fit the paper to the full rect after each sort.
+	sort_children.connect(_fit)
 	_fit()
 
 

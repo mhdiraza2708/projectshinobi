@@ -120,20 +120,39 @@ func load_model(path: String) -> void:
 	model_loaded.emit()
 
 
-## Applies colours, gear, height and expression from the Profile.
+const GEAR_KEYS: PackedStringArray = ["headband", "headband_color", "mask", "mask_color", "scarf",
+	"scarf_color", "back", "pouch", "gear_scale", "gear_lift"]
+
+## The look applied when the model isn't following the Profile (enemies).
+## Same keys as Profile: "tints" {slot: Color}, gear keys, "height",
+## "expression". Missing keys keep Profile defaults.
+var style: Dictionary = {}
+
+
+## Applies colours, gear, height and expression from the Profile, or from
+## `style` when use_profile is off.
 func apply_profile() -> void:
-	if not use_profile or instance == null:
+	if instance == null:
 		return
+	var look := {}
+	for key: StringName in Profile.DEFAULTS:
+		look[key] = Profile.get_value(key) if use_profile else style.get(String(key), Profile.DEFAULTS[key])
 	for slot in styler.available_slots():
-		styler.apply_tint(slot, Profile.tint(slot))
+		var tints: Dictionary = look[&"tints"]
+		styler.apply_tint(slot, tints.get(slot, Color.WHITE))
 	if skeleton and poser and poser.active:
 		var settings := {}
-		for key in ["headband", "headband_color", "mask", "mask_color", "scarf", "scarf_color",
-				"back", "pouch", "gear_scale", "gear_lift"]:
-			settings[key] = Profile.get_value(StringName(key))
+		for key in GEAR_KEYS:
+			settings[key] = look[StringName(key)]
 		gear.rebuild(settings)
-	instance.scale = _base_scale * float(Profile.get_value(&"height"))
-	play_expression(StringName(Profile.get_value(&"expression")))
+	instance.scale = _base_scale * float(look[&"height"])
+	play_expression(StringName(look[&"expression"]))
+
+
+## Replaces the look (for models that don't follow the Profile).
+func apply_style(new_style: Dictionary) -> void:
+	style = new_style
+	apply_profile()
 
 
 func _on_profile_changed(key: StringName) -> void:

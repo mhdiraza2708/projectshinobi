@@ -13,10 +13,32 @@ func after_each() -> void:
 func test_fonts_cover_every_kanji_the_ui_draws() -> void:
 	var brush := UiKit.font(&"brush")
 	var body := UiKit.font(&"body")
-	for k in Seal.KANJI + Element.KANJI + PackedStringArray(["忍", "体", "気", "印", "術", "操", "作", "設", "定", "巻", "一", "時", "停", "止"]):
+	for k in Seal.KANJI + Element.KANJI:
 		assert_true(brush.has_char(k.unicode_at(0)), "brush font has %s" % k)
 	for c in "Weave Strike › · — ×":
 		assert_true(body.has_char(c.unicode_at(0)), "body font has '%s'" % c)
+	# Every non-ASCII character written anywhere in the scripts: kanji need
+	# the brush font, symbols the body font. Fix with art/fonts/subset_fonts.py.
+	var missing := ""
+	for path in _files("res://scripts") + _files("res://autoload"):
+		for ch in FileAccess.get_file_as_string(path):
+			var cp := ch.unicode_at(0)
+			if cp <= 0x7E or missing.contains(ch):
+				continue
+			var cjk := (cp >= 0x3000 and cp <= 0x9FFF) or (cp >= 0xFF00 and cp <= 0xFFEF)
+			if not (brush.has_char(cp) if cjk else body.has_char(cp)):
+				missing += ch
+	assert_eq(missing, "", "characters missing from the UI fonts")
+
+
+func _files(dir: String) -> Array[String]:
+	var out: Array[String] = []
+	for f in DirAccess.get_files_at(dir):
+		if f.ends_with(".gd"):
+			out.append(dir.path_join(f))
+	for d in DirAccess.get_directories_at(dir):
+		out.append_array(_files(dir.path_join(d)))
+	return out
 
 
 func test_every_binding_type_has_a_drawable_glyph() -> void:

@@ -28,8 +28,15 @@ var _shape_params: PhysicsShapeQueryParameters3D
 
 
 func _ready() -> void:
+	add_to_group(&"projectiles")
 	if caster is CollisionObject3D:
 		_exclude.append((caster as CollisionObject3D).get_rid())
+	# Flies through the caster's allies.
+	var team: Variant = caster.get(&"team") if is_instance_valid(caster) else null
+	if team is StringName and team != &"":
+		for ally in get_tree().get_nodes_in_group(team):
+			if ally is CollisionObject3D and ally != caster:
+				_exclude.append((ally as CollisionObject3D).get_rid())
 	var shape := SphereShape3D.new()
 	shape.radius = radius
 	_shape_params = PhysicsShapeQueryParameters3D.new()

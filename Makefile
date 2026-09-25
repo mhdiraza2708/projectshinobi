@@ -8,7 +8,7 @@ SHOTS ?= screenshots
 # Any Python with numpy and scipy (pip install -r art/audio/requirements.txt).
 PYTHON ?= python3
 
-.PHONY: run editor import test assets animations sfx screenshots
+.PHONY: run editor import test assets animations sfx fonts screenshots
 
 run:
 	$(GODOT) --path game
@@ -37,10 +37,15 @@ sfx:
 	$(PYTHON) art/audio/make_sfx.py
 	$(MAKE) import
 
+# Re-subset the Japanese UI fonts after adding kanji (needs fonttools).
+fonts:
+	$(PYTHON) art/fonts/subset_fonts.py
+	$(MAKE) import
+
 # Needs Xvfb when there is no display.
 screenshots: import
 	mkdir -p $(SHOTS)
-	for demo in overview weave cast menu; do \
+	for demo in overview weave cast menu title trial; do \
 		xvfb-run -a -s "-screen 0 1280x720x24" $(GODOT) --path game \
 			--rendering-driver opengl3 --rendering-method gl_compatibility --audio-driver Dummy \
 			-- --screenshot=$(abspath $(SHOTS))/$$demo.png --demo=$$demo; \

@@ -12,8 +12,10 @@ signal quick_slots_changed
 ## Short player-facing message: "Not enough chakra", jutsu names, etc.
 ## kind: &"cast", &"fail" or &"info".
 signal feedback(text: String, kind: StringName)
+## Health reached zero.
+signal defeated
 
-enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING }
+enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING, DOWN }
 
 @export_group("Movement")
 @export var run_speed := 7.0
@@ -48,6 +50,8 @@ const SOFT_AIM_RANGE := 28.0
 ## Landing faster than this (m/s) makes a sound.
 const LAND_SOUND_SPEED := 5.0
 
+## Combat team (see Combat.same_team); also this node's group.
+var team := &"player"
 var state := State.FREE
 var weaver := SealWeaver.new()
 var lock_target: Node3D
@@ -108,6 +112,7 @@ func _ready() -> void:
 	caster.cast_succeeded.connect(_on_cast_succeeded)
 	caster.cast_failed.connect(_on_cast_failed)
 	stats.damaged.connect(_on_damaged)
+	stats.died.connect(_on_died)
 
 
 func _exit_tree() -> void:
@@ -125,7 +130,9 @@ func _physics_process(delta: float) -> void:
 	weaver.tick(delta)
 	_validate_lock()
 
-	if not input_enabled:
+	if state == State.DOWN:
+		_decelerate(delta)
+	elif not input_enabled:
 		if state == State.CHARGING or state == State.GUARDING:
 			_enter(State.FREE)
 		_decelerate(delta)
@@ -437,6 +444,9 @@ func _validate_lock() -> void:
 	if not is_instance_valid(lock_target) or not lock_target.is_inside_tree() \
 			or global_position.distance_to(lock_target.global_position) > lock_range * 1.3:
 		_set_lock(null)
+	elif not lock_target.is_in_group(&"lockable"):
+		# The target was defeated: move on to the next one, if any.
+		_set_lock(find_lock_target())
 
 
 # --- Movement helpers ----------------------------------------------------------
@@ -542,3 +552,26 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 
 func take_hit(amount: float, element: int, _source: Node) -> float:
 	return stats.take_damage(amount, element)
+
+
+func is_down() -> bool:
+	return state == State.DOWN
+
+
+func _on_died() -> void:
+	weaver.cancel()
+	_set_lock(null)
+	_enter(State.DOWN)
+	Sfx.play(&"hit_player", 3.0)
+	# Topple forward onto the ground.
+	var tw := model.create_tween()
+	tw.tween_property(model, "rotation:x", -1.35, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	defeated.emit()
+
+
+## Back on your feet at full health (trial retry).
+func revive() -> void:
+	stats.restore()
+	model.rotation = Vector3.ZERO
+	velocity = Vector3.ZERO
+	_enter(State.FREE)

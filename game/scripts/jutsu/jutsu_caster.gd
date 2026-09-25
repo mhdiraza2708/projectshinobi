@@ -20,6 +20,8 @@ const AFFINITY_DISCOUNT := 0.2
 @export var body: Node3D
 ## The caster's chakra nature (Element.*): jutsu of this nature cost less.
 var affinity := Element.NONE
+## Multiplies the power of everything this caster makes (enemy tuning).
+var power_scale := 1.0
 
 var _cooldowns: Dictionary = {}
 
@@ -71,7 +73,7 @@ func cast(jutsu: JutsuDefinition, target: Node3D = null) -> bool:
 	if jutsu.cooldown > 0.0:
 		_cooldowns[jutsu.id] = jutsu.cooldown
 
-	var power := jutsu.power * (1.0 + stats.modifier(&"attack_power"))
+	var power := jutsu.power * power_scale * (1.0 + stats.modifier(&"attack_power"))
 	match jutsu.form:
 		JutsuDefinition.Form.PROJECTILE:
 			_spawn_projectiles(jutsu, power, target)

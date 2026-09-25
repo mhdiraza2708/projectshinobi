@@ -30,7 +30,18 @@ static func find_hittable(node: Node) -> Node:
 static func apply_hit(target: Node, amount: float, element: int, source: Node) -> float:
 	if target == null or target == source or not target.has_method("take_hit"):
 		return 0.0
+	if same_team(target, source):
+		return 0.0
 	return target.take_hit(amount, element, source)
+
+
+## Fighters with the same non-empty `team` never hurt each other. A team name
+## is also the group its members are in.
+static func same_team(a: Node, b: Node) -> bool:
+	if a == null or b == null or not is_instance_valid(a) or not is_instance_valid(b):
+		return false
+	var ta: Variant = a.get(&"team")
+	return ta is StringName and ta != &"" and ta == b.get(&"team")
 
 
 ## Every distinct hittable overlapping a sphere, excluding `exclude`.
