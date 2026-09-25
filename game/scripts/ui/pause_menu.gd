@@ -46,6 +46,7 @@ func is_open() -> bool:
 
 
 func open() -> void:
+	Sfx.ui(&"ui_open")
 	_root.visible = true
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -57,6 +58,8 @@ func open() -> void:
 
 func close() -> void:
 	_cancel_capture()
+	if _root.visible:
+		Sfx.ui(&"ui_close")
 	_root.visible = false
 	get_tree().paused = false
 	if DisplayServer.get_name() != "headless":
@@ -416,6 +419,11 @@ func _build_accessibility() -> Control:
 	list.add_child(_section("Display"))
 	list.add_child(_option_row("Screen shake", _slider(&"screen_shake", 0.0, 1.0, 0.1, "%.0f%%", 100.0)))
 	list.add_child(_option_row("UI scale", _slider(&"ui_scale", 0.75, 1.5, 0.05, "%.2f×")))
+
+	list.add_child(_section("Audio"))
+	list.add_child(_option_row("Master volume", _slider(&"master_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
+	list.add_child(_option_row("Effects volume", _slider(&"sfx_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
+	list.add_child(_option_row("Menu sounds volume", _slider(&"ui_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
 	return list
 
 

@@ -11,5 +11,5 @@
 | **Godot Engine** | Godot contributors | MIT | not bundled |
 
 Full font licence texts are in `game/assets/fonts/OFL-*.txt`. Everything else
-in this repository (code, shaders, jutsu data, generated environment models
-and test fixtures) is original to this project.
+in this repository (code, shaders, jutsu data, generated environment models,
+synthesised sound effects and test fixtures) is original to this project.

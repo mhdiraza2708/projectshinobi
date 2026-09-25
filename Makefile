@@ -5,7 +5,10 @@ GODOT ?= godot
 BLENDER_RUN ?= python
 SHOTS ?= screenshots
 
-.PHONY: run editor import test assets animations screenshots
+# Any Python with numpy and scipy (pip install -r art/audio/requirements.txt).
+PYTHON ?= python3
+
+.PHONY: run editor import test assets animations sfx screenshots
 
 run:
 	$(GODOT) --path game
@@ -27,6 +30,11 @@ assets:
 # retargeting (see docs/CHARACTERS.md), then re-import them.
 animations: import
 	$(GODOT) --headless --path game --script res://tools/setup_mixamo.gd
+	$(MAKE) import
+
+# Regenerate the synthesised sound effects in game/assets/audio/sfx/.
+sfx:
+	$(PYTHON) art/audio/make_sfx.py
 	$(MAKE) import
 
 # Needs Xvfb when there is no display.

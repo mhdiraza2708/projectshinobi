@@ -45,6 +45,8 @@ enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING }
 ## Soft aim: how far off the camera's line a target can be and still be aimed at.
 const SOFT_AIM_ANGLE := deg_to_rad(22.0)
 const SOFT_AIM_RANGE := 28.0
+## Landing faster than this (m/s) makes a sound.
+const LAND_SOUND_SPEED := 5.0
 
 var state := State.FREE
 var weaver := SealWeaver.new()
@@ -100,10 +102,16 @@ func _ready() -> void:
 	_sync_settings()
 	Settings.value_changed.connect(func(_k: StringName, _v: Variant) -> void: _sync_settings())
 	weaver.seal_added.connect(_on_seal_added)
-	weaver.broken.connect(func() -> void: feedback.emit("Sequence broken: too slow", &"fail"))
+	weaver.broken.connect(func() -> void:
+		Sfx.play(&"seal_break")
+		feedback.emit("Sequence broken: too slow", &"fail"))
 	caster.cast_succeeded.connect(_on_cast_succeeded)
 	caster.cast_failed.connect(_on_cast_failed)
 	stats.damaged.connect(_on_damaged)
+
+
+func _exit_tree() -> void:
+	Sfx.stop_loop(&"charge")
 
 
 func _sync_settings() -> void:
@@ -118,6 +126,8 @@ func _physics_process(delta: float) -> void:
 	_validate_lock()
 
 	if not input_enabled:
+		if state == State.CHARGING or state == State.GUARDING:
+			_enter(State.FREE)
 		_decelerate(delta)
 	else:
 		match state:
@@ -130,9 +140,13 @@ func _physics_process(delta: float) -> void:
 
 	if state != State.DASHING and not is_on_floor():
 		velocity.y -= gravity * delta
+	var was_airborne := not is_on_floor()
+	var fall_speed := -velocity.y
 	move_and_slide()
 	if is_on_floor():
 		_air_jumps_left = air_jumps
+		if was_airborne and fall_speed > LAND_SOUND_SPEED:
+			Sfx.play_at(&"land", global_position, linear_to_db(clampf(fall_speed / 16.0, 0.35, 1.0)))
 	_update_animator()
 
 
@@ -232,9 +246,13 @@ func _enter(new_state: State) -> void:
 		return
 	# Clean up whatever the old state switched on.
 	match state:
-		State.CHARGING: stats.is_charging = false
+		State.CHARGING:
+			stats.is_charging = false
+			Sfx.stop_loop(&"charge")
 		State.GUARDING: stats.guard_multiplier = 1.0
 		State.DASHING: stats.is_invulnerable = false
+	if new_state == State.CHARGING:
+		Sfx.start_loop(&"charge", &"charge_loop", -3.0)
 	state = new_state
 	_state_time = 0.0
 	state_changed.emit(state)
@@ -243,6 +261,7 @@ func _enter(new_state: State) -> void:
 # --- Actions -----------------------------------------------------------------
 
 func _begin_weave() -> void:
+	Sfx.play(&"weave_start")
 	weaver.begin()
 	_weave_started_frame = Engine.get_physics_frames()
 	_enter(State.WEAVING)
@@ -272,6 +291,7 @@ func start_quick_cast(slot: int) -> void:
 	_auto_jutsu = jutsu
 	_auto_queue = jutsu.seals.duplicate()
 	_auto_timer = 0.0
+	Sfx.play(&"weave_start")
 	weaver.begin()
 	_enter(State.AUTO_WEAVING)
 
@@ -294,9 +314,11 @@ func _held_bank() -> int:
 func _jump() -> void:
 	if is_on_floor():
 		velocity.y = jump_velocity
+		Sfx.play(&"jump", -4.0)
 	elif _air_jumps_left > 0 and stats.spend_chakra(air_jump_cost):
 		_air_jumps_left -= 1
 		velocity.y = jump_velocity * 0.9
+		Sfx.play(&"chakra_jump")
 		Vfx.burst(get_parent(), global_position, Element.color(Element.NONE), 1.0, 0.3)
 
 
@@ -308,6 +330,7 @@ func _start_dash() -> void:
 	_dash_dir = dir.normalized()
 	_face_now(_dash_dir)
 	_dash_cooldown_left = dash_cooldown
+	Sfx.play(&"dash")
 	_enter(State.DASHING)
 
 
@@ -320,6 +343,7 @@ func _strike() -> void:
 		_face_now(lock_target.global_position - global_position)
 	if animator:
 		animator.strike()
+	Sfx.play(&"strike_whoosh", -2.0, 0.1)
 	var forward := -global_basis.z
 	velocity += forward * 3.0
 	var center := global_position + forward * strike_reach + Vector3.UP * 1.1
@@ -329,6 +353,7 @@ func _strike() -> void:
 		if Combat.apply_hit(victim, damage, Element.NONE, self) > 0.0:
 			landed = true
 	if landed:
+		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
 		camera_rig.add_shake(0.25)
 		InputDevice.rumble(0.3, 0.2, 0.08)
 
@@ -476,7 +501,8 @@ func _update_animator() -> void:
 
 # --- Reactions ---------------------------------------------------------------
 
-func _on_seal_added(_seal: int, _sequence: Array[int]) -> void:
+func _on_seal_added(seal: int, _sequence: Array[int]) -> void:
+	Sfx.play(StringName("seal_%d" % (Seal.bank_of(seal) + 1)), 0.0, 0.03)
 	if animator:
 		animator.seal_flick()
 	InputDevice.rumble(0.12, 0.0, 0.04)
@@ -493,6 +519,7 @@ func _on_cast_succeeded(jutsu: JutsuDefinition) -> void:
 func _on_cast_failed(jutsu: JutsuDefinition, reason: StringName) -> void:
 	if jutsu == _kunai:
 		return
+	Sfx.play(&"misfire", 0.0 if reason == &"misfire" else -7.0)
 	match reason:
 		&"misfire":
 			feedback.emit("Misfire: no jutsu uses that sequence", &"fail")
@@ -504,6 +531,7 @@ func _on_cast_failed(jutsu: JutsuDefinition, reason: StringName) -> void:
 
 
 func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
+	Sfx.play(&"guard" if state == State.GUARDING else &"hit_player")
 	camera_rig.add_shake(clampf(amount / 30.0, 0.1, 0.6))
 	InputDevice.rumble(0.4, 0.5, 0.15)
 	if amount >= interrupt_damage and (state == State.WEAVING or state == State.AUTO_WEAVING):

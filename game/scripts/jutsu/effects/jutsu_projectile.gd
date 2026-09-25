@@ -79,6 +79,8 @@ func _impact(collider: Node) -> void:
 		Combat.apply_hit(victim, power, element, caster)
 	if on_hit.is_valid():
 		on_hit.call(victim)
+	Sfx.play_at(&"kunai_hit" if style == &"kunai" else &"impact", global_position,
+		0.0 if victim else -6.0)
 	if style == &"kunai":
 		_stick(collider as Node3D)
 	else:

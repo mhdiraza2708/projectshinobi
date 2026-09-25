@@ -76,6 +76,7 @@ func _on_damaged(amount: float, element: int, multiplier: float) -> void:
 	_wobble = 1.0
 	var text := str(roundi(amount))
 	if multiplier > 1.0:
+		Sfx.play_at(&"weak_hit", global_position + Vector3.UP * 1.5)
 		text += "  WEAK!"
 	elif multiplier < 1.0:
 		text += "  RESIST"
@@ -97,6 +98,7 @@ func _on_damaged(amount: float, element: int, multiplier: float) -> void:
 
 func _on_died() -> void:
 	_label.text = "Broken! Resetting…"
+	Sfx.play_at(&"enemy_down", global_position + Vector3.UP)
 	await get_tree().create_timer(reset_delay).timeout
 	if is_inside_tree():
 		stats.restore()

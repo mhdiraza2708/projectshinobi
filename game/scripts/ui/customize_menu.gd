@@ -50,6 +50,7 @@ func is_open() -> bool:
 
 
 func open() -> void:
+	Sfx.ui(&"ui_open")
 	_rebuild_tabs()
 	_root.visible = true
 	player.input_enabled = false
@@ -63,6 +64,7 @@ func open() -> void:
 func close() -> void:
 	if not is_open():
 		return
+	Sfx.ui(&"ui_close")
 	_root.visible = false
 	player.input_enabled = true
 	player.camera_rig.end_showcase()

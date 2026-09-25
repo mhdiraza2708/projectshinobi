@@ -71,6 +71,7 @@ keep weaving and can start the sequence again without letting go.
 | Vibration | Controller rumble on/off. |
 | Screen shake | 0–100%. |
 | UI scale | Makes every menu and HUD element bigger or smaller. |
+| Master / Effects / Menu sounds volume | 0–100% each. 0 mutes that group. |
 | Remapping | Rebind any action on either device. If a key is already in use, the two actions swap, so nothing is left bound twice by accident. |
 
 Elements are never shown by colour alone. The HUD always prints the nature

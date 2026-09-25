@@ -42,6 +42,7 @@ func _ready() -> void:
 	mi.material_override = mat
 	add_child(mi)
 
+	Sfx.play_at(&"wall_rise", global_position)
 	# Rise from below ground, hold, then sink and free.
 	var rest_y := position.y
 	position.y = rest_y - HEIGHT - 0.2

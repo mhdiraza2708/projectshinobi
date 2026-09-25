@@ -85,8 +85,23 @@ func cast(jutsu: JutsuDefinition, target: Node3D = null) -> bool:
 		JutsuDefinition.Form.HEAL:
 			stats.heal(jutsu.power)
 			Vfx.burst(_world_parent(), _body().global_position + Vector3.UP, Color(0.5, 1.0, 0.6), 1.8, 0.6)
+	var sound := cast_sound(jutsu)
+	if sound != &"":
+		Sfx.play_at(sound, global_position)
 	cast_succeeded.emit(jutsu)
 	return true
+
+
+## The sound of `jutsu` leaving the caster's hands (&"" if the effect makes
+## its own, like a wall rising).
+static func cast_sound(jutsu: JutsuDefinition) -> StringName:
+	if jutsu.visual == &"kunai":
+		return &"kunai_throw"
+	match jutsu.form:
+		JutsuDefinition.Form.BUFF: return &"buff"
+		JutsuDefinition.Form.HEAL: return &"heal"
+		JutsuDefinition.Form.WALL: return &""
+	return StringName("cast_" + Element.NAMES[jutsu.element])
 
 
 func aim_direction(target: Node3D) -> Vector3:
@@ -141,6 +156,7 @@ func _blast(jutsu: JutsuDefinition, power: float) -> void:
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, jutsu.radius, exclude):
 		Combat.apply_hit(victim, power, jutsu.element, _body())
 	Vfx.burst(_world_parent(), center, Element.color(jutsu.element), jutsu.radius, 0.45)
+	Sfx.play_at(&"explosion", center)
 
 
 func _raise_wall(jutsu: JutsuDefinition) -> void:
