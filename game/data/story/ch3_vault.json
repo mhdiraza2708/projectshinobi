@@ -1,0 +1,34 @@
+{
+	"id": "ch3_vault",
+	"number": 3,
+	"title": "The Empty Vault",
+	"location": "Emberwood Academy yard",
+	"time": "dusk",
+	"summary": "The scroll is stolen, and its clones attack the academy.",
+	"player_at": [0, 4],
+	"beats": [
+		{"do": "enter", "who": "hisame", "at": [-3, -1]},
+		{"do": "say", "lines": [
+			["hisame", "The vault seal was cut, not broken. Whoever did this knew our seals.", "sad"],
+			["hisame", "The Scroll of Five Natures is gone. In the wrong hands it makes clones without end."],
+			["player", "Clones like the one from my trial?"],
+			["hisame", "That one was polite. These won't be.", "neutral"],
+			["hisame", "And there they are. The thief left us a welcome party. Hold the yard, {name}. I'll guard the vault.", "angry"]
+		]},
+		{"do": "exit", "who": "hisame"},
+		{"do": "fight", "text": "Hold the academy yard", "waves": [
+			{"element": "wind", "enemies": ["genin", "genin"]},
+			{"element": "earth", "enemies": ["chunin", "genin"]}
+		]},
+		{"do": "enter", "who": "hisame", "at": [2, -2]},
+		{"do": "enter", "who": "asahi", "at": [-3, -3]},
+		{"do": "say", "lines": [
+			["asahi", "Wind clones and earth clones? The thief can't even pick a nature."],
+			["hisame", "Because the scroll holds all five. The clones fled toward the Ashen Pass."],
+			["hisame", "And I know those seal cuts. I taught them.", "sad"],
+			["asahi", "You taught a thief?"],
+			["hisame", "Years ago. He had a gift for fire and no patience for anything else. His name is Kagerou."],
+			["hisame", "We follow at nightfall. Rest while you can."]
+		]}
+	]
+}

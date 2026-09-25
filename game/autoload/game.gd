@@ -1,13 +1,15 @@
 extends Node
-## Which mode the game scene starts in, and trial records.
+## Which mode the game scene starts in, story progress and trial records.
 ## Autoloaded as `Game`.
 
-enum Mode { TITLE, TRAINING, TRIAL }
+enum Mode { TITLE, TRAINING, TRIAL, STORY }
 
 const RECORDS_PATH := "user://records.cfg"
 
 ## Read by the game scene when it loads. Tests set TRAINING.
 var start_mode := Mode.TITLE
+## The chapter id a STORY start plays.
+var story_chapter := ""
 ## When false nothing touches disk (tests, screenshots).
 var persist := true
 
@@ -45,6 +47,22 @@ func restart(mode: Mode) -> void:
 	start_mode = mode
 	get_tree().paused = false
 	get_tree().reload_current_scene()
+
+
+## Reloads the game scene into a story chapter.
+func start_story(chapter_id: String) -> void:
+	story_chapter = chapter_id
+	restart(Mode.STORY)
+
+
+func chapter_done(chapter_id: String) -> bool:
+	return bool(_records.get_value("story", chapter_id, false))
+
+
+func mark_chapter_done(chapter_id: String) -> void:
+	_records.set_value("story", chapter_id, true)
+	if persist:
+		_records.save(RECORDS_PATH)
 
 
 static func format_time(seconds: float) -> String:

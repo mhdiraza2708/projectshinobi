@@ -1,0 +1,75 @@
+{
+	"hisame": {
+		"name": "Hisame",
+		"title": "Sensei",
+		"kanji": "雨",
+		"element": "water",
+		"style": {
+			"tints": {"body": "#b3c4dc", "outfit": "#1f3552", "hair": "#d9e0ea"},
+			"headband": "cloth",
+			"headband_color": "#2f5fb3",
+			"scarf": true,
+			"scarf_color": "#1f3552",
+			"back": "ninjato",
+			"mask": false,
+			"pouch": true,
+			"expression": "relaxed",
+			"height": 1.05
+		}
+	},
+	"asahi": {
+		"name": "Asahi",
+		"title": "Rival",
+		"kanji": "朝",
+		"element": "lightning",
+		"style": {
+			"tints": {"body": "#f2e3b6", "outfit": "#3a3226", "hair": "#f2c94c"},
+			"headband": "hachigane",
+			"headband_color": "#c9a45c",
+			"scarf": true,
+			"scarf_color": "#d4a017",
+			"back": "none",
+			"mask": false,
+			"pouch": true,
+			"expression": "happy",
+			"height": 1.0
+		}
+	},
+	"iwao": {
+		"name": "Iwao",
+		"title": "Rogue",
+		"kanji": "巌",
+		"element": "earth",
+		"style": {
+			"tints": {"body": "#a8927a", "outfit": "#4a3b2a", "hair": "#3b3228"},
+			"headband": "hachigane",
+			"headband_color": "#6b5433",
+			"mask": true,
+			"mask_color": "#2a2520",
+			"scarf": false,
+			"back": "none",
+			"pouch": true,
+			"expression": "angry",
+			"height": 1.1
+		}
+	},
+	"kagerou": {
+		"name": "Kagerou",
+		"title": "Rogue",
+		"kanji": "陽",
+		"element": "fire",
+		"style": {
+			"tints": {"body": "#8c7474", "outfit": "#1b1a1f", "hair": "#3a1d1d"},
+			"headband": "hachigane",
+			"headband_color": "#7a1e12",
+			"mask": true,
+			"mask_color": "#111114",
+			"scarf": true,
+			"scarf_color": "#7a1e12",
+			"back": "ninjato",
+			"pouch": false,
+			"expression": "angry",
+			"height": 1.08
+		}
+	}
+}

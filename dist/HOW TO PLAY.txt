@@ -5,6 +5,7 @@ Run ProjectShinobi.exe. There's nothing to install. Windows may warn
 because the exe isn't code-signed: click "More info" then "Run anyway".
 
 The game opens on the title screen:
+  Story                     - Part One: The Stolen Scroll, five chapters.
   Trial of the Five Natures - five waves of enemy shinobi, one nature each.
   Training Ground           - dummies that don't hit back, for practice.
   Customize                 - your look, gear, name and chakra nature.
@@ -29,6 +30,11 @@ IN THE FIELD                 KEYBOARD + MOUSE        CONTROLLER
 
 Kunai aim at whatever is near the middle of the screen, so there's no need
 to lock on first.
+
+STORY
+  A / Enter / Space / click: next line. Hold it to fast-forward.
+  Chapters unlock in order. If you lose a fight, "Retry fight" restarts
+  just that fight.
 
 FIGHTING ENEMIES
   Each enemy shows its nature. Hit it with the nature that beats it for

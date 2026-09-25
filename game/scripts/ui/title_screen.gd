@@ -6,10 +6,15 @@ extends CanvasLayer
 signal trial_chosen
 signal training_chosen
 signal customize_chosen
+signal chapter_chosen(chapter_id: String)
+
+## The story, for the chapter list (loaded on first use if not given).
+var story: Story
 
 var _root: Control
+var _menu: VBoxContainer
 var _first: Button
-var _best: Label
+var _on_chapters := false
 
 
 func _init() -> void:
@@ -28,11 +33,63 @@ func is_open() -> bool:
 
 func open() -> void:
 	visible = true
-	var best := Game.best_time(TrialDirector.TRIAL_ID)
-	_best.text = "Best time  %s" % Game.format_time(best) if best > 0.0 else "Not yet completed"
+	show_main()
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_first.grab_focus()
+
+
+func showing_chapters() -> bool:
+	return _on_chapters
+
+
+func show_main() -> void:
+	_on_chapters = false
+	_clear_menu()
+	if story == null:
+		story = Story.load_all()
+	var cleared := story.chapters.filter(func(c: Dictionary) -> bool: return Game.chapter_done(c["id"])).size()
+	_first = _entry("物", "Story", "Part One: The Stolen Scroll. %d chapters, %d cleared." % [story.chapters.size(), cleared], show_chapters)
+	var best := Game.best_time(TrialDirector.TRIAL_ID)
+	_entry("試", "Trial of the Five Natures", "Five waves of shinobi clones. %s" % (
+		"Best time %s." % Game.format_time(best) if best > 0.0 else "Beat each nature with the one that overcomes it."), trial_chosen.emit)
+	_entry("修", "Training Ground", "Practise seals and jutsu on dummies. Nothing hits back.", training_chosen.emit)
+	_entry("装", "Customize", "Look, colours, gear, name and chakra nature.", customize_chosen.emit)
+	if OS.get_name() != "Web":
+		_entry("退", "Quit", "", func() -> void: get_tree().quit())
+	_first.grab_focus.call_deferred()
+
+
+func show_chapters() -> void:
+	_on_chapters = true
+	_clear_menu()
+	_menu.add_child(UiKit.label("物語  PART ONE: THE STOLEN SCROLL", 22, UiKit.CRIMSON_DARK, &"bold"))
+	var focus: Button = null
+	for c: Dictionary in story.chapters:
+		var id: String = c["id"]
+		var unlocked := story.is_unlocked(id)
+		var done := Game.chapter_done(id)
+		var status := "Cleared" if done else ("New" if unlocked else "Sealed: clear the chapter before it")
+		var b := _entry(Story.numeral(c["number"]) if unlocked else "封", c["title"] if unlocked else "? ? ?",
+			"%s  ·  %s" % [c["location"], status] if unlocked else status, chapter_chosen.emit.bind(id))
+		b.disabled = not unlocked
+		if unlocked and (focus == null or not done):
+			focus = b
+	_entry("戻", "Back", "", show_main)
+	if focus:
+		focus.grab_focus.call_deferred()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if visible and _on_chapters and event.is_action_pressed(&"ui_cancel"):
+		Sfx.ui(&"ui_back")
+		show_main()
+		get_viewport().set_input_as_handled()
+
+
+func _clear_menu() -> void:
+	for child in _menu.get_children():
+		_menu.remove_child(child)
+		child.queue_free()
 
 
 func close() -> void:
@@ -97,17 +154,10 @@ func _build() -> void:
 	vbox.add_child(header)
 	vbox.add_child(_rule())
 
-	var menu := VBoxContainer.new()
-	menu.add_theme_constant_override(&"separation", 10)
-	menu.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(menu)
-	_first = _entry(menu, "試", "Trial of the Five Natures", "Five waves of shinobi clones. Beat each nature with the one that overcomes it.", trial_chosen.emit)
-	_best = UiKit.label("", 19, UiKit.CRIMSON_DARK, &"bold")
-	menu.add_child(_best)
-	_entry(menu, "修", "Training Ground", "Practise seals and jutsu on dummies. Nothing hits back.", training_chosen.emit)
-	_entry(menu, "装", "Customize", "Look, colours, gear, name and chakra nature.", customize_chosen.emit)
-	if OS.get_name() != "Web":
-		_entry(menu, "退", "Quit", "", func() -> void: get_tree().quit())
+	_menu = VBoxContainer.new()
+	_menu.add_theme_constant_override(&"separation", 6)
+	_menu.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(_menu)
 
 	vbox.add_child(_rule())
 	var footer := HBoxContainer.new()
@@ -121,13 +171,15 @@ func _build() -> void:
 	footer.add_child(UiKit.label("An original shinobi game", 16, UiKit.INK_SOFT, &"body"))
 
 
-func _entry(parent: Container, kanji: String, title: String, blurb: String, on_press: Callable) -> Button:
+func _entry(kanji: String, title: String, blurb: String, on_press: Callable) -> Button:
+	var parent := _menu
 	var b := Button.new()
 	b.text = "%s   %s" % [kanji, title]
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_size_override(&"font_size", 32)
-	b.custom_minimum_size.y = 58
-	b.pressed.connect(on_press)
+	b.add_theme_font_size_override(&"font_size", 30)
+	b.custom_minimum_size.y = 54
+	# Deferred: pages rebuild the menu, freeing the button that was pressed.
+	b.pressed.connect(func() -> void: on_press.call_deferred())
 	parent.add_child(b)
 	if blurb != "":
 		var l := UiKit.label(blurb, 18, UiKit.INK_SOFT, &"body")

@@ -5,10 +5,20 @@ extends Node3D
 ## Automated screenshots (used for review/CI artifacts):
 ##   godot --path game --rendering-driver opengl3 -- --screenshot=out.png [--demo=NAME] [--device=gamepad]
 ## NAME is one of: overview (default), weave, cast, kunai, menu, customize,
-## customize_colours, customize_gear, title, trial, results, and the close-up
-## character views portrait, portrait_weave, portrait_guard, portrait_charge.
+## customize_colours, customize_gear, title, trial, results, story,
+## story_boss, story_menu, chapter_card, night, and the close-up character
+## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
 const KILL_PLANE_Y := -20.0
+## Lighting per story time of day ("day" is the scene as authored).
+const TIMES := {
+	"dawn": {"top": Color(0.3, 0.36, 0.62), "horizon": Color(0.96, 0.7, 0.55), "sun": Color(1.0, 0.76, 0.58),
+		"energy": 1.0, "elevation": 12.0, "yaw": 70.0, "ambient": Color(0.78, 0.68, 0.7), "lanterns": false},
+	"dusk": {"top": Color(0.2, 0.18, 0.4), "horizon": Color(0.98, 0.5, 0.3), "sun": Color(1.0, 0.56, 0.36),
+		"energy": 0.9, "elevation": 8.0, "yaw": -110.0, "ambient": Color(0.62, 0.5, 0.56), "lanterns": true},
+	"night": {"top": Color(0.015, 0.02, 0.06), "horizon": Color(0.09, 0.11, 0.2), "sun": Color(0.55, 0.65, 0.95),
+		"energy": 0.35, "elevation": 42.0, "yaw": 30.0, "ambient": Color(0.33, 0.38, 0.58), "lanterns": true},
+}
 
 var hud: Hud
 var pause_menu: PauseMenu
@@ -17,6 +27,12 @@ var title_screen: TitleScreen
 var results: TrialResults
 var director: TrialDirector
 var mode := Game.Mode.TRAINING
+var story: Story
+var story_director: StoryDirector
+var dialogue: DialogueBox
+var chapter_card: ChapterCard
+## Point lights added to the lanterns for dusk and night.
+var lantern_lights: Array[OmniLight3D] = []
 
 var _customize_from_title := false
 
@@ -46,9 +62,10 @@ func _ready() -> void:
 		title_screen.close()
 		_customize_from_title = true
 		customize_menu.open())
+	title_screen.chapter_chosen.connect(start_story)
 	results = TrialResults.new()
 	add_child(results)
-	results.retry_chosen.connect(_restart.bind(Game.Mode.TRIAL))
+	results.retry_chosen.connect(_on_results_primary)
 	results.title_chosen.connect(_restart.bind(Game.Mode.TITLE))
 
 	var args := _user_args()
@@ -58,6 +75,7 @@ func _ready() -> void:
 	match Game.start_mode:
 		Game.Mode.TITLE: show_title()
 		Game.Mode.TRIAL: start_trial()
+		Game.Mode.STORY: start_story(Game.story_chapter)
 		_: start_training()
 
 
@@ -92,6 +110,107 @@ func start_trial(waves: Array = []) -> void:
 	if not waves.is_empty():
 		director.waves = waves
 	director.start(player)
+
+
+## Plays a story chapter. The chapter card shows first; `skip_card` starts
+## the beats at once (tests).
+func start_story(chapter_id: String, skip_card := false) -> void:
+	if story == null:
+		story = Story.load_all()
+	var chapter := story.chapter(chapter_id)
+	if chapter.is_empty():
+		push_error("No story chapter '%s'" % chapter_id)
+		start_training()
+		return
+	mode = Game.Mode.STORY
+	_leave_title()
+	if not chapter["dummies"]:
+		for dummy in find_children("*", "TrainingDummy", true, false):
+			dummy.free()
+	set_time_of_day(chapter["time"])
+	dialogue = DialogueBox.new()
+	add_child(dialogue)
+	chapter_card = ChapterCard.new()
+	add_child(chapter_card)
+	story_director = StoryDirector.new()
+	story_director.name = "StoryDirector"
+	add_child(story_director)
+	story_director.setup(player, hud, dialogue, self, story)
+	story_director.fight_lost.connect(_on_story_fight_lost)
+	story_director.chapter_finished.connect(_on_chapter_finished)
+	player.input_enabled = false
+	if not skip_card:
+		chapter_card.show_chapter(chapter["number"], chapter["title"],
+			"%s  ·  %s" % [chapter["location"], chapter["time"]])
+		await chapter_card.finished
+	if is_inside_tree():
+		story_director.start(chapter)
+
+
+func _on_story_fight_lost() -> void:
+	await get_tree().create_timer(1.4).timeout
+	if is_inside_tree():
+		results.show_panel("敗", false, "物語", "DEFEATED", "Catch your breath. The fight starts again from the beginning.",
+			"", false, "Retry fight", "Title screen")
+
+
+func _on_chapter_finished(chapter: Dictionary) -> void:
+	var next := story.next_chapter(chapter["id"])
+	await get_tree().create_timer(1.0).timeout
+	if not is_inside_tree():
+		return
+	var body := "Next:  %s %s" % [Story.numeral(next["number"]), next["title"]] if not next.is_empty() \
+		else "End of Part One. Thank you for playing."
+	results.show_panel("完", true, "第%s章" % Story.numeral(chapter["number"]), "CHAPTER COMPLETE",
+		"%s %s" % [Story.numeral(chapter["number"]), chapter["title"]], body, false,
+		"Next chapter" if not next.is_empty() else "Play it again", "Title screen")
+
+
+func _on_results_primary() -> void:
+	match mode:
+		Game.Mode.TRIAL:
+			_restart(Game.Mode.TRIAL)
+		Game.Mode.STORY:
+			var chapter := story_director.chapter
+			if story_director.running:
+				results.close()
+				if DisplayServer.get_name() != "headless":
+					Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+				story_director.retry()
+			elif get_tree().current_scene == self:
+				var next := story.next_chapter(chapter["id"])
+				Game.start_story(next["id"] if not next.is_empty() else chapter["id"])
+
+
+## Relights the arena for a story time of day ("day" leaves it as authored).
+func set_time_of_day(time: String) -> void:
+	if not TIMES.has(time):
+		return
+	var t: Dictionary = TIMES[time]
+	var world := $WorldEnvironment as WorldEnvironment
+	world.environment = world.environment.duplicate(true)
+	var env := world.environment
+	var sky := env.sky.sky_material as ProceduralSkyMaterial
+	sky.sky_top_color = t["top"]
+	sky.sky_horizon_color = t["horizon"]
+	sky.ground_horizon_color = t["horizon"]
+	sky.ground_bottom_color = Color(t["horizon"]).darkened(0.8)
+	env.ambient_light_color = t["ambient"]
+	env.fog_light_color = t["horizon"]
+	var sun := $Sun as DirectionalLight3D
+	sun.light_color = t["sun"]
+	sun.light_energy = t["energy"]
+	sun.rotation_degrees = Vector3(-float(t["elevation"]), float(t["yaw"]), 0.0)
+	if t["lanterns"] and lantern_lights.is_empty():
+		for node in $Scenery.get_children():
+			if node.name.begins_with("Lantern"):
+				var light := OmniLight3D.new()
+				light.light_color = Color(1.0, 0.7, 0.38)
+				light.light_energy = 2.2
+				light.omni_range = 7.0
+				light.position = Vector3(0, 1.3, 0)
+				node.add_child(light)
+				lantern_lights.append(light)
 
 
 func _leave_title() -> void:
@@ -239,6 +358,34 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			hud.visible = false
 			results.show_result(true, 312.4, true, 5, 5)
 			await _frames(10)
+		"story":
+			start_story("ch1_graduation", true)
+			await _frames(40)
+			dialogue.advance()
+			dialogue.advance()
+			await _frames(60)
+		"story_boss", "night":
+			start_story("ch5_kagerou", true)
+			await _frames(5)
+			if demo == "story_boss":
+				var beats: Array = story_director.chapter["beats"]
+				story_director.beat_index = beats.find_custom(func(b: Dictionary) -> bool: return b["do"] == "boss") - 1
+				dialogue.visible = false
+				story_director._next()
+				for f in 90:
+					await get_tree().physics_frame
+				story_director.boss.take_hit(story_director.boss.stats.max_health * 0.25, Element.WATER, player)
+				for f in 30:
+					await get_tree().physics_frame
+				player.toggle_lock()
+			await _frames(40)
+		"story_menu":
+			show_title()
+			title_screen.show_chapters()
+			await _frames(20)
+		"chapter_card":
+			start_story("ch3_vault")
+			await _frames(12)
 		"customize", "customize_colours", "customize_gear":
 			if demo == "customize_gear":
 				Profile.set_value(&"headband", "hachigane")

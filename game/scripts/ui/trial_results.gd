@@ -1,18 +1,23 @@
 class_name TrialResults
 extends CanvasLayer
-## Shown when a trial ends: time, record, waves cleared, and what next.
+## The end-of-mode panel: a trial's time and record, a story chapter
+## cleared or a fight lost, and two choices of what next.
 
+## The main button (retry / next chapter).
 signal retry_chosen
+## The second button (title screen).
 signal title_chosen
 
 var _root: Control
 var _stamp: Control
 var _stamp_slot: Control
+var _kicker: Label
 var _heading: Label
 var _sub: Label
 var _lines: Label
 var _record: Label
 var _retry: Button
+var _second: Button
 
 
 func _init() -> void:
@@ -30,21 +35,34 @@ func is_open() -> bool:
 
 
 func show_result(won: bool, seconds: float, new_record: bool, cleared: int, total: int) -> void:
-	if _stamp:
-		_stamp.queue_free()
-	_stamp = Hanko.make("勝" if won else "敗", 110.0, UiKit.CRIMSON if won else UiKit.INK_SOFT)
-	_stamp_slot.add_child(_stamp)
-	_heading.text = "TRIAL COMPLETE" if won else "DEFEATED"
-	_sub.text = "The five natures yield to you." if won else "Rest, then try again. Watch for the seals above their heads: interrupt them."
 	var best := Game.best_time(TrialDirector.TRIAL_ID)
 	var lines := PackedStringArray()
 	lines.append("Waves cleared   %d / %d" % [cleared, total])
 	lines.append("Time   %s" % Game.format_time(seconds))
 	if best > 0.0:
 		lines.append("Best   %s" % Game.format_time(best))
-	_lines.text = "\n".join(lines)
-	_record.visible = new_record
-	_retry.text = "Run it again" if won else "Try again"
+	show_panel("勝" if won else "敗", won, "五行の試練", "TRIAL COMPLETE" if won else "DEFEATED",
+		"The five natures yield to you." if won else "Rest, then try again. Watch for the seals above their heads: interrupt them.",
+		"\n".join(lines), new_record, "Run it again" if won else "Try again", "Title screen")
+
+
+## The general form: a stamp, a heading, text, and two buttons ("" hides
+## the second).
+func show_panel(stamp: String, good: bool, kicker: String, heading: String, sub: String, body: String,
+		record: bool, primary: String, secondary: String) -> void:
+	if _stamp:
+		_stamp.queue_free()
+	_stamp = Hanko.make(stamp, 110.0, UiKit.CRIMSON if good else UiKit.INK_SOFT)
+	_stamp_slot.add_child(_stamp)
+	_kicker.text = kicker
+	_heading.text = heading
+	_sub.text = sub
+	_lines.text = body
+	_lines.visible = body != ""
+	_record.visible = record
+	_retry.text = primary
+	_second.text = secondary
+	_second.visible = secondary != ""
 	visible = true
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -88,7 +106,8 @@ func _build() -> void:
 	header.add_child(_stamp_slot)
 	var titles := VBoxContainer.new()
 	titles.add_theme_constant_override(&"separation", -6)
-	titles.add_child(UiKit.label("五行の試練", 24, UiKit.INK_SOFT, &"brush"))
+	_kicker = UiKit.label("", 24, UiKit.INK_SOFT, &"brush")
+	titles.add_child(_kicker)
 	_heading = UiKit.label("", 56, UiKit.CRIMSON, &"display")
 	titles.add_child(_heading)
 	header.add_child(titles)
@@ -109,8 +128,7 @@ func _build() -> void:
 	_retry.add_theme_font_size_override(&"font_size", 28)
 	_retry.pressed.connect(retry_chosen.emit)
 	buttons.add_child(_retry)
-	var title := Button.new()
-	title.text = "Title screen"
-	title.add_theme_font_size_override(&"font_size", 28)
-	title.pressed.connect(title_chosen.emit)
-	buttons.add_child(title)
+	_second = Button.new()
+	_second.add_theme_font_size_override(&"font_size", 28)
+	_second.pressed.connect(title_chosen.emit)
+	buttons.add_child(_second)

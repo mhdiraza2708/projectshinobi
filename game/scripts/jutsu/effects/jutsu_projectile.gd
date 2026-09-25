@@ -82,8 +82,9 @@ func _physics_process(delta: float) -> void:
 
 func _impact(collider: Node) -> void:
 	var victim := Combat.find_hittable(collider)
-	if victim:
-		Combat.apply_hit(victim, power, element, caster)
+	if victim and Combat.apply_hit(victim, power, element, caster) > 0.0 \
+			and is_instance_valid(caster) and caster.has_method(&"notify_hit"):
+		caster.notify_hit(victim, &"kunai" if style == &"kunai" else &"jutsu")
 	if on_hit.is_valid():
 		on_hit.call(victim)
 	Sfx.play_at(&"kunai_hit" if style == &"kunai" else &"impact", global_position,

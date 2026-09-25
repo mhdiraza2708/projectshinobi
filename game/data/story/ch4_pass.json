@@ -1,0 +1,38 @@
+{
+	"id": "ch4_pass",
+	"number": 4,
+	"title": "The Ashen Pass",
+	"location": "Abandoned shrine, Ashen Pass",
+	"time": "night",
+	"summary": "An ambush at the old shrine.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "enter", "who": "asahi", "at": [-2.5, 3]},
+		{"do": "say", "lines": [
+			["asahi", "An abandoned shrine. Of course it's an abandoned shrine."],
+			["player", "The lanterns are lit. Someone's here."],
+			["asahi", "Someone heavy. I can feel earth chakra in the ground.", "neutral"]
+		]},
+		{"do": "enter", "who": "iwao", "at": [0, -6]},
+		{"do": "say", "lines": [
+			["iwao", "Kagerou said the academy would send its best. He didn't say they'd be children.", "angry"],
+			["asahi", "There are clones moving in the trees. I'll take them. You take the big one."],
+			["player", "Earth nature. Lightning shatters earth..."],
+			["asahi", "You're welcome to borrow my nature. Go!", "happy"]
+		]},
+		{"do": "exit", "who": "asahi"},
+		{"do": "boss", "who": "iwao", "rank": "jonin", "health": 260,
+			"taunt": "Stone doesn't bleed.",
+			"phases": [
+				{"at": 0.6, "say": "Rise, stone clones!", "summon": [["genin", "earth"], ["genin", "earth"]]},
+				{"at": 0.25, "say": "Enough! I'll bury you here!"}
+			]},
+		{"do": "enter", "who": "asahi", "at": [2, -2]},
+		{"do": "say", "lines": [
+			["asahi", "He's gone. A substitution log. These people love substitution logs."],
+			["asahi", "But he dropped this. A note: \"Midnight. The shrine. Bring the scroll's last seal.\""],
+			["player", "The last seal... Then the scroll isn't finished yet."],
+			["asahi", "Then we make sure it never is. Midnight is soon."]
+		]}
+	]
+}

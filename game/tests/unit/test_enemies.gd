@@ -218,3 +218,16 @@ func test_training_mode_keeps_dummies() -> void:
 	assert_eq(scene.mode, Game.Mode.TRAINING)
 	assert_true(scene.find_children("*", "TrainingDummy", true, false).size() > 0)
 	assert_true(scene.director == null)
+
+
+func test_lock_on_prefers_enemies_over_dummies() -> void:
+	await _load()
+	# The neutral dummy is dead ahead; the enemy is off to the side.
+	var e := _spawn(&"genin", Element.FIRE, player.global_position + Vector3(3, 0, -9))
+	await _await_fight(e)
+	e.set_physics_process(false)
+	assert_true(player.find_lock_target() == e, "locks the enemy, not the dummy")
+	assert_true(player.soft_target() == e, "soft aim takes the enemy in its cone over the dummy")
+	e.dismiss()
+	await physics_frames(2)
+	assert_true(player.find_lock_target() is TrainingDummy, "dummies are still targetable on their own")

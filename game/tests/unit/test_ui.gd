@@ -20,7 +20,10 @@ func test_fonts_cover_every_kanji_the_ui_draws() -> void:
 	# Every non-ASCII character written anywhere in the scripts: kanji need
 	# the brush font, symbols the body font. Fix with art/fonts/subset_fonts.py.
 	var missing := ""
-	for path in _files("res://scripts") + _files("res://autoload"):
+	var story_files: Array[String] = []
+	for f in DirAccess.get_files_at("res://data/story"):
+		story_files.append("res://data/story".path_join(f))
+	for path in _files("res://scripts") + _files("res://autoload") + story_files:
 		for ch in FileAccess.get_file_as_string(path):
 			var cp := ch.unicode_at(0)
 			if cp <= 0x7E or missing.contains(ch):

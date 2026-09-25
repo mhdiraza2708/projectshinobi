@@ -21,6 +21,12 @@ var _name: Label
 var _banner: BrushBanner
 var _objective: Label
 var _hurt: ColorRect
+var _boss_panel: VBoxContainer
+var _boss_name: Label
+var _boss_bar: InkBar
+var _boss: Node
+var _subtitle: Label
+var _subtitle_tween: Tween
 var _weave_panel: PaperPanel
 var _fuse: FuseBar
 var _instruction: HBoxContainer
@@ -120,6 +126,39 @@ func _build() -> void:
 	_objective.offset_top = 36
 	_objective.visible = false
 	root.add_child(_objective)
+
+	# --- Story boss bar, top-centre ----------------------------------------
+	_boss_panel = VBoxContainer.new()
+	_boss_panel.add_theme_constant_override(&"separation", 2)
+	_boss_panel.anchor_left = 0.5
+	_boss_panel.anchor_right = 0.5
+	_boss_panel.offset_left = -380
+	_boss_panel.offset_right = 380
+	_boss_panel.offset_top = 92
+	_boss_panel.visible = false
+	root.add_child(_boss_panel)
+	_boss_name = UiKit.scene_label("", 30, UiKit.PAPER, &"display")
+	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_panel.add_child(_boss_name)
+	_boss_bar = InkBar.new()
+	_boss_bar.custom_minimum_size = Vector2(760, 30)
+	_boss_bar.seed = 13.0
+	_boss_panel.add_child(_boss_bar)
+
+	# --- Story lines spoken mid-fight, lower centre ------------------------
+	_subtitle = UiKit.scene_label("", 28, UiKit.PAPER, &"bold")
+	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_subtitle.anchor_left = 0.5
+	_subtitle.anchor_right = 0.5
+	_subtitle.anchor_top = 1.0
+	_subtitle.anchor_bottom = 1.0
+	_subtitle.offset_left = -700
+	_subtitle.offset_right = 700
+	_subtitle.offset_top = -330
+	_subtitle.offset_bottom = -250
+	_subtitle.visible = false
+	root.add_child(_subtitle)
 
 	# --- Red edge flash when hurt ------------------------------------------
 	_hurt = ColorRect.new()
@@ -310,6 +349,45 @@ func set_objective(text: String) -> void:
 
 func objective() -> String:
 	return _objective.text if _objective.visible else ""
+
+
+## Shows a named enemy's health across the top until it falls.
+func show_boss(enemy: Node, title: String) -> void:
+	_boss = enemy
+	_boss_name.text = title
+	_boss_panel.visible = true
+	var stats: Stats = enemy.get("stats")
+	_boss_bar.set_ratio(stats.health / stats.max_health)
+	stats.health_changed.connect(func(current: float, maximum: float) -> void:
+		_boss_bar.set_ratio(current / maximum))
+	enemy.tree_exiting.connect(hide_boss)
+
+
+func hide_boss() -> void:
+	_boss = null
+	_boss_panel.visible = false
+
+
+func boss_shown() -> bool:
+	return _boss_panel.visible
+
+
+## A line of speech during play: "Name: text", fading after a few seconds.
+func say(speaker: String, text: String, color := UiKit.GOLD) -> void:
+	_subtitle.text = "%s:  %s" % [speaker, text]
+	_subtitle.add_theme_color_override(&"font_color", UiKit.PAPER)
+	_subtitle.visible = true
+	_subtitle.modulate = Color(color.lightened(0.6), 1.0)
+	if _subtitle_tween:
+		_subtitle_tween.kill()
+	_subtitle_tween = _subtitle.create_tween()
+	_subtitle_tween.tween_interval(3.2 + text.length() * 0.03)
+	_subtitle_tween.tween_property(_subtitle, "modulate:a", 0.0, 0.5)
+	_subtitle_tween.tween_callback(func() -> void: _subtitle.visible = false)
+
+
+func subtitle() -> String:
+	return _subtitle.text if _subtitle.visible else ""
 
 
 func flash_hurt(amount: float) -> void:

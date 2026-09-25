@@ -21,6 +21,9 @@ var frame_offset := 0.0
 
 var _shake := 0.0
 var _saved: Dictionary = {}
+## Story conversations: who the camera looks toward over the player's shoulder.
+var _focus: Node3D
+var _conversation_saved: Dictionary = {}
 
 @onready var pivot: Node3D = $Pivot
 @onready var spring: SpringArm3D = $Pivot/SpringArm3D
@@ -63,6 +66,10 @@ func _process(delta: float) -> void:
 		var rs := Input.get_joy_axis(InputDevice.active_joypad, JOY_AXIS_RIGHT_X)
 		if absf(rs) > float(Settings.get_value(&"stick_deadzone")):
 			yaw -= rs * stick_speed * delta
+	elif is_instance_valid(_focus) and target:
+		var to_focus := _focus.global_position - target.global_position
+		yaw = lerp_angle(yaw, atan2(-to_focus.x, -to_focus.z), 1.0 - exp(-4.0 * delta))
+		pitch = lerpf(pitch, deg_to_rad(-8.0), 1.0 - exp(-4.0 * delta))
 	elif is_instance_valid(lock_target) and target:
 		var to := lock_target.global_position - target.global_position
 		yaw = lerp_angle(yaw, atan2(-to.x, -to.z), 1.0 - exp(-7.0 * delta))
@@ -125,6 +132,29 @@ func end_showcase() -> void:
 	if target:
 		yaw = target.global_rotation.y
 	snap()
+
+
+## Frames a story conversation: over the player's shoulder toward `focus`.
+func begin_conversation(focus: Node3D) -> void:
+	if _conversation_saved.is_empty():
+		_conversation_saved = {"length": spring.spring_length, "lock": lock_target}
+	_focus = focus
+	lock_target = null
+	spring.spring_length = 3.3
+	frame_offset = 0.75
+
+
+func end_conversation() -> void:
+	_focus = null
+	if _conversation_saved.is_empty():
+		return
+	spring.spring_length = _conversation_saved["length"]
+	frame_offset = 0.0
+	_conversation_saved.clear()
+
+
+func in_conversation() -> bool:
+	return _focus != null
 
 
 func in_showcase() -> bool:

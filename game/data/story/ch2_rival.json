@@ -1,0 +1,38 @@
+{
+	"id": "ch2_rival",
+	"number": 2,
+	"title": "Lightning at Noon",
+	"location": "Emberwood Academy yard",
+	"time": "day",
+	"summary": "Asahi's challenge.",
+	"player_at": [0, 4],
+	"beats": [
+		{"do": "enter", "who": "hisame", "at": [-5, 1]},
+		{"do": "enter", "who": "asahi", "at": [0, -4]},
+		{"do": "say", "lines": [
+			["asahi", "You came. I bet myself you wouldn't. I lost. I hate losing.", "happy"],
+			["hisame", "A duel under academy rules. No real blades, no lasting harm. Stop when I say stop."],
+			["asahi", "Lightning nature. Fast, loud, and it hits first. Like me."],
+			["hisame", "{name}. What beats lightning?"],
+			["player", "Wind cuts lightning."],
+			["hisame", "Then find some wind. Or hit him hard enough to break his seals. Begin!"]
+		]},
+		{"do": "boss", "who": "asahi", "rank": "chunin", "health": 200,
+			"taunt": "Try to keep up!",
+			"phases": [
+				{"at": 0.5, "say": "Okay. Warm-up's over. Lightning clone!", "summon": [["genin", "lightning"]]}
+			]},
+		{"do": "enter", "who": "asahi", "at": [1, -4]},
+		{"do": "say", "lines": [
+			["asahi", "...A substitution. You made me use a substitution. Nobody makes me use a substitution.", "angry"],
+			["player", "First time for everything."],
+			["asahi", "Rematch. Some other day, when I've...", "sad"],
+			["hisame", "Quiet. Listen. Those are the academy bells.", "neutral"],
+			["hisame", "That's the alarm pattern. Someone broke into the scroll vault."],
+			["asahi", "The Five Natures Scroll?"],
+			["hisame", "Both of you, with me. Now."]
+		]},
+		{"do": "exit", "who": "asahi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

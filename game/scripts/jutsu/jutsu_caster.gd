@@ -156,7 +156,8 @@ func _blast(jutsu: JutsuDefinition, power: float) -> void:
 	if _body() is CollisionObject3D:
 		exclude.append((_body() as CollisionObject3D).get_rid())
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, jutsu.radius, exclude):
-		Combat.apply_hit(victim, power, jutsu.element, _body())
+		if Combat.apply_hit(victim, power, jutsu.element, _body()) > 0.0 and _body().has_method(&"notify_hit"):
+			_body().notify_hit(victim, &"jutsu")
 	Vfx.burst(_world_parent(), center, Element.color(jutsu.element), jutsu.radius, 0.45)
 	Sfx.play_at(&"explosion", center)
 

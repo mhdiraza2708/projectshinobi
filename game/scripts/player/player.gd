@@ -14,6 +14,9 @@ signal quick_slots_changed
 signal feedback(text: String, kind: StringName)
 ## Health reached zero.
 signal defeated
+## One of the player's attacks damaged `victim`. kind: &"strike", &"kunai"
+## or &"jutsu".
+signal hit_landed(victim: Node, kind: StringName)
 
 enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING, DOWN }
 
@@ -46,6 +49,9 @@ enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING, DOWN }
 
 ## Soft aim: how far off the camera's line a target can be and still be aimed at.
 const SOFT_AIM_ANGLE := deg_to_rad(22.0)
+## Lock-on prefers enemies that fight back over things that don't (training
+## dummies) by this much score. Soft aim takes any enemy in its cone first.
+const PASSIVE_LOCK_PENALTY := 8.0
 const SOFT_AIM_RANGE := 28.0
 ## Landing faster than this (m/s) makes a sound.
 const LAND_SOUND_SPEED := 5.0
@@ -359,6 +365,7 @@ func _strike() -> void:
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, 0.9, [get_rid()]):
 		if Combat.apply_hit(victim, damage, Element.NONE, self) > 0.0:
 			landed = true
+			notify_hit(victim, &"strike")
 	if landed:
 		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
 		camera_rig.add_shake(0.25)
@@ -387,10 +394,13 @@ func aim_target() -> Node3D:
 
 
 ## Without lock-on, the target nearest to where the camera points (within
-## SOFT_AIM_ANGLE), so throws and jutsu land without precise aiming.
+## SOFT_AIM_ANGLE), so throws and jutsu land without precise aiming. An
+## enemy in the cone always wins over a dummy.
 func soft_target() -> Node3D:
 	var best: Node3D = null
 	var best_angle := SOFT_AIM_ANGLE
+	var passive: Node3D = null
+	var passive_angle := SOFT_AIM_ANGLE
 	var look := camera_rig.flat_forward()
 	for node in get_tree().get_nodes_in_group(&"lockable"):
 		var n := node as Node3D
@@ -402,10 +412,19 @@ func soft_target() -> Node3D:
 		if dist > SOFT_AIM_RANGE or dist < 0.5:
 			continue
 		var angle := look.angle_to(to / dist)
-		if angle < best_angle:
+		if not _is_hostile(n):
+			if angle < passive_angle:
+				passive_angle = angle
+				passive = n
+		elif angle < best_angle:
 			best_angle = angle
 			best = n
-	return best
+	return best if best else passive
+
+
+func _is_hostile(n: Node) -> bool:
+	var other: Variant = n.get(&"team")
+	return other is StringName and other != &"" and other != team
 
 
 func toggle_lock() -> void:
@@ -424,8 +443,10 @@ func find_lock_target() -> Node3D:
 		var dist := to.length()
 		if dist > lock_range or dist < 0.01:
 			continue
-		# Prefer what the camera is pointing at, then what is close.
+		# Prefer enemies, then what the camera is pointing at, then what is close.
 		var score := look.angle_to(to.normalized()) * 8.0 + dist * 0.1
+		if not _is_hostile(n):
+			score += PASSIVE_LOCK_PENALTY
 		if score < best_score:
 			best_score = score
 			best = n
@@ -552,6 +573,11 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 
 func take_hit(amount: float, element: int, _source: Node) -> float:
 	return stats.take_damage(amount, element)
+
+
+## Called by projectiles and blasts this player made when they deal damage.
+func notify_hit(victim: Node, kind: StringName) -> void:
+	hit_landed.emit(victim, kind)
 
 
 func is_down() -> bool:

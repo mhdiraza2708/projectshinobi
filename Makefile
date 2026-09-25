@@ -45,7 +45,7 @@ fonts:
 # Needs Xvfb when there is no display.
 screenshots: import
 	mkdir -p $(SHOTS)
-	for demo in overview weave cast menu title trial; do \
+	for demo in overview weave cast menu title trial story story_menu; do \
 		xvfb-run -a -s "-screen 0 1280x720x24" $(GODOT) --path game \
 			--rendering-driver opengl3 --rendering-method gl_compatibility --audio-driver Dummy \
 			-- --screenshot=$(abspath $(SHOTS))/$$demo.png --demo=$$demo; \

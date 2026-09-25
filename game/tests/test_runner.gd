@@ -53,7 +53,12 @@ func _ready() -> void:
 	var passed := 0
 	var failed: Array[String] = []
 	for file: String in files:
-		var suite: TestCase = load(UNIT_DIR.path_join(file)).new()
+		var script := load(UNIT_DIR.path_join(file)) as GDScript
+		if script == null or not script.can_instantiate():
+			failed.append("%s: failed to load (parse error?)" % file)
+			printerr("  FAIL  %s: failed to load (parse error?)" % file)
+			continue
+		var suite: TestCase = script.new()
 		suite.root = self
 		for method in suite.get_method_list():
 			var name: String = method["name"]

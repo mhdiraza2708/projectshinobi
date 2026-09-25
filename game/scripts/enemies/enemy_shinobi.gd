@@ -9,6 +9,8 @@ extends CharacterBody3D
 ## breaks the weave (a kunai is enough for a genin).
 
 signal defeated(enemy: EnemyShinobi)
+## A story boss crossed one of its `phases` health thresholds.
+signal phase_reached(phase: Dictionary)
 
 enum State { SPAWNING, FIGHT, WEAVING, WINDUP, GUARDING, DODGING, STAGGERED, DEFEATED }
 
@@ -48,6 +50,15 @@ const BAR_SIZE := Vector2i(120, 12)
 @export var element := Element.FIRE
 ## Empty = pick from the character roster.
 @export var model_path := ""
+## Story bosses: a name instead of "<Nature> <Rank>", a portrait kanji, a
+## health pool, a look, and phases [{at: 0-1 health share, element: int or
+## -1, say: String, summon: [[rank, element], ...]}] handled by whoever
+## listens to phase_reached.
+var title_override := ""
+var kanji_override := ""
+var health_override := 0.0
+var style_override: Dictionary = {}
+var phases: Array = []
 ## Who to fight (normally the player).
 var target: Node3D
 ## Combat team (see Combat.same_team); also this node's group.
@@ -78,6 +89,8 @@ var _name_label: Label3D
 var _seal_label: Label3D
 var _bar: Sprite3D
 var _bar_image: Image
+var _ring: MeshInstance3D
+var _next_phase := 0
 
 
 func _ready() -> void:
@@ -97,7 +110,7 @@ func _ready() -> void:
 
 	stats = Stats.new()
 	stats.name = "Stats"
-	stats.max_health = _r["health"]
+	stats.max_health = health_override if health_override > 0.0 else float(_r["health"])
 	stats.chakra_regen = 8.0
 	stats.affinity = element
 	add_child(stats)
@@ -109,7 +122,7 @@ func _ready() -> void:
 	model.name = "Model"
 	model.use_profile = false
 	model.model_path = model_path if model_path != "" else pick_model()
-	model.style = style_for(element, rank)
+	model.style = style_override if not style_override.is_empty() else style_for(element, rank)
 	add_child(model)
 
 	caster = JutsuCaster.new()
@@ -178,22 +191,53 @@ static func jutsu_for(nature: int, max_cost: float) -> Array[JutsuDefinition]:
 
 
 ## A roster character other than the player's own, else the placeholder.
-static func pick_model() -> String:
+## With `key` (a story character id) the pick is always the same one.
+static func pick_model(key := "") -> String:
 	var mine: String = Profile.get_value(&"model")
 	var options: Array[String] = []
 	for entry in CharacterModel.roster():
 		var path: String = entry["path"]
 		if path != CharacterModel.USER_MODEL and path != mine and path != CharacterModel.DEFAULT_MODEL:
 			options.append(path)
-	return options.pick_random() if not options.is_empty() else CharacterModel.DEFAULT_MODEL
+	if options.is_empty():
+		return CharacterModel.DEFAULT_MODEL
+	if key != "":
+		return options[absi(hash(key)) % options.size()]
+	return options.pick_random()
 
 
 func display_name() -> String:
+	if title_override != "":
+		return "%s %s" % [Element.kanji(element), title_override]
 	return "%s %s %s" % [Element.kanji(element), Element.display_name(element), _r["title"]]
+
+
+func is_boss() -> bool:
+	return title_override != ""
+
+
+## Switches chakra nature mid-fight: weakness, jutsu, colours and name.
+func set_element(nature: int) -> void:
+	element = nature
+	stats.affinity = nature
+	caster.affinity = nature
+	jutsu_list = jutsu_for(nature, _r["max_cost"])
+	var c := Element.color(nature)
+	_ring.material_override = Vfx.glow_material(c, 1.2, 0.45)
+	_name_label.text = display_name()
+	_name_label.modulate = c.lightened(0.35)
+	Vfx.burst(get_parent(), global_position + Vector3.UP, c, 1.3, 0.35)
 
 
 func is_defeated() -> bool:
 	return state == State.DEFEATED
+
+
+## Vanishes at once, whatever state it is in (a boss's clones when it falls).
+func dismiss() -> void:
+	if state != State.DEFEATED:
+		stats.health = 0.0
+		_on_died()
 
 
 # --- Loop ----------------------------------------------------------------------
@@ -474,7 +518,29 @@ func _stagger() -> void:
 		velocity += away.normalized() * 3.0
 
 
+func _check_phases() -> void:
+	while _next_phase < phases.size() and not stats.is_dead():
+		var phase: Dictionary = phases[_next_phase]
+		if stats.health > float(phase.get("at", 0.0)) * stats.max_health:
+			return
+		_next_phase += 1
+		if int(phase.get("element", -1)) >= 0 and int(phase["element"]) != element:
+			set_element(int(phase["element"]))
+		# Break off: a substitution-style hop away to regroup.
+		_weave = null
+		_enter(State.STAGGERED)
+		if _target_ok():
+			var away := global_position - target.global_position
+			away.y = 0.0
+			var hop := away.normalized().rotated(Vector3.UP, randf_range(-0.8, 0.8)) * 3.5
+			Vfx.burst(get_parent(), global_position + Vector3.UP, Color(0.9, 0.9, 0.92), 1.6, 0.4)
+			global_position += hop
+			Sfx.play_at(&"smoke", global_position)
+		phase_reached.emit(phase)
+
+
 func _on_damaged(amount: float, hit_element: int, multiplier: float) -> void:
+	_check_phases.call_deferred()
 	var text := str(roundi(amount))
 	if multiplier > 1.0:
 		text += "  WEAK!"
@@ -508,15 +574,15 @@ func _on_died() -> void:
 
 func _build_overhead() -> void:
 	var c := Element.color(element)
-	var ring := MeshInstance3D.new()
+	_ring = MeshInstance3D.new()
 	var disc := CylinderMesh.new()
 	disc.top_radius = 0.6
 	disc.bottom_radius = 0.6
 	disc.height = 0.02
-	ring.mesh = disc
-	ring.material_override = Vfx.glow_material(c, 1.2, 0.45)
-	ring.position.y = 0.02
-	add_child(ring)
+	_ring.mesh = disc
+	_ring.material_override = Vfx.glow_material(c, 1.2, 0.45)
+	_ring.position.y = 0.02
+	add_child(_ring)
 
 	_name_label = _label3d(display_name(), 30, c.lightened(0.35))
 	_name_label.position.y = 2.35

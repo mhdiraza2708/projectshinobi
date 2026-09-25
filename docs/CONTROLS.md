@@ -33,6 +33,12 @@ The game opens on the title screen: **Trial of the Five Natures**,
 arrow keys or mouse. Confirm with A or Enter; B or Esc backs out. From the
 pause menu, **Title screen** leaves the current mode.
 
+## Story dialogue
+
+Confirm (**A**, **Enter**, **Space** or **left click**) finishes the line
+being typed, then moves to the next. Hold it to fast-forward. The pause
+menu still works during dialogue.
+
 ## Fighting enemies
 
 - Enemies show their nature (kanji and name) and a health bar overhead.

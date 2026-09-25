@@ -1,0 +1,56 @@
+{
+	"id": "ch1_graduation",
+	"number": 1,
+	"title": "The Graduation Trial",
+	"location": "Emberwood Academy yard",
+	"time": "dawn",
+	"summary": "Sensei Hisame puts you through the graduation trial.",
+	"dummies": true,
+	"player_at": [0, 4],
+	"beats": [
+		{"do": "enter", "who": "hisame", "at": [-3.5, -0.5]},
+		{"do": "say", "lines": [
+			["hisame", "You're late, {name}. The sun is up, and so are the dummies.", "relaxed"],
+			["player", "The dummies weren't going anywhere, Sensei."],
+			["hisame", "Neither are you, until you pass. Graduation trial. Three parts: tools, seals, and an opponent who hits back.", "neutral"],
+			["hisame", "Tools first. A kunai that misses is a gift to your enemy. Hit a dummy. Twice."]
+		]},
+		{"do": "task", "text": "Hit a dummy with a kunai ({throw_tool})", "goal": "kunai_hit", "count": 2},
+		{"do": "say", "lines": [
+			["hisame", "Good. Now the part they write songs about: hand seals.", "happy"],
+			["hisame", "Hold {weave}, make the seals, let go to cast. Tiger, then Ox. That's Ember Volley."]
+		]},
+		{"do": "task", "text": "Weave Tiger, Ox to cast Ember Volley (hold {weave})", "goal": "cast", "jutsu": "ember_volley"},
+		{"do": "say", "lines": [
+			["hisame", "Fire burns wind. Wind cuts lightning. Lightning shatters earth. Earth dams water. Water drowns fire."],
+			["hisame", "Learn the circle and every fight gets shorter. The dummy on the right is wind-natured. Show it some fire."]
+		]},
+		{"do": "task", "text": "Land a WEAK! hit: fire on the Wind dummy", "goal": "weak_hit"},
+		{"do": "say", "lines": [
+			["hisame", "Last part. When something swings at you, don't be there. Or be ready."],
+			["hisame", "Hold {guard} to guard. Show me."]
+		]},
+		{"do": "task", "text": "Guard ({guard})", "goal": "guard"},
+		{"do": "say", "lines": [
+			["hisame", "This is the Scroll of Five Natures. The academy lends its chakra to make clones for training."],
+			["hisame", "They hit back. They weave, too. Watch for seals above their heads: hit them first, and the jutsu dies in their hands."],
+			["player", "And if I get hit?"],
+			["hisame", "Then you learn faster. Begin.", "relaxed"]
+		]},
+		{"do": "fight", "text": "Defeat the training clone", "waves": [{"element": "fire", "enemies": ["genin"]}]},
+		{"do": "enter", "who": "asahi", "at": [3.5, -2]},
+		{"do": "say", "lines": [
+			["asahi", "One genin clone? I did three at once last spring.", "happy"],
+			["hisame", "Asahi. You're supposed to be on patrol.", "neutral"],
+			["asahi", "Patrol's boring, and I wanted to see the new graduate. Not bad, {name}. Not good, either."],
+			["asahi", "Tomorrow at noon. You and me, right here. Unless you're scared."],
+			["player", "I'll be here."],
+			["asahi", "Wear something you don't mind getting singed.", "happy"]
+		]},
+		{"do": "exit", "who": "asahi"},
+		{"do": "say", "lines": [
+			["hisame", "Congratulations. You're a genin. Don't let him get in your head.", "happy"],
+			["hisame", "...Well. Not all the way in.", "relaxed"]
+		]}
+	]
+}

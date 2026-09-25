@@ -1,0 +1,52 @@
+{
+	"id": "ch5_kagerou",
+	"number": 5,
+	"title": "Kagerou",
+	"location": "Abandoned shrine, Ashen Pass",
+	"time": "night",
+	"summary": "The thief and all five natures.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "enter", "who": "hisame", "at": [-3, 4]},
+		{"do": "enter", "who": "asahi", "at": [3, 4]},
+		{"do": "enter", "who": "kagerou", "at": [0, -5]},
+		{"do": "say", "lines": [
+			["kagerou", "Hisame-sensei. You brought children.", "relaxed"],
+			["hisame", "I brought shinobi. Give back the scroll, Kagerou."],
+			["kagerou", "The academy threw me out for being too strong. Now I'll have an army of me. Let's see who they throw out then.", "angry"],
+			["asahi", "That's the worst plan I've ever heard, and I make a lot of plans."],
+			["kagerou", "Fire, wind, lightning, earth, water. I carry all five now. Which will you answer with, little {nature} user?"],
+			["hisame", "{name}. Watch his chakra change. Answer each nature with the one that beats it."],
+			["hisame", "Asahi and I will hold off his clones. He's yours."]
+		]},
+		{"do": "exit", "who": "hisame"},
+		{"do": "exit", "who": "asahi"},
+		{"do": "boss", "who": "kagerou", "rank": "jonin", "health": 340,
+			"taunt": "Burn first.",
+			"phases": [
+				{"at": 0.8, "element": "wind", "say": "Too slow. Wind, then."},
+				{"at": 0.6, "element": "lightning", "say": "Lightning! Faster than your seals!", "summon": [["genin", "lightning"]]},
+				{"at": 0.4, "element": "earth", "say": "Earth. You can't break what doesn't move."},
+				{"at": 0.2, "element": "water", "say": "Water puts out every fire. Even yours.", "summon": [["genin", "water"]]}
+			]},
+		{"do": "enter", "who": "kagerou", "at": [0, -5]},
+		{"do": "enter", "who": "hisame", "at": [-3, 3]},
+		{"do": "enter", "who": "asahi", "at": [3, 3]},
+		{"do": "say", "lines": [
+			["kagerou", "...Five natures. And you still beat me.", "sad"],
+			["player", "You had five natures. I had the circle."],
+			["hisame", "The scroll, Kagerou."],
+			["kagerou", "Take it. It never liked me anyway.", "relaxed"],
+			["kagerou", "But the seal I cut from it stays with me. Until next time, Sensei.", "angry"]
+		]},
+		{"do": "exit", "who": "kagerou"},
+		{"do": "say", "lines": [
+			["asahi", "He kept the last seal. What does that mean?"],
+			["hisame", "That this isn't over.", "sad"],
+			["hisame", "But tonight, {name}, you did what three jonin couldn't. Rest. Tomorrow your real training starts.", "happy"],
+			["asahi", "And our rematch.", "happy"],
+			["player", "And our rematch."]
+		]},
+		{"do": "banner", "text": "End of Part One"}
+	]
+}

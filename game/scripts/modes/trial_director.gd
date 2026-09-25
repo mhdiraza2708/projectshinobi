@@ -26,8 +26,12 @@ const SPAWN_DISTANCE := 11.0
 const ARENA_RADIUS := 19.0
 
 var player: Player
-## The waves to run (tests use shorter lists).
+## The waves to run (tests and story fights use their own lists).
 var waves: Array = WAVES
+## Where the completion time is recorded ("" = not recorded).
+var record_id := TRIAL_ID
+## Announce each wave with its sound (story fights do their own intro).
+var announce := true
 var wave := -1
 var elapsed := 0.0
 var running := false
@@ -63,7 +67,8 @@ func _next_wave() -> void:
 		return
 	var w: Dictionary = waves[wave]
 	wave_started.emit(wave, waves.size(), w["element"])
-	Sfx.play(&"wave_start")
+	if announce:
+		Sfx.play(&"wave_start")
 	await get_tree().create_timer(ANNOUNCE_TIME, false).timeout
 	if not running or not is_inside_tree():
 		return
@@ -127,7 +132,7 @@ func _finish(won: bool) -> void:
 	for e in alive:
 		if is_instance_valid(e):
 			e.target = null
-	var record := Game.record_time(TRIAL_ID, elapsed) if won else false
+	var record := Game.record_time(record_id, elapsed) if won and record_id != "" else false
 	Sfx.play(&"victory" if won else &"defeat")
 	finished.emit(won, elapsed, record)
 
