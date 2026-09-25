@@ -17,10 +17,14 @@ const DEFAULT_MODEL := "res://assets/characters/default/godette.vrm"
 @export var target_height := 1.65
 @export var min_height := 1.3
 @export var max_height := 2.1
+## Where retargeted Mixamo clips live (overridable for tests).
+@export_dir var clip_dir := CharacterAnimator.CLIP_DIR
 
 var instance: Node3D
 var skeleton: Skeleton3D
 var poser: HumanoidPoser
+## Gameplay-facing animation driver (clips + procedural poser).
+var animator: CharacterAnimator
 ## The VRM's expression player (blink, happy, angry...), if any.
 var expressions: AnimationPlayer
 var loaded_path := ""
@@ -62,6 +66,11 @@ func load_model(path: String) -> void:
 	if poser.setup(skeleton):
 		_face_forward()
 	_normalize_height()
+
+	animator = CharacterAnimator.new()
+	animator.name = "CharacterAnimator"
+	add_child(animator)
+	animator.setup(instance, poser, clip_dir)
 
 
 ## Turns the model so it faces -Z (Godot's forward). VRM models face +Z.

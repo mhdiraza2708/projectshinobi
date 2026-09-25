@@ -23,3 +23,8 @@ screenshots/
 
 # Godot lightmap-unwrap caches (regenerated on import)
 *.unwrap_cache
+
+# Mixamo downloads: usable in the game, but the raw files shouldn't be
+# redistributed from a public repo. Remove these lines if the repo is private.
+game/assets/animations/mixamo/*.fbx
+game/assets/animations/mixamo/*.fbx.import

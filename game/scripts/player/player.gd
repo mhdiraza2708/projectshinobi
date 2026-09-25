@@ -66,8 +66,8 @@ var _kunai: JutsuDefinition
 @onready var caster: JutsuCaster = $Caster
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var model: CharacterModel = $Model
-## Procedural body language; null only if the character rig is unusable.
-var animator: HumanoidPoser
+## Clips + procedural body language for the character.
+var animator: CharacterAnimator
 
 
 func _ready() -> void:
@@ -76,7 +76,7 @@ func _ready() -> void:
 	collision_mask = Combat.BODY_MASK
 	caster.stats = stats
 	caster.body = self
-	animator = model.poser
+	animator = model.animator
 
 	_kunai = JutsuDefinition.new()
 	_kunai.id = &"kunai"

@@ -5,7 +5,7 @@ GODOT ?= godot
 BLENDER_RUN ?= python
 SHOTS ?= screenshots
 
-.PHONY: run editor import test assets screenshots
+.PHONY: run editor import test assets animations screenshots
 
 run:
 	$(GODOT) --path game
@@ -21,6 +21,12 @@ test: import
 
 assets:
 	$(BLENDER_RUN) art/blender/build_assets.py
+	$(MAKE) import
+
+# Configure Mixamo FBX clips in game/assets/animations/mixamo/ for humanoid
+# retargeting (see docs/CHARACTERS.md), then re-import them.
+animations: import
+	$(GODOT) --headless --path game --script res://tools/setup_mixamo.gd
 	$(MAKE) import
 
 # Needs Xvfb when there is no display.

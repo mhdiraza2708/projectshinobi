@@ -8,9 +8,9 @@ extends SkeletonModifier3D
 ## Limbs are placed with two-bone IK, so the same pose data works for T-pose
 ## and A-pose rigs, any facing, and any proportions.
 ##
-## Runs as a SkeletonModifier3D, i.e. *after* animation clips. With Mixamo
-## clips driving locomotion, set `procedural_locomotion = false` and this only
-## layers the poses clips can't provide (hand seals, charge, guard).
+## Runs as a SkeletonModifier3D, i.e. *after* animation clips, so when Mixamo
+## clips drive a state (see `clip_states`) it only layers what the clips can't
+## provide, above all the hand-seal pose.
 
 enum Pose { LOCOMOTION, WEAVE, CHARGE, GUARD, DASH }
 
@@ -29,9 +29,9 @@ var pose := Pose.LOCOMOTION
 ## 0 = idle, 1 = run, above 1 = sprint.
 var speed_ratio := 0.0
 var airborne := false
-## False when animation clips handle idle/run/jump; the poser then only
-## drives the special poses.
-var procedural_locomotion := true
+## Poses that animation clips already cover (set by CharacterAnimator). The
+## poser leaves those alone, except the hand-seal arms, which it always owns.
+var clip_states: Dictionary = {}
 
 var _skel: Skeleton3D
 var _b: Dictionary = {}                 # bone name -> index (only bones that exist)
@@ -104,8 +104,7 @@ func _target_params() -> Dictionary:
 		"hand_L": Vector3(0, -1, 0), "hand_R": Vector3(0, -1, 0),
 		"thumb_L": Vector3(0, 0, -1), "thumb_R": Vector3(0, 0, -1),
 		"foot_L": Vector3.ZERO, "foot_R": Vector3.ZERO,
-		"curl": 0.35, "use_legs": procedural_locomotion,
-		"use_arms": procedural_locomotion, "use_spine": procedural_locomotion,
+		"curl": 0.35, "use_legs": true, "use_arms": true, "use_spine": true,
 	}
 	var breath := sin(_time * 2.2)
 	p["arm_L"].y += breath * 0.01
@@ -160,9 +159,6 @@ func _target_params() -> Dictionary:
 			p["foot_L"] = Vector3(-0.07, 0, 0)
 			p["foot_R"] = Vector3(0.07, 0, 0)
 			p["hips_drop"] = 0.05
-			p["use_arms"] = true
-			p["use_legs"] = true
-			p["use_spine"] = true
 		Pose.CHARGE:
 			var tremble := sin(_time * 38.0) * 0.012
 			p["arm_L"] = Vector3(-0.42, -0.78 + tremble, 0.12)
@@ -175,9 +171,6 @@ func _target_params() -> Dictionary:
 			p["foot_L"] = Vector3(-0.16, 0, 0)
 			p["foot_R"] = Vector3(0.16, 0, 0)
 			p["hips_drop"] = 0.13
-			p["use_arms"] = true
-			p["use_legs"] = true
-			p["use_spine"] = true
 		Pose.GUARD:
 			# Forearms crossed in front of the face.
 			p["arm_L"] = Vector3(0.42, 0.22, -0.5)
@@ -191,8 +184,6 @@ func _target_params() -> Dictionary:
 			p["foot_L"] = Vector3(-0.05, 0, -0.14)
 			p["foot_R"] = Vector3(0.05, 0, 0.12)
 			p["hips_drop"] = 0.08
-			p["use_arms"] = true
-			p["use_spine"] = true
 		Pose.DASH:
 			p["lean"] = 0.62
 			p["head_pitch"] = -0.45
@@ -204,9 +195,14 @@ func _target_params() -> Dictionary:
 			p["foot_R"] = Vector3(0, 0.22, 0.36)
 			p["hips_drop"] = 0.1
 			p["curl"] = 0.2
-			p["use_arms"] = true
-			p["use_legs"] = true
-			p["use_spine"] = true
+
+	if clip_states.has(pose):
+		p["use_arms"] = false
+		p["use_legs"] = false
+		p["use_spine"] = false
+	elif pose == Pose.WEAVE and clip_states.has(Pose.LOCOMOTION):
+		# Seal arms over the idle clip's stance.
+		p["use_legs"] = false
 
 	if _strike_t > 0.0:
 		var punch := sin(clampf(_strike_t / 0.24, 0.0, 1.0) * PI)
@@ -218,7 +214,6 @@ func _target_params() -> Dictionary:
 		p["twist"] += 0.4 * sx * punch
 		p["curl"] = maxf(p["curl"], 1.3 * punch)
 		p["use_arms"] = true
-		p["use_spine"] = true
 	return p
 
 
