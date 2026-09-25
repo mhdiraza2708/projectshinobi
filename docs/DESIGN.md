@@ -58,8 +58,10 @@ mostly a data and art swap.
 | Choice | Why |
 |---|---|
 | **Godot 4.7** (GDScript) | Free and open source with no royalties. The whole project is plain text, so it diffs, merges and can be reviewed or edited by AI tools. It runs headless for automated tests and CI. Forward+ renderer for high-end looks. |
-| **Blender 4.5 LTS**, scripted | `art/blender/build_assets.py` generates blockout models reproducibly and exports glTF. Real art replaces them later, keeping the same node names (the procedural animator looks up `Hips`, `Torso`, `Head`, `ArmL/R`, `LegL/R`). |
-| **Cel shading** | Toon diffuse/specular + inverted-hull outlines (`scripts/world/toon.gd`). A custom anime shader (ramp textures, face shadow maps) is an M2 upgrade. |
+| **VRoid Studio → VRM** for characters | Free, anime-quality, fully rigged characters with spring-bone hair and cloth. They are imported by the MIT [godot-vrm](https://github.com/V-Sekai/godot-vrm) addon with the MToon anime shader. See [CHARACTERS.md](CHARACTERS.md). |
+| **Mixamo** for locomotion clips (next) | Free motion-capture animation, retargeted to Godot's humanoid profile. Hand seals stay procedural (IK), since no library has them. |
+| **Blender 4.5 LTS**, scripted | `art/blender/build_assets.py` generates environment blockouts reproducibly and exports glTF. They get replaced by Poly Haven (CC0) and bought kits. |
+| **Cel shading** | Characters use MToon. Blockout props use toon diffuse/specular + inverted-hull outlines (`scripts/world/toon.gd`). |
 | **JSON jutsu data** | Easy to author in bulk, validated strictly on load (unknown keys, bad seals and duplicate sequences are all errors). |
 
 Honest trade-off: Unreal Engine 5 has better out-of-the-box visual fidelity.

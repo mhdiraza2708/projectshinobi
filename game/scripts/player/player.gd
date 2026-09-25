@@ -65,8 +65,9 @@ var _kunai: JutsuDefinition
 @onready var stats: Stats = $Stats
 @onready var caster: JutsuCaster = $Caster
 @onready var camera_rig: CameraRig = $CameraRig
-@onready var model: Node3D = $Model
-@onready var animator: ProceduralAnimator = $Animator
+@onready var model: CharacterModel = $Model
+## Procedural body language; null only if the character rig is unusable.
+var animator: HumanoidPoser
 
 
 func _ready() -> void:
@@ -75,8 +76,7 @@ func _ready() -> void:
 	collision_mask = Combat.BODY_MASK
 	caster.stats = stats
 	caster.body = self
-	Toon.apply(model)
-	animator.bind(model)
+	animator = model.poser
 
 	_kunai = JutsuDefinition.new()
 	_kunai.id = &"kunai"
@@ -310,7 +310,8 @@ func _strike() -> void:
 	_strike_combo = (_strike_combo + 1) % 3
 	if is_instance_valid(lock_target):
 		_face_now(lock_target.global_position - global_position)
-	animator.strike()
+	if animator:
+		animator.strike()
 	var forward := -global_basis.z
 	velocity += forward * 3.0
 	var center := global_position + forward * strike_reach + Vector3.UP * 1.1
@@ -411,12 +412,14 @@ func _face_now(dir: Vector3) -> void:
 
 
 func _update_animator() -> void:
+	if animator == null:
+		return
 	match state:
-		State.WEAVING, State.AUTO_WEAVING: animator.pose = ProceduralAnimator.Pose.WEAVE
-		State.CHARGING: animator.pose = ProceduralAnimator.Pose.CHARGE
-		State.GUARDING: animator.pose = ProceduralAnimator.Pose.GUARD
-		State.DASHING: animator.pose = ProceduralAnimator.Pose.DASH
-		_: animator.pose = ProceduralAnimator.Pose.LOCOMOTION
+		State.WEAVING, State.AUTO_WEAVING: animator.pose = HumanoidPoser.Pose.WEAVE
+		State.CHARGING: animator.pose = HumanoidPoser.Pose.CHARGE
+		State.GUARDING: animator.pose = HumanoidPoser.Pose.GUARD
+		State.DASHING: animator.pose = HumanoidPoser.Pose.DASH
+		_: animator.pose = HumanoidPoser.Pose.LOCOMOTION
 	animator.airborne = not is_on_floor()
 	animator.speed_ratio = Vector2(velocity.x, velocity.z).length() / run_speed
 
@@ -424,7 +427,8 @@ func _update_animator() -> void:
 # --- Reactions ---------------------------------------------------------------
 
 func _on_seal_added(_seal: int, _sequence: Array[int]) -> void:
-	animator.seal_flick()
+	if animator:
+		animator.seal_flick()
 	InputDevice.rumble(0.12, 0.0, 0.04)
 
 

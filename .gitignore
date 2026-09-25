@@ -20,3 +20,6 @@ Thumbs.db
 
 # Local screenshot output (`make screenshots`)
 screenshots/
+
+# Godot lightmap-unwrap caches (regenerated on import)
+*.unwrap_cache

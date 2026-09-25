@@ -20,8 +20,9 @@ sky_material = SubResource("SkyMaterial")
 [sub_resource type="Environment" id="Environment"]
 background_mode = 2
 sky = SubResource("Sky")
-ambient_light_source = 3
-ambient_light_energy = 0.45
+ambient_light_source = 2
+ambient_light_color = Color(0.72, 0.73, 0.76, 1)
+ambient_light_energy = 0.5
 tonemap_mode = 3
 glow_enabled = true
 ssao_enabled = true

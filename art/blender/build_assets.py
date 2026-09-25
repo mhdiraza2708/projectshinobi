@@ -6,17 +6,15 @@ Run with either:
 
 Options:
     --out DIR        output directory (default: game/assets/models)
-    --only NAME      build a single asset (e.g. shinobi)
+    --only NAME      build a single asset (e.g. gate)
     --save-blend     also write a .blend next to each .glb for hand editing
 
-These are *blockouts*: clean, stylised, readable shapes that let the game be
-built and play-tested now. Production art should replace them while keeping
-the same object names, because the game animates the shinobi procedurally
-by node name (Hips, Torso, Head, ArmL, ArmR, LegL, LegR) until it gets a
-real skeleton.
+These are environment *blockouts*: clean, stylised, readable shapes that let
+the game be built and play-tested now. Characters are not modelled here: they
+come from VRoid Studio as .vrm files (see docs/CHARACTERS.md).
 
-Conventions: 1 unit = 1 metre, characters face +Y in Blender (which becomes
--Z, Godot's forward, after glTF export), origins sit on the ground.
+Conventions: 1 unit = 1 metre, props face +Y in Blender (which becomes -Z,
+Godot's forward, after glTF export), origins sit on the ground.
 """
 
 from __future__ import annotations
@@ -35,20 +33,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = REPO_ROOT / "game" / "assets" / "models"
 
 # --------------------------------------------------------------------------
-# Palette (sRGB, converted to linear on export). Original costume design: navy
-# bodysuit, crimson jacket and scarf, cloth wraps. No licensed iconography.
+# Palette (sRGB, converted to linear on export).
 # --------------------------------------------------------------------------
 PALETTE = {
-    "skin": (0.96, 0.76, 0.62),
-    "suit": (0.10, 0.11, 0.19),
-    "jacket": (0.62, 0.10, 0.12),
-    "scarf": (0.78, 0.16, 0.14),
-    "wrap": (0.90, 0.88, 0.80),
-    "hair": (0.08, 0.08, 0.12),
-    "mask": (0.14, 0.15, 0.22),
-    "eyes": (0.03, 0.03, 0.04),
-    "belt": (0.35, 0.22, 0.12),
-    "sandal": (0.18, 0.18, 0.20),
     "wood": (0.55, 0.36, 0.20),
     "wood_dark": (0.36, 0.22, 0.12),
     "rope": (0.85, 0.74, 0.48),
@@ -179,66 +166,6 @@ def empty(name: str, location=(0, 0, 0), parent=None) -> bpy.types.Object:
 # Assets
 # --------------------------------------------------------------------------
 
-def build_shinobi() -> None:
-    """Player character, ~1.75 m, with separate limbs pivoting at joints."""
-    root = empty("Shinobi")
-
-    hips = Part("Hips", (0, 0, 0.95))
-    hips.ball("suit", (0, 0, 0.96), (0.30, 0.20, 0.22))
-    hips.tube("belt", (0, 0, 1.03), 0.165, 0.165, 0.07)
-    hips.box("belt", (0.0, 0.17, 1.03), (0.08, 0.03, 0.06))
-    hips.build().parent = root
-
-    torso = Part("Torso", (0, 0, 1.04), parent=hips)
-    torso.ball("suit", (0, 0, 1.25), (0.34, 0.22, 0.46))
-    # Jacket: open-front vest over the bodysuit.
-    torso.ball("jacket", (-0.08, -0.005, 1.27), (0.22, 0.25, 0.44))
-    torso.ball("jacket", (0.08, -0.005, 1.27), (0.22, 0.25, 0.44))
-    torso.tube("jacket", (0, 0, 1.10), 0.17, 0.155, 0.12)
-    torso.tube("suit", (0, 0, 1.49), 0.05, 0.05, 0.08)  # neck
-    # Scarf: collar ring plus a tail that flows behind.
-    torso.tube("scarf", (0, 0, 1.47), 0.105, 0.09, 0.08, segments=16)
-    torso.box("scarf", (0.05, -0.16, 1.28), (0.09, 0.025, 0.42), rot=(math.radians(-14), 0, math.radians(6)))
-    torso.box("scarf", (0.09, -0.22, 1.02), (0.08, 0.02, 0.18), rot=(math.radians(-24), 0, math.radians(10)))
-    torso.build()
-
-    head = Part("Head", (0, 0, 1.52), parent=torso)
-    head.ball("skin", (0, 0.0, 1.64), (0.25, 0.26, 0.28))
-    # Cloth mask over the lower face.
-    head.ball("mask", (0, 0.025, 1.595), (0.255, 0.25, 0.17))
-    head.ball("eyes", (-0.05, 0.115, 1.665), (0.03, 0.015, 0.038))
-    head.ball("eyes", (0.05, 0.115, 1.665), (0.03, 0.015, 0.038))
-    # Headband with two tails.
-    head.tube("scarf", (0, 0, 1.705), 0.132, 0.128, 0.04, segments=20)
-    head.box("scarf", (-0.03, -0.17, 1.64), (0.035, 0.012, 0.16), rot=(math.radians(-25), 0, math.radians(-12)))
-    head.box("scarf", (0.03, -0.17, 1.64), (0.035, 0.012, 0.16), rot=(math.radians(-25), 0, math.radians(12)))
-    # Swept-back spiky hair.
-    head.ball("hair", (0, -0.01, 1.73), (0.26, 0.27, 0.18))
-    head.ball("hair", (0, -0.045, 1.655), (0.262, 0.23, 0.25))  # back of the head
-    spikes = [(-0.1, 20, -40), (-0.04, 25, -12), (0.04, 25, 12), (0.1, 20, 40),
-              (-0.07, 50, -25), (0.07, 50, 25), (0.0, 55, 0), (0.0, 80, 0)]
-    for x, tilt, yaw in spikes:
-        head.tube("hair", (x, -0.1, 1.77), 0.07, 0.0, 0.28,
-                  rot=(math.radians(90 - tilt), 0, math.radians(yaw)), segments=6, smooth=False)
-    head.build()
-
-    for side, sx in (("L", -1), ("R", 1)):
-        arm = Part(f"Arm{side}", (0.23 * sx, 0, 1.43), parent=torso)
-        arm.ball("jacket", (0.225 * sx, 0, 1.43), (0.12, 0.13, 0.11))
-        arm.tube("suit", (0.245 * sx, 0, 1.28), 0.052, 0.046, 0.28)
-        arm.tube("suit", (0.25 * sx, 0, 1.01), 0.046, 0.040, 0.26)
-        arm.tube("wrap", (0.25 * sx, 0, 0.92), 0.044, 0.042, 0.08)
-        arm.ball("skin", (0.25 * sx, 0.005, 0.845), (0.085, 0.07, 0.1))
-        arm.build()
-
-        leg = Part(f"Leg{side}", (0.1 * sx, 0, 0.92), parent=hips)
-        leg.tube("suit", (0.1 * sx, 0, 0.71), 0.082, 0.064, 0.42)
-        leg.tube("suit", (0.1 * sx, 0, 0.31), 0.062, 0.05, 0.38)
-        leg.tube("wrap", (0.1 * sx, 0, 0.21), 0.057, 0.053, 0.2)
-        leg.box("sandal", (0.1 * sx, 0.045, 0.035), (0.1, 0.22, 0.07))
-        leg.build()
-
-
 def build_training_dummy() -> None:
     """Classic wooden training post with arms and a straw-wrapped head."""
     empty("TrainingDummy")
@@ -298,7 +225,6 @@ def build_lantern() -> None:
 
 
 ASSETS = {
-    "shinobi": build_shinobi,
     "training_dummy": build_training_dummy,
     "rock": build_rock,
     "pine": build_pine,

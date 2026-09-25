@@ -3,7 +3,8 @@ extends Node3D
 ##
 ## Automated screenshots (used for review/CI artifacts):
 ##   godot --path game --rendering-driver opengl3 -- --screenshot=out.png [--demo=NAME] [--device=gamepad]
-## NAME is one of: overview (default), weave, cast, menu.
+## NAME is one of: overview (default), weave, cast, menu, and the close-up
+## character views portrait, portrait_weave, portrait_guard, portrait_charge.
 
 const KILL_PLANE_Y := -20.0
 
@@ -78,6 +79,23 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		"menu":
 			pause_menu.open()
 			await _frames(4)
+		"portrait", "portrait_weave", "portrait_guard", "portrait_charge":
+			hud.visible = false
+			# Freeze the controller so the character keeps facing the camera,
+			# and set the pose directly.
+			player.set_physics_process(false)
+			var poses := {"portrait_weave": HumanoidPoser.Pose.WEAVE, "portrait_guard": HumanoidPoser.Pose.GUARD,
+				"portrait_charge": HumanoidPoser.Pose.CHARGE}
+			if player.animator:
+				player.animator.pose = poses.get(demo, HumanoidPoser.Pose.LOCOMOTION)
+			# Swing the camera round to look at the character's front.
+			var rig := player.camera_rig
+			rig.spring.spring_length = 2.3
+			rig.follow_height = 1.15
+			rig.yaw = player.rotation.y + PI - 0.35
+			rig.pitch = deg_to_rad(-6.0)
+			rig.snap()
+			await _frames(45)
 	await RenderingServer.frame_post_draw
 	var err := get_viewport().get_texture().get_image().save_png(path)
 	if err != OK:
