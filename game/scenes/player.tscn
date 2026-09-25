@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
+[ext_resource type="PackedScene" path="res://assets/models/shinobi.glb" id="2_model"]
+[ext_resource type="Script" path="res://scripts/combat/stats.gd" id="3_stats"]
+[ext_resource type="Script" path="res://scripts/jutsu/jutsu_caster.gd" id="4_caster"]
+[ext_resource type="Script" path="res://scripts/player/procedural_animator.gd" id="5_anim"]
+[ext_resource type="Script" path="res://scripts/player/camera_rig.gd" id="6_cam"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.35
+height = 1.75
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]
+
+[node name="Stats" type="Node" parent="."]
+script = ExtResource("3_stats")
+
+[node name="Caster" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -0.6)
+script = ExtResource("4_caster")
+
+[node name="Animator" type="Node" parent="."]
+script = ExtResource("5_anim")
+
+[node name="CameraRig" type="Node3D" parent="."]
+script = ExtResource("6_cam")
+
+[node name="Pivot" type="Node3D" parent="CameraRig"]
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig/Pivot"]
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/Pivot/SpringArm3D"]
+current = true
+fov = 70.0

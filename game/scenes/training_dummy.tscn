@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_dummy.gd" id="1_dummy"]
+[ext_resource type="PackedScene" path="res://assets/models/training_dummy.glb" id="2_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_dummy"]
+radius = 0.45
+height = 2.2
+
+[node name="TrainingDummy" type="StaticBody3D"]
+script = ExtResource("1_dummy")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 0)
+shape = SubResource("CapsuleShape3D_dummy")
+
+[node name="Model" parent="." instance=ExtResource("2_model")]

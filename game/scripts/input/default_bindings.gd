@@ -105,8 +105,6 @@ static func ui_extras() -> Dictionary:
 	return {
 		&"ui_accept": [Binding.joy_button(JOY_BUTTON_A)],
 		&"ui_cancel": [Binding.joy_button(JOY_BUTTON_B)],
-		&"ui_focus_next": [Binding.joy_button(JOY_BUTTON_RIGHT_SHOULDER)],
-		&"ui_focus_prev": [Binding.joy_button(JOY_BUTTON_LEFT_SHOULDER)],
 	}
 
 

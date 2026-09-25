@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  GODOT_VERSION: 4.7.2
+  BPY_VERSION: 4.5.14
+
+jobs:
+  godot-tests:
+    name: Godot tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -fsSL -o /tmp/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+
+      - name: Import project
+        run: ~/godot/godot --headless --path game --import
+
+      - name: Run tests
+        run: ~/godot/godot --headless --path game res://tests/test_runner.tscn
+
+      - name: Screenshots
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          mkdir -p screenshots
+          for demo in overview weave cast menu; do
+            xvfb-run -a -s "-screen 0 1280x720x24" ~/godot/godot --path game \
+              --rendering-driver opengl3 --rendering-method gl_compatibility --audio-driver Dummy \
+              -- --screenshot="$PWD/screenshots/$demo.png" --demo=$demo
+          done
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots/
+
+  blender-assets:
+    name: Blender asset pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Blender (bpy)
+        run: pip install "bpy==${BPY_VERSION}"
+
+      - name: Build every asset
+        run: python art/blender/build_assets.py --out /tmp/assets
+
+      - name: Every committed model is reproducible by the script
+        run: |
+          for f in game/assets/models/*.glb; do
+            test -f "/tmp/assets/$(basename "$f")" || { echo "::error::$f has no generator"; exit 1; }
+          done

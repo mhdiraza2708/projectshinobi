@@ -17,3 +17,6 @@ Thumbs.db
 *.tmp
 .vscode/
 .idea/
+
+# Local screenshot output (`make screenshots`)
+screenshots/

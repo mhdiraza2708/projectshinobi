@@ -58,7 +58,8 @@ mostly a data and art swap.
 | Choice | Why |
 |---|---|
 | **Godot 4.7** (GDScript) | Free and open source with no royalties. The whole project is plain text, so it diffs, merges and can be reviewed or edited by AI tools. It runs headless for automated tests and CI. Forward+ renderer for high-end looks. |
-| **Blender 4.5 LTS**, scripted | `art/blender/build_assets.py` generates blockout models reproducibly and exports glTF. Real art replaces them later, keeping the same node names. |
+| **Blender 4.5 LTS**, scripted | `art/blender/build_assets.py` generates blockout models reproducibly and exports glTF. Real art replaces them later, keeping the same node names (the procedural animator looks up `Hips`, `Torso`, `Head`, `ArmL/R`, `LegL/R`). |
+| **Cel shading** | Toon diffuse/specular + inverted-hull outlines (`scripts/world/toon.gd`). A custom anime shader (ramp textures, face shadow maps) is an M2 upgrade. |
 | **JSON jutsu data** | Easy to author in bulk, validated strictly on load (unknown keys, bad seals and duplicate sequences are all errors). |
 
 Honest trade-off: Unreal Engine 5 has better out-of-the-box visual fidelity.
@@ -100,6 +101,20 @@ wrong trade.
 
 - `JutsuRegistry` loads every `*.json` file and rejects bad data, duplicate
   ids and duplicate seal sequences.
+- `JutsuCaster` spends chakra, tracks cooldowns, and spawns the form's
+  effect. Projectile collision is swept in sub-steps, so fast jutsu can't
+  tunnel through targets. A sequence that matches nothing is a **misfire**
+  and costs a little chakra.
+
+### Combat (`game/scripts/combat`, `game/scripts/player`)
+- `Stats`: health, chakra (passive regen plus much faster regen while
+  charging), elemental affinity, guard multiplier, i-frames, and timed
+  modifiers that refresh rather than stack.
+- `Player`: a state machine (FREE, WEAVING, AUTO_WEAVING, CHARGING,
+  GUARDING, DASHING). While weaving, the character plants their feet and
+  field actions are ignored, which is what lets the seal inputs reuse the
+  movement keys and face buttons. A hit of 10+ damage interrupts a weave.
+- Anything with `take_hit(amount, element, source)` can be damaged.
 
 ### Adding a jutsu
 Add an entry to the matching `game/data/jutsu/<element>.json` file:
@@ -130,7 +145,7 @@ existing sequence.
 | Milestone | Goal | Status |
 |---|---|---|
 | M0 Foundation | Input layer, seal weaving, jutsu data and validation, tests, CI | ✅ |
-| M1 Training ground | Playable third-person slice: movement, strikes, kunai, all 5 jutsu forms, dummies with element affinities, HUD, pause menu with rebinding and accessibility options | 🚧 |
+| M1 Training ground | Playable third-person slice: movement, strikes, kunai, all 5 jutsu forms, dummies with element affinities, HUD, pause menu with rebinding and accessibility options | ✅ |
 | M2 Feel | Real animation (rigged character, ideally mocap/Mixamo-style clips), hit-stop, VFX pass, audio, camera polish | ⏳ |
 | M3 Opponent | One AI shinobi that weaves, guards, dashes and uses walls. The goal is to prove the combat loop is fun 1v1. | ⏳ |
 | M4 Content | 30–50 jutsu, new forms (clone, substitution, summon), 2–3 arenas | ⏳ |
