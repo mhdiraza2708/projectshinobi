@@ -42,6 +42,10 @@ enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING }
 ## A hit at least this big knocks you out of a weave.
 @export var interrupt_damage := 10.0
 
+## Soft aim: how far off the camera's line a target can be and still be aimed at.
+const SOFT_AIM_ANGLE := deg_to_rad(22.0)
+const SOFT_AIM_RANGE := 28.0
+
 var state := State.FREE
 var weaver := SealWeaver.new()
 var lock_target: Node3D
@@ -84,12 +88,14 @@ func _ready() -> void:
 	_kunai = JutsuDefinition.new()
 	_kunai.id = &"kunai"
 	_kunai.display_name = "Kunai"
-	_kunai.power = 4.0
-	_kunai.speed = 38.0
-	_kunai.max_range = 35.0
-	_kunai.radius = 0.1
+	_kunai.power = 5.0
+	_kunai.speed = 34.0
+	_kunai.max_range = 32.0
+	_kunai.radius = 0.12
 	_kunai.chakra_cost = 0.0
 	_kunai.cooldown = 0.3
+	_kunai.visual = &"kunai"
+	_kunai.homing = 7.0
 
 	_sync_settings()
 	Settings.value_changed.connect(func(_k: StringName, _v: Variant) -> void: _sync_settings())
@@ -159,8 +165,7 @@ func _state_free(delta: float) -> void:
 	if Input.is_action_just_pressed(&"attack"):
 		_strike()
 	if Input.is_action_just_pressed(&"throw_tool"):
-		_face_now(_aim_flat())
-		caster.cast(_kunai, lock_target)
+		throw_kunai()
 
 	var speed := sprint_speed if _sprinting else run_speed
 	_move(delta, speed * (1.0 + stats.modifier(&"move_speed")))
@@ -193,7 +198,7 @@ func _state_auto_weaving(delta: float) -> void:
 	weaver.finish()
 	_enter(State.FREE)
 	_face_now(_aim_flat())
-	caster.cast(_auto_jutsu, lock_target)
+	caster.cast(_auto_jutsu, aim_target())
 
 
 func _state_charging(delta: float) -> void:
@@ -249,7 +254,7 @@ func _release_weave() -> void:
 	if sequence.is_empty():
 		return
 	_face_now(_aim_flat())
-	caster.cast_sequence(sequence, lock_target)
+	caster.cast_sequence(sequence, aim_target())
 
 
 ## Casts the jutsu in `slot` by weaving its seals automatically.
@@ -328,7 +333,48 @@ func _strike() -> void:
 		InputDevice.rumble(0.3, 0.2, 0.08)
 
 
+func throw_kunai() -> void:
+	if caster.cooldown_left(_kunai.id) > 0.0:
+		return
+	var target := aim_target()
+	_face_now(_aim_flat())
+	if animator:
+		animator.throw()
+	caster.cast(_kunai, target)
+	InputDevice.rumble(0.15, 0.0, 0.05)
+
+
 # --- Lock-on -----------------------------------------------------------------
+
+## Where attacks go: the lock-on target, else the soft-aim target, else null
+## (straight ahead).
+func aim_target() -> Node3D:
+	if is_instance_valid(lock_target):
+		return lock_target
+	return soft_target()
+
+
+## Without lock-on, the target nearest to where the camera points (within
+## SOFT_AIM_ANGLE), so throws and jutsu land without precise aiming.
+func soft_target() -> Node3D:
+	var best: Node3D = null
+	var best_angle := SOFT_AIM_ANGLE
+	var look := camera_rig.flat_forward()
+	for node in get_tree().get_nodes_in_group(&"lockable"):
+		var n := node as Node3D
+		if n == null or n == self:
+			continue
+		var to := n.global_position - global_position
+		to.y = 0.0
+		var dist := to.length()
+		if dist > SOFT_AIM_RANGE or dist < 0.5:
+			continue
+		var angle := look.angle_to(to / dist)
+		if angle < best_angle:
+			best_angle = angle
+			best = n
+	return best
+
 
 func toggle_lock() -> void:
 	_set_lock(null if lock_target else find_lock_target())
@@ -395,10 +441,11 @@ func _decelerate(delta: float) -> void:
 	velocity.z = move_toward(velocity.z, 0.0, acceleration * delta)
 
 
-## Where techniques should go: the lock-on target, else where the camera looks.
+## Where techniques should go: the aim target, else where the camera looks.
 func _aim_flat() -> Vector3:
-	if is_instance_valid(lock_target):
-		return lock_target.global_position - global_position
+	var target := aim_target()
+	if is_instance_valid(target):
+		return target.global_position - global_position
 	return camera_rig.flat_forward()
 
 

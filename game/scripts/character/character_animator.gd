@@ -72,6 +72,11 @@ func strike() -> void:
 		poser.strike()
 
 
+func throw() -> void:
+	if poser:
+		poser.throw()
+
+
 func seal_flick() -> void:
 	if poser:
 		poser.seal_flick()

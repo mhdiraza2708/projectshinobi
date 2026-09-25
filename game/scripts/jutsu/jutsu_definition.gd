@@ -39,6 +39,11 @@ const OPTIONAL_KEYS: PackedStringArray = [
 @export var buff_stat := ""
 ## Number of projectiles fired in a fan.
 @export var count := 1
+## Projectile look: &"orb" for chakra techniques, &"kunai" for thrown tools.
+## Not read from JSON (tools are defined in code).
+@export var visual := &"orb"
+## How hard projectiles steer toward their target (rad/s).
+@export var homing := 2.2
 
 
 ## Parses and validates one JSON entry. Problems are appended to `errors`

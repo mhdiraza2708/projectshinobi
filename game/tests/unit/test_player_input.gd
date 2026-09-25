@@ -176,3 +176,31 @@ func test_pause_menu_pauses_and_resumes() -> void:
 	assert_true(root.get_tree().paused)
 	menu.close()
 	assert_false(root.get_tree().paused)
+
+
+func test_kunai_soft_aims_and_sticks_without_lock_on() -> void:
+	await _settle()
+	var dummy := player.soft_target() as TrainingDummy
+	assert_true(dummy != null, "a dummy is under the camera's aim")
+	var spawned: Array[JutsuProjectile] = []
+	root.child_entered_tree.connect(func(n: Node) -> void:
+		if n is JutsuProjectile:
+			spawned.append(n))
+	await _tap(&"throw_tool")
+	assert_eq(spawned.size(), 1, "one kunai thrown")
+	assert_eq(spawned[0].style, &"kunai")
+	assert_true(spawned[0].target == dummy, "homes on the soft-aim target")
+	await physics_frames(40)
+	assert_true(dummy.stats.health < dummy.stats.max_health, "kunai hit without lock-on")
+	var stuck := dummy.find_children("*", "MeshInstance3D", true, false).size()
+	assert_true(stuck > 1, "kunai left stuck in the dummy")
+
+
+func test_kunai_has_a_cooldown_but_is_free() -> void:
+	await _settle()
+	var chakra := player.stats.chakra
+	await _tap(&"throw_tool")
+	await _tap(&"throw_tool")
+	var thrown := root.find_children("*", "JutsuProjectile", true, false).size()
+	assert_eq(thrown, 1, "second press inside the cooldown is ignored")
+	assert_near(player.stats.chakra, minf(chakra + 1.0, player.stats.max_chakra), 1.5, "no chakra cost")

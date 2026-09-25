@@ -3,7 +3,7 @@ extends Node3D
 ##
 ## Automated screenshots (used for review/CI artifacts):
 ##   godot --path game --rendering-driver opengl3 -- --screenshot=out.png [--demo=NAME] [--device=gamepad]
-## NAME is one of: overview (default), weave, cast, menu, customize,
+## NAME is one of: overview (default), weave, cast, kunai, menu, customize,
 ## customize_colours, customize_gear, and the close-up character views
 ## portrait, portrait_weave, portrait_guard, portrait_charge.
 
@@ -86,6 +86,14 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			# Count physics steps: slow software rendering must not let the
 			# projectiles land before the shot is taken.
 			for i in 12:
+				await get_tree().physics_frame
+		"kunai":
+			for i in 3:
+				player.throw_kunai()
+				for f in 22:
+					await get_tree().physics_frame
+			player.throw_kunai()
+			for f in 5:
 				await get_tree().physics_frame
 		"menu":
 			pause_menu.open()

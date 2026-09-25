@@ -76,3 +76,45 @@ static func burst(parent: Node, position: Vector3, color: Color, radius: float, 
 		.set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mat, "albedo_color:a", 0.0, duration)
 	tw.chain().tween_callback(s.queue_free)
+
+
+## A kunai: diamond steel blade, cord-wrapped grip and pommel ring, pointing
+## down -Z. About 30 cm long, like the real thing.
+static func kunai() -> Node3D:
+	var root := Node3D.new()
+	var steel := StandardMaterial3D.new()
+	steel.albedo_color = Color(0.62, 0.64, 0.7)
+	steel.metallic = 0.8
+	steel.roughness = 0.3
+	var cord := StandardMaterial3D.new()
+	cord.albedo_color = Color(0.12, 0.1, 0.1)
+	var blade := CylinderMesh.new()
+	blade.top_radius = 0.0
+	blade.bottom_radius = 0.035
+	blade.height = 0.17
+	blade.radial_segments = 4
+	var blade_mi := MeshInstance3D.new()
+	blade_mi.mesh = blade
+	blade_mi.material_override = steel
+	blade_mi.transform = Transform3D(Basis(Vector3.RIGHT, -PI * 0.5).scaled(Vector3(1.0, 0.35, 1.0)), Vector3(0, 0, -0.085))
+	root.add_child(blade_mi)
+	var grip := CylinderMesh.new()
+	grip.top_radius = 0.01
+	grip.bottom_radius = 0.01
+	grip.height = 0.1
+	var grip_mi := MeshInstance3D.new()
+	grip_mi.mesh = grip
+	grip_mi.material_override = cord
+	grip_mi.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, 0.05))
+	root.add_child(grip_mi)
+	var ring := TorusMesh.new()
+	ring.inner_radius = 0.014
+	ring.outer_radius = 0.022
+	var ring_mi := MeshInstance3D.new()
+	ring_mi.mesh = ring
+	ring_mi.material_override = steel
+	ring_mi.transform = Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, 0.12))
+	root.add_child(ring_mi)
+	# Oversized for readability at combat distance.
+	root.scale = Vector3.ONE * 2.0
+	return root

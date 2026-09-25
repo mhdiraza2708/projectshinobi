@@ -124,6 +124,8 @@ func _spawn_projectiles(jutsu: JutsuDefinition, power: float, target: Node3D) ->
 		p.radius = jutsu.radius
 		p.direction = aim.rotated(Vector3.UP, offset).normalized()
 		p.caster = _body()
+		p.style = jutsu.visual
+		p.homing_rate = jutsu.homing
 		# Only the centre shot of a fan homes, so the spread stays readable.
 		p.target = target if offset == 0.0 else null
 		_world_parent().add_child(p)

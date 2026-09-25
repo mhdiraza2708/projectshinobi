@@ -41,7 +41,7 @@ static func table() -> Dictionary:
 		&"jump": _a("Jump / Chakra Jump", "Movement", [
 			Binding.key(KEY_SPACE), Binding.joy_button(JOY_BUTTON_A)]),
 		&"evade": _a("Dash (tap) / Sprint (hold)", "Movement", [
-			Binding.key(KEY_SHIFT), Binding.joy_button(JOY_BUTTON_B)]),
+			Binding.key(KEY_SHIFT), Binding.joy_button(JOY_BUTTON_LEFT_STICK)]),
 
 		# --- Combat ---------------------------------------------------------
 		&"attack": _a("Strike", "Combat", [

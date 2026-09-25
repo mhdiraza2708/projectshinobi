@@ -26,6 +26,8 @@ var _talismans: HBoxContainer
 var _hints: VBoxContainer
 var _slot_rows: Array[Dictionary] = []
 var _reticle: ShurikenReticle
+## Faint marker on the soft-aim target (what a throw would hit without lock-on).
+var _soft_reticle: ShurikenReticle
 var _shown_sequence: Array[int] = []
 
 
@@ -202,6 +204,11 @@ func _build() -> void:
 	_reticle = ShurikenReticle.new()
 	_reticle.visible = false
 	root.add_child(_reticle)
+	_soft_reticle = ShurikenReticle.new()
+	_soft_reticle.visible = false
+	_soft_reticle.modulate = Color(1, 1, 1, 0.45)
+	_soft_reticle.scale = Vector2.ONE * 0.6
+	root.add_child(_soft_reticle)
 
 
 func _vital_row(kanji: String, title: String, value_label: Label) -> HBoxContainer:
@@ -233,6 +240,11 @@ func _process(_delta: float) -> void:
 	if _reticle.visible:
 		var screen := cam.unproject_position(target.global_position + Vector3.UP * 1.2)
 		_reticle.position = screen - _reticle.size * 0.5
+	var soft := player.soft_target() if not is_instance_valid(target) else null
+	_soft_reticle.visible = soft != null and cam != null and not cam.is_position_behind(soft.global_position + Vector3.UP)
+	if _soft_reticle.visible:
+		var screen := cam.unproject_position(soft.global_position + Vector3.UP * 1.2)
+		_soft_reticle.position = screen - _soft_reticle.size * _soft_reticle.scale * 0.5
 
 
 func _refresh_name() -> void:

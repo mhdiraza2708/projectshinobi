@@ -23,7 +23,7 @@ controls can be remapped.
 ## What you can do right now (M1: training ground)
 
 - Run, sprint, **dash** with i-frames, **chakra double-jump**, 3-hit
-  **strikes**, **kunai**, **guard**, and **charge chakra**.
+  **strikes**, **kunai** (soft-aimed, they stick where they land), **guard**, and **charge chakra**.
 - **Lock on** to targets. The camera frames the fight, and jutsu home in on
   the target.
 - **Weave seals** (12 seals, 3 banks × 4 directions) and cast any of **16

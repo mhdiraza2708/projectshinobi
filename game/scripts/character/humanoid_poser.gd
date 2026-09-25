@@ -15,6 +15,7 @@ extends SkeletonModifier3D
 enum Pose { LOCOMOTION, WEAVE, CHARGE, GUARD, DASH }
 
 const BLEND_RATE := 14.0
+const THROW_TIME := 0.28
 
 # Humanoid bone names (Godot SkeletonProfileHumanoid, which godot-vrm and
 # Godot's retargeting both produce).
@@ -43,6 +44,7 @@ var _time := 0.0
 var _phase := 0.0
 var _strike_t := 0.0
 var _strike_side := 1.0
+var _throw_t := 0.0
 var _flick_t := 0.0
 var _cur: Dictionary = {}               # smoothed pose parameters
 var _ready_for_pose := false
@@ -91,6 +93,11 @@ func canonical_frame() -> Basis:
 func strike() -> void:
 	_strike_t = 0.24
 	_strike_side = -_strike_side
+
+
+## Overhand right-handed throw (kunai).
+func throw() -> void:
+	_throw_t = THROW_TIME
 
 
 func seal_flick() -> void:
@@ -210,6 +217,18 @@ func _target_params() -> Dictionary:
 		# Seal arms over the idle clip's stance.
 		p["use_legs"] = false
 
+	if _throw_t > 0.0:
+		# Wind up behind the head, then whip forward.
+		var t := 1.0 - _throw_t / THROW_TIME
+		var arm := Vector3(0.18, 0.5, 0.35).lerp(Vector3(0.05, 0.02, -0.97), smoothstep(0.25, 0.75, t))
+		p["arm_R"] = arm
+		p["pole_R"] = Vector3(1, -0.4, 0.6)
+		p["hand_R"] = Vector3(0, 0.3, -1)
+		p["twist"] += lerpf(-0.3, 0.35, t)
+		p["curl"] = maxf(p["curl"], 1.1)
+		p["use_arms"] = true
+		p["use_spine"] = true
+
 	if _strike_t > 0.0:
 		var punch := sin(clampf(_strike_t / 0.24, 0.0, 1.0) * PI)
 		var side := "R" if _strike_side > 0.0 else "L"
@@ -230,6 +249,7 @@ func _process_modification_with_delta(delta: float) -> void:
 		return
 	_time += delta
 	_strike_t = maxf(0.0, _strike_t - delta)
+	_throw_t = maxf(0.0, _throw_t - delta)
 	_flick_t = maxf(0.0, _flick_t - delta)
 	if speed_ratio > 0.05 and not airborne:
 		_phase += delta * lerpf(6.0, 12.5, clampf(speed_ratio, 0.0, 1.6) / 1.6)

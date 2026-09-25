@@ -16,7 +16,7 @@ automatically. Prompts switch the moment you touch the other device.
 | Move | W A S D | Left stick |
 | Camera | Mouse (or arrow keys) | Right stick |
 | Jump / chakra jump (in air) | Space | A |
-| Dash (tap) / Sprint (hold) | Shift | B |
+| Dash (tap) / Sprint (hold) | Shift | L3 (click left stick) |
 | Strike | Left mouse (or K) | X |
 | Throw kunai | Q | RT |
 | Guard (hold) | E | RB |
