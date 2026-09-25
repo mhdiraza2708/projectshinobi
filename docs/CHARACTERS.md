@@ -44,6 +44,41 @@ is public**, so a committed `.vrm` can be downloaded by anyone. If that
 matters, add `game/assets/characters/player.vrm` to `.gitignore` or make the
 repository private.
 
+### No Godot installed? Let CI build it for you
+
+1. Export your VRoid character as `.vrm` (step 3 above).
+2. On GitHub, open `game/assets/characters/roster/` (or `game/assets/characters/`
+   for `player.vrm`) on your branch → **Add file → Upload files** → drop
+   the `.vrm` → **Commit changes**.
+3. Wait for the **CI** run on that commit to finish (Actions tab, about
+   10 minutes). Download the **ProjectShinobi-Windows** artifact. Your
+   character is in it: pick it under Customize → Look.
+
+The same public-repo warning applies: anyone can download a committed `.vrm`.
+
+### A ninja recipe for VRoid Studio
+
+A starting point that reads as "shinobi" at game-camera distance. None of
+it copies a specific anime character.
+
+- **Hair:** start from a short spiky or swept preset, then use hair guides to
+  push 5–8 large clumps back and up. Big, readable shapes beat many thin
+  strands, because the camera is 4 m away. Pick a hair colour that contrasts
+  with the outfit.
+- **Face:** slightly narrower eyes and a flatter brow read as focused. Raise
+  eye highlight size a little so the eyes don't go dead under game lighting.
+- **Body:** default proportions are fine. The gear fitter measures the body,
+  so height and build can vary.
+- **Outfit:** a bodysuit or fitted top plus trousers. In *Edit Texture*
+  paint a dark base (navy, charcoal, deep green), one accent colour, and
+  bandage wraps on the forearms and shins. Leave the head and neck bare: the
+  game adds the headband, mask and scarf, so you can recolour them in game.
+- **Export:** as in step 3. Around 8 materials and a 2048 atlas keep it light.
+
+Make two or three variants (different hair and colours from the same base)
+and upload them all to `roster/`. That gives you a roster to choose from, and
+enemies can use them later.
+
 ## In-game customization
 
 Pause (Esc / Start) → **Customize** opens a screen with

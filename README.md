@@ -80,6 +80,13 @@ with IK (including the hand-seal pose) on any humanoid rig.
   PlayStation and Nintendo pads is name-based and needs checking on real
   hardware.
 
+## Just want to play? (Windows)
+
+Every push builds a Windows exe. On GitHub: **Actions** tab → the latest
+green **CI** run → **Artifacts** → **ProjectShinobi-Windows**. Unzip it and
+run `ProjectShinobi.exe`. You need to be signed in to GitHub to download
+artifacts.
+
 ## Requirements
 - [Godot 4.7](https://godotengine.org/download) (standard build, not .NET)
 - Optional, to regenerate models: Blender 4.5 LTS, or `pip install -r art/blender/requirements.txt` on Python 3.11

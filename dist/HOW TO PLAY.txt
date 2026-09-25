@@ -1,0 +1,50 @@
+PROJECT SHINOBI - how to play
+=============================
+
+Run ProjectShinobi.exe. There's nothing to install. Windows may warn
+because the exe isn't code-signed: click "More info" then "Run anyway".
+
+Keyboard + mouse and controller both work, and you can switch mid-game.
+Controller buttons are named Xbox-style below. PlayStation and Nintendo
+pads get their own labels in game.
+
+IN THE FIELD                 KEYBOARD + MOUSE        CONTROLLER
+  Move                       W A S D                 Left stick
+  Camera                     Mouse                   Right stick
+  Jump (again in air)        Space                   A
+  Dash (tap) / Sprint (hold) Shift                   L3 (click left stick)
+  Strike                     Left mouse              X
+  Throw kunai                Q                       RT
+  Guard (hold)               E                       RB
+  Charge chakra (hold)       R                       Y
+  Lock on                    Tab / middle mouse      R3
+  WEAVE SEALS (hold)         Right mouse             LT
+  Quick-cast jutsu 1-4       1 2 3 4                 D-pad
+  Pause / settings           Esc                     Start
+
+Kunai aim at whatever is near the middle of the screen, so there's no need
+to lock on first.
+
+WEAVING HAND SEALS
+  Hold Weave, enter seals, release to cast.
+  A seal is a direction, plus an optional bank modifier:
+
+                 Bottom    Right    Left     Top
+                 (S / A)   (D / B)  (A / X)  (W / Y)
+  Bank I         Rat       Ox       Tiger    Hare
+  Bank II        Dragon    Snake    Horse    Ram     (hold Shift / LB)
+  Bank III       Monkey    Bird     Dog      Boar    (hold Space / RB)
+
+  Example: Ember Volley = Tiger, Ox = left, right.
+  Every jutsu and its seals are in Pause > Jutsu Scroll.
+  Too slow between seals and the sequence breaks. Pause > Accessibility
+  can widen the timing, turn it off, or switch to toggle mode.
+
+CUSTOMIZE
+  Pause > Customize: colours, gear (headband, mask, scarf, sword, pouch),
+  height, name, and chakra nature. Jutsu of your nature cost 20% less.
+
+SOUND
+  Pause > Accessibility > Audio has Master, Effects and Menu volume.
+
+Settings and your character save to %APPDATA%\Godot\app_userdata\Project Shinobi\
