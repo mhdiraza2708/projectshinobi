@@ -1,0 +1,54 @@
+; Engine configuration file.
+; Gameplay input actions are NOT declared here: they are built at startup from
+; res://scripts/input/default_bindings.gd (plus the player's saved overrides) so
+; that defaults, rebinding and "reset to defaults" all share one source of truth.
+
+config_version=5
+
+[application]
+
+config/name="Project Shinobi"
+config/description="Third-person shinobi action game built around a hand-seal jutsu system."
+run/main_scene="res://scenes/training_ground.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+Settings="*res://autoload/settings.gd"
+InputDevice="*res://autoload/input_device.gd"
+JutsuRegistry="*res://autoload/jutsu_registry.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=false
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="player"
+3d_physics/layer_3="targets"
+3d_physics/layer_4="projectiles"
+3d_physics/layer_5="jutsu_walls"
+
+[physics]
+
+common/physics_ticks_per_second=60
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="gl_compatibility"
+rendering_device/fallback_to_opengl3=true
+anti_aliasing/quality/msaa_3d=2
+anti_aliasing/quality/screen_space_aa=1
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3

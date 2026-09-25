@@ -1,0 +1,31 @@
+[
+  {
+    "id": "thunder_needle",
+    "name": "Thunder Needle",
+    "description": "A needle of lightning that crosses the arena almost instantly.",
+    "rank": "C",
+    "element": "lightning",
+    "form": "projectile",
+    "seals": ["ox", "monkey", "hare"],
+    "chakra_cost": 14,
+    "cooldown": 2,
+    "power": 15,
+    "speed": 55,
+    "range": 35,
+    "radius": 0.2
+  },
+  {
+    "id": "storm_mantle",
+    "name": "Storm Mantle",
+    "description": "Wraps the body in crackling chakra, greatly increasing movement speed.",
+    "rank": "B",
+    "element": "lightning",
+    "form": "buff",
+    "seals": ["ox", "dragon", "monkey", "hare"],
+    "chakra_cost": 25,
+    "cooldown": 16,
+    "power": 0.4,
+    "duration": 8,
+    "buff_stat": "move_speed"
+  }
+]

@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# Binary art assets. Move these to Git LFS (`git lfs track`) once real
+# production art starts landing; generated blockout assets are small.
+*.glb binary
+*.gltf binary
+*.blend binary
+*.png binary
+*.jpg binary
+*.exr binary
+*.wav binary
+*.ogg binary
+*.ttf binary
+*.otf binary

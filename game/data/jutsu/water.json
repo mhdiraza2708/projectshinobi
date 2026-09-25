@@ -1,0 +1,45 @@
+[
+  {
+    "id": "tide_lance",
+    "name": "Tide Lance",
+    "description": "A spear of high-pressure water.",
+    "rank": "C",
+    "element": "water",
+    "form": "projectile",
+    "seals": ["rat", "snake", "ram"],
+    "chakra_cost": 15,
+    "cooldown": 2.5,
+    "power": 18,
+    "speed": 32,
+    "range": 30,
+    "radius": 0.35
+  },
+  {
+    "id": "riptide_wall",
+    "name": "Riptide Wall",
+    "description": "A curtain of churning water that swallows projectiles.",
+    "rank": "C",
+    "element": "water",
+    "form": "wall",
+    "seals": ["rat", "dragon", "bird"],
+    "chakra_cost": 16,
+    "cooldown": 6,
+    "range": 3,
+    "radius": 2.5,
+    "duration": 4
+  },
+  {
+    "id": "geyser_burst",
+    "name": "Geyser Burst",
+    "description": "Erupts a column of water from the ground at a distance.",
+    "rank": "B",
+    "element": "water",
+    "form": "area",
+    "seals": ["snake", "rat", "bird", "dragon"],
+    "chakra_cost": 22,
+    "cooldown": 5,
+    "power": 22,
+    "range": 8,
+    "radius": 2.5
+  }
+]

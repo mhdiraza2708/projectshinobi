@@ -1,0 +1,43 @@
+[
+  {
+    "id": "chakra_bolt",
+    "name": "Chakra Bolt",
+    "description": "A compressed pellet of raw chakra. The first technique every academy student learns.",
+    "rank": "E",
+    "element": "none",
+    "form": "projectile",
+    "seals": ["rat"],
+    "chakra_cost": 6,
+    "cooldown": 0.6,
+    "power": 8,
+    "speed": 30,
+    "range": 30,
+    "radius": 0.25
+  },
+  {
+    "id": "focus_seal",
+    "name": "Focus Seal",
+    "description": "Steadies the chakra network, sharpening every strike and technique for a short time.",
+    "rank": "D",
+    "element": "none",
+    "form": "buff",
+    "seals": ["ram"],
+    "chakra_cost": 12,
+    "cooldown": 15,
+    "power": 0.5,
+    "duration": 6,
+    "buff_stat": "attack_power"
+  },
+  {
+    "id": "mending_palm",
+    "name": "Mending Palm",
+    "description": "Floods your own wounds with chakra to knit them closed.",
+    "rank": "C",
+    "element": "none",
+    "form": "heal",
+    "seals": ["ram", "hare", "rat"],
+    "chakra_cost": 25,
+    "cooldown": 10,
+    "power": 30
+  }
+]

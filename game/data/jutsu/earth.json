@@ -1,0 +1,44 @@
+[
+  {
+    "id": "stone_bulwark",
+    "name": "Stone Bulwark",
+    "description": "Raises a slab of rock in front of the user that blocks incoming projectiles.",
+    "rank": "C",
+    "element": "earth",
+    "form": "wall",
+    "seals": ["rat", "dog"],
+    "chakra_cost": 15,
+    "cooldown": 5,
+    "range": 3,
+    "radius": 2.2,
+    "duration": 6
+  },
+  {
+    "id": "granite_skin",
+    "name": "Granite Skin",
+    "description": "Hardens the skin like stone, reducing all incoming damage.",
+    "rank": "C",
+    "element": "earth",
+    "form": "buff",
+    "seals": ["dog", "boar", "ram"],
+    "chakra_cost": 20,
+    "cooldown": 14,
+    "power": 0.5,
+    "duration": 6,
+    "buff_stat": "damage_reduction"
+  },
+  {
+    "id": "quake_stomp",
+    "name": "Quake Stomp",
+    "description": "A chakra-driven stomp that ruptures the ground all around the user.",
+    "rank": "B",
+    "element": "earth",
+    "form": "area",
+    "seals": ["ox", "snake", "dog", "boar"],
+    "chakra_cost": 26,
+    "cooldown": 6,
+    "power": 24,
+    "range": 0,
+    "radius": 5
+  }
+]

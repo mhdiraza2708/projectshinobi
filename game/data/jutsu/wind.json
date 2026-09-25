@@ -1,0 +1,31 @@
+[
+  {
+    "id": "gale_palm",
+    "name": "Gale Palm",
+    "description": "A burst of pressurised air just ahead of the user.",
+    "rank": "D",
+    "element": "wind",
+    "form": "area",
+    "seals": ["hare", "ox"],
+    "chakra_cost": 10,
+    "cooldown": 2,
+    "power": 12,
+    "range": 3,
+    "radius": 2.5
+  },
+  {
+    "id": "crescent_cutter",
+    "name": "Crescent Cutter",
+    "description": "A thin, very fast blade of wind.",
+    "rank": "C",
+    "element": "wind",
+    "form": "projectile",
+    "seals": ["hare", "bird", "dog"],
+    "chakra_cost": 14,
+    "cooldown": 2,
+    "power": 16,
+    "speed": 40,
+    "range": 30,
+    "radius": 0.35
+  }
+]

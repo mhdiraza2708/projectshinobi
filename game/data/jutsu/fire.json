@@ -1,0 +1,47 @@
+[
+  {
+    "id": "ember_volley",
+    "name": "Ember Volley",
+    "description": "Spits a fan of three small fireballs.",
+    "rank": "D",
+    "element": "fire",
+    "form": "projectile",
+    "seals": ["tiger", "ox"],
+    "chakra_cost": 12,
+    "cooldown": 1.5,
+    "power": 7,
+    "speed": 26,
+    "range": 28,
+    "radius": 0.25,
+    "count": 3
+  },
+  {
+    "id": "cinder_bloom",
+    "name": "Cinder Bloom",
+    "description": "Releases a ring of flame around the user, punishing anyone who crowds in.",
+    "rank": "C",
+    "element": "fire",
+    "form": "area",
+    "seals": ["tiger", "horse", "boar"],
+    "chakra_cost": 18,
+    "cooldown": 4,
+    "power": 18,
+    "range": 0,
+    "radius": 3.5
+  },
+  {
+    "id": "sunfall_orb",
+    "name": "Sunfall Orb",
+    "description": "A slow, massive sphere of fire. Hard to dodge once it has closed the distance.",
+    "rank": "B",
+    "element": "fire",
+    "form": "projectile",
+    "seals": ["tiger", "snake", "horse", "dragon"],
+    "chakra_cost": 28,
+    "cooldown": 5,
+    "power": 34,
+    "speed": 16,
+    "range": 32,
+    "radius": 0.8
+  }
+]
