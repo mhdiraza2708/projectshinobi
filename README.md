@@ -18,6 +18,8 @@ controls can be remapped.
 |---|---|
 | ![The placeholder VRM character pressing its palms together for a seal](docs/images/seal_pose.png) | ![Scroll-styled pause menu with drawn keyboard and controller glyphs](docs/images/pause_menu_controller.png) |
 
+![Customize screen, Gear tab: the character wears a fitted hachigane, face mask and scarf, previewed live](docs/images/customize.png)
+
 ## What you can do right now (M1: training ground)
 
 - Run, sprint, **dash** with i-frames, **chakra double-jump**, 3-hit
@@ -35,6 +37,11 @@ controls can be remapped.
   bars, talisman seals with zodiac kanji, a burning-fuse timing window, a
   shuriken lock-on marker, and drawn keyboard/mouse/Xbox/PlayStation/Nintendo
   button icons that switch the moment you change device.
+- **Character customization** (Pause → Customize): pick from your
+  VRoid roster, tint hair/eyes/skin/outfit, add ninja gear fitted to the
+  character's measured head and body (headband or hachigane, mask, scarf,
+  ninjato, kunai pouch), set height and expression, name your shinobi, and
+  choose a chakra nature (its jutsu cost 20% less chakra).
 - **Pause menu:** rebind every action on both devices, accessibility
   options (hold/toggle weaving, seal timing window or no limit, seal hints,
   sensitivities, invert Y, deadzone, vibration, screen shake, UI scale), and
@@ -94,12 +101,12 @@ uploads screenshots as an artifact.
 game/                  Godot project
   addons/              godot-vrm importer + MToon anime shader (MIT)
   assets/characters/   player.vrm (yours) / default placeholder
-  autoload/            Settings, InputDevice, JutsuRegistry singletons
+  autoload/            Settings, InputDevice, JutsuRegistry, Profile singletons
   data/jutsu/          Jutsu definitions (JSON, one file per element)
   scenes/              Training ground, player, dummy
   scripts/input/       Bindings table + binding (de)serialisation
   scripts/jutsu/       Seals, elements, weaver, definitions, caster, effects
-  scripts/character/   VRM loading, rig-agnostic IK poser
+  scripts/character/   VRM loading, IK poser, clip animator, styler, gear
   scripts/player/      Controller, camera
   scripts/combat/      Stats, hit helpers
   scripts/ui/          HUD, pause menu, UI kit

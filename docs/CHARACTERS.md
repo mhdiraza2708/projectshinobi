@@ -44,6 +44,46 @@ is public**, so a committed `.vrm` can be downloaded by anyone. If that
 matters, add `game/assets/characters/player.vrm` to `.gitignore` or make the
 repository private.
 
+## In-game customization
+
+Pause (Esc / Start) → **Customize** opens a screen with
+your character standing on the right. Rotate it with the right stick or by
+dragging with the mouse. Every change applies live and is saved to
+`user://profile.cfg`.
+
+| Tab | What you can change |
+|---|---|
+| 姿 **Look** | Which character (roster), height (90–110%), default facial expression |
+| 色 **Colours** | A tint per material slot the model has: hair (brows follow), eyes, skin, outfit, lower, shoes, accessories |
+| 装 **Gear** | Headband (cloth or metal-plated hachigane), face mask, scarf, ninjato on the back, kunai pouch, each with colours where it makes sense. Gear size and headband height sliders help with unusual heads. |
+| 名 **Identity** | Name (or **Random** for a generated ninja name, handy on a controller) and chakra nature |
+
+**The limits, honestly:**
+- Face, hair shape and body shape come from VRoid Studio. To change those,
+  make another character in VRoid and add it to the roster (below).
+- Colours *multiply* the model's own textures. They shift and darken, but
+  can't turn dark hair blond. For light colours, author light textures in
+  VRoid and tint them here.
+- Gear is fitted automatically: the game measures each character's head,
+  neck, torso and thigh from its skinned mesh. Very large hairstyles can
+  still clip. The fit sliders exist for that.
+
+**Chakra nature** is gameplay, not cosmetic: jutsu of your nature cost 20%
+less chakra.
+
+### Adding characters to the roster
+
+- `game/assets/characters/player.vrm` is listed as "Your character".
+- Any `.vrm` in `game/assets/characters/roster/` is listed by file name.
+  For example, export one VRoid character in two outfits, as
+  `roster/kaze_day.vrm` and `roster/kaze_night.vrm`.
+- The placeholder Godette is always available.
+
+Colour slots are found from material names. VRoid tags them (`_HAIR`,
+`_CLOTH`, `_SKIN`, `_EYE` and so on), and most VRM models use similar words.
+If a model's naming isn't recognised, it gets a single whole-model
+**Body** colour instead.
+
 ## Animations: Mixamo
 
 Out of the box the character is animated procedurally. For motion-captured
@@ -93,9 +133,14 @@ by default. Check Adobe's current terms yourself.
 
 ## How it works (for programmers)
 
-- `scripts/character/character_model.gd` loads `player.vrm` if it exists,
-  else `default/godette.vrm`. It also fixes facing and scale and attaches the
-  poser.
+- `scripts/character/character_model.gd` loads the profile's chosen model,
+  or `player.vrm` if one exists, else `default/godette.vrm`. It fixes facing
+  and scale, attaches the poser, and applies the profile live.
+- `autoload/profile.gd` stores the customization. `scripts/character/character_styler.gd`
+  classifies materials into colour slots and tints per-character copies.
+  `scripts/character/character_gear.gd` measures body regions from skinned
+  vertices (dominant bone per vertex, in the canonical frame) and fits gear
+  to them on `BoneAttachment3D`s. `scripts/ui/customize_menu.gd` is the screen.
 - `scripts/character/humanoid_poser.gd` is a `SkeletonModifier3D`. Poses are
   authored in a canonical frame (facing −Z, sizes in arm and leg lengths)
   and solved with two-bone IK, so the same data fits T-pose and A-pose rigs of

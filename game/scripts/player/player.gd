@@ -77,6 +77,9 @@ func _ready() -> void:
 	caster.stats = stats
 	caster.body = self
 	animator = model.animator
+	model.model_loaded.connect(func() -> void: animator = model.animator)
+	caster.affinity = Profile.get_value(&"affinity")
+	Profile.changed.connect(func(_k: StringName) -> void: caster.affinity = Profile.get_value(&"affinity"))
 
 	_kunai = JutsuDefinition.new()
 	_kunai.id = &"kunai"

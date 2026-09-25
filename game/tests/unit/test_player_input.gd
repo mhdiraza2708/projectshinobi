@@ -45,7 +45,8 @@ func test_hold_weave_tiger_ox_casts_ember_volley() -> void:
 	await physics_frames(2)
 	assert_eq(player.state, Player.State.FREE)
 	assert_true(player.caster.cooldown_left(&"ember_volley") > 0.0, "Ember Volley was cast")
-	assert_true(player.stats.chakra < chakra - 10.0, "chakra spent")
+	var cost := player.caster.cost_of(JutsuRegistry.get_jutsu(&"ember_volley"))
+	assert_true(player.stats.chakra < chakra - cost * 0.9, "chakra spent")
 
 
 func test_bank_modifiers_select_upper_seals() -> void:

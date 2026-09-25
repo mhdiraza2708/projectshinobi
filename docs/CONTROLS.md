@@ -24,7 +24,7 @@ automatically. Prompts switch the moment you touch the other device.
 | Lock on | Tab or middle mouse | R3 |
 | **Weave seals** | **Right mouse (or F)** | **LT** |
 | Quick-cast slots 1–4 | 1 2 3 4 | D-pad ↑ → ↓ ← |
-| Pause / settings | Esc | Start |
+| Pause / settings / customize | Esc | Start |
 
 ## Weaving hand seals
 
@@ -75,3 +75,13 @@ keep weaving and can start the sequence again without letting go.
 
 Elements are never shown by colour alone. The HUD always prints the nature
 name (Fire, Water, and so on).
+
+## Customize screen
+
+| Action | Keyboard + Mouse | Controller |
+|---|---|---|
+| Move between options | Arrow keys / Tab | D-pad or left stick |
+| Choose | Enter / Space / click | A |
+| Switch tab | click the tab | LB / RB |
+| Rotate character | drag with the mouse | Right stick |
+| Done | Esc | B or Start |

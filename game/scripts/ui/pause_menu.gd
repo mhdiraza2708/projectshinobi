@@ -8,6 +8,8 @@ extends CanvasLayer
 
 const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["巻", "Jutsu Scroll"]]
 
+signal customize_requested
+
 var player: Player
 
 var _root: Control
@@ -177,6 +179,9 @@ func _build() -> void:
 	vbox.add_child(buttons)
 	_resume = _button("Resume", close)
 	buttons.add_child(_resume)
+	buttons.add_child(_button("Customize", func() -> void:
+		close()
+		customize_requested.emit()))
 	buttons.add_child(_button("Reset controls", func() -> void:
 		Settings.reset_bindings()
 		_notice.text = "Controls reset to defaults."))

@@ -82,6 +82,12 @@ func forward_in_skeleton() -> Vector3:
 	return -_frame.z
 
 
+## Basis mapping the canonical character frame (facing -Z, right +X, up +Y)
+## into skeleton space.
+func canonical_frame() -> Basis:
+	return _frame
+
+
 func strike() -> void:
 	_strike_t = 0.24
 	_strike_side = -_strike_side

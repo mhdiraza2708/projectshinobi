@@ -7,10 +7,36 @@ extends Node
 const UNIT_DIR := "res://tests/unit"
 
 
+## Records GDScript runtime errors: they abort a test function silently, so
+## without this a crashing test would still count as passed.
+class ScriptErrorCatcher extends Logger:
+	var errors: PackedStringArray = []
+	var _lock := Mutex.new()
+
+	func _log_error(function: String, file: String, line: int, code: String, rationale: String,
+			_editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type != Logger.ERROR_TYPE_SCRIPT:
+			return
+		_lock.lock()
+		errors.append("%s (%s:%d in %s)" % [rationale if rationale != "" else code, file, line, function])
+		_lock.unlock()
+
+	func take() -> PackedStringArray:
+		_lock.lock()
+		var out := errors.duplicate()
+		errors.clear()
+		_lock.unlock()
+		return out
+
+
 func _ready() -> void:
-	# Tests must never read or clobber the player's real settings file.
+	# Tests must never read or clobber the player's real settings/profile.
 	Settings.persist = false
 	Settings.load_from_disk()
+	Profile.persist = false
+	Profile.load_from_disk()
+	var catcher := ScriptErrorCatcher.new()
+	OS.add_logger(catcher)
 
 	var filter := ""
 	for arg in OS.get_cmdline_user_args():
@@ -34,11 +60,16 @@ func _ready() -> void:
 				continue
 			suite._current = "%s::%s" % [file.get_basename(), name]
 			var before := suite.failures.size()
+			catcher.take()
 			suite.before_each()
 			await suite.call(name)
 			suite.after_each()
+			for err in catcher.take():
+				suite.fail("script error: " + err)
 			# Reset shared global state between tests.
+			get_tree().paused = false
 			Settings.load_from_disk()
+			Profile.load_from_disk()
 			for child in get_children():
 				child.queue_free()
 			await get_tree().process_frame

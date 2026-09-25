@@ -12,10 +12,14 @@ signal cast_failed(jutsu: JutsuDefinition, reason: StringName)
 const MISFIRE_CHAKRA := 4.0
 ## Angle between projectiles in a multi-shot fan.
 const FAN_SPREAD := deg_to_rad(11.0)
+## How much cheaper jutsu of the caster's own chakra nature are.
+const AFFINITY_DISCOUNT := 0.2
 
 @export var stats: Stats
 ## The body casting; never hit by its own techniques.
 @export var body: Node3D
+## The caster's chakra nature (Element.*): jutsu of this nature cost less.
+var affinity := Element.NONE
 
 var _cooldowns: Dictionary = {}
 
@@ -31,11 +35,18 @@ func cooldown_left(id: StringName) -> float:
 	return _cooldowns.get(id, 0.0)
 
 
+## Chakra this caster pays for `jutsu`, after the affinity discount.
+func cost_of(jutsu: JutsuDefinition) -> float:
+	if affinity != Element.NONE and jutsu.element == affinity:
+		return jutsu.chakra_cost * (1.0 - AFFINITY_DISCOUNT)
+	return jutsu.chakra_cost
+
+
 ## &"" if `jutsu` can be cast right now, otherwise the reason it can't.
 func block_reason(jutsu: JutsuDefinition) -> StringName:
 	if cooldown_left(jutsu.id) > 0.0:
 		return &"cooldown"
-	if stats.chakra < jutsu.chakra_cost:
+	if stats.chakra < cost_of(jutsu):
 		return &"chakra"
 	return &""
 
@@ -56,7 +67,7 @@ func cast(jutsu: JutsuDefinition, target: Node3D = null) -> bool:
 	if reason != &"":
 		cast_failed.emit(jutsu, reason)
 		return false
-	stats.spend_chakra(jutsu.chakra_cost)
+	stats.spend_chakra(cost_of(jutsu))
 	if jutsu.cooldown > 0.0:
 		_cooldowns[jutsu.id] = jutsu.cooldown
 

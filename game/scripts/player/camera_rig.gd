@@ -16,8 +16,11 @@ var yaw := 0.0
 var pitch := deg_to_rad(-14.0)
 var lock_target: Node3D
 var target: Node3D
+## Horizontal framing offset (the customize screen shifts the character right).
+var frame_offset := 0.0
 
 var _shake := 0.0
+var _saved: Dictionary = {}
 
 @onready var pivot: Node3D = $Pivot
 @onready var spring: SpringArm3D = $Pivot/SpringArm3D
@@ -54,7 +57,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	if is_instance_valid(lock_target) and target:
+	if in_showcase():
+		# Arrow keys are menu navigation here, so only the right stick orbits
+		# (the customize screen also handles mouse drags).
+		var rs := Input.get_joy_axis(InputDevice.active_joypad, JOY_AXIS_RIGHT_X)
+		if absf(rs) > float(Settings.get_value(&"stick_deadzone")):
+			yaw -= rs * stick_speed * delta
+	elif is_instance_valid(lock_target) and target:
 		var to := lock_target.global_position - target.global_position
 		yaw = lerp_angle(yaw, atan2(-to.x, -to.z), 1.0 - exp(-7.0 * delta))
 		pitch = lerpf(pitch, deg_to_rad(-12.0), 1.0 - exp(-4.0 * delta))
@@ -73,11 +82,11 @@ func _process(delta: float) -> void:
 	pivot.rotation.x = pitch
 
 	if _shake > 0.0:
-		camera.h_offset = randf_range(-1.0, 1.0) * _shake * 0.12
+		camera.h_offset = frame_offset + randf_range(-1.0, 1.0) * _shake * 0.12
 		camera.v_offset = randf_range(-1.0, 1.0) * _shake * 0.12
 		_shake = move_toward(_shake, 0.0, delta * 3.0)
 	else:
-		camera.h_offset = 0.0
+		camera.h_offset = frame_offset
 		camera.v_offset = 0.0
 
 
@@ -88,6 +97,38 @@ func flat_basis() -> Basis:
 
 func flat_forward() -> Vector3:
 	return flat_basis() * Vector3.FORWARD
+
+
+## Swings round to look at the character's front, close up, for the
+## customize screen. The stick/arrow keys still orbit. `end_showcase` restores.
+func begin_showcase(offset := -0.55) -> void:
+	if _saved.is_empty():
+		_saved = {"length": spring.spring_length, "height": follow_height, "pitch": pitch}
+	lock_target = null
+	spring.spring_length = 2.7
+	follow_height = 1.05
+	pitch = deg_to_rad(-4.0)
+	frame_offset = offset
+	if target:
+		yaw = target.global_rotation.y + PI
+	snap()
+
+
+func end_showcase() -> void:
+	if _saved.is_empty():
+		return
+	spring.spring_length = _saved["length"]
+	follow_height = _saved["height"]
+	pitch = _saved["pitch"]
+	frame_offset = 0.0
+	_saved.clear()
+	if target:
+		yaw = target.global_rotation.y
+	snap()
+
+
+func in_showcase() -> bool:
+	return not _saved.is_empty()
 
 
 func add_shake(amount: float) -> void:

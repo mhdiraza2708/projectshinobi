@@ -17,6 +17,7 @@ var _health_text: Label
 var _chakra_bar: InkBar
 var _chakra_text: Label
 var _buffs: Label
+var _name: Label
 var _banner: BrushBanner
 var _weave_panel: PaperPanel
 var _fuse: FuseBar
@@ -47,6 +48,8 @@ func bind(p: Player) -> void:
 		if kind != &"cast":
 			show_banner(text, kind))
 	player.quick_slots_changed.connect(_refresh_slots)
+	Profile.changed.connect(func(_k: StringName) -> void: _refresh_name())
+	_refresh_name()
 	InputDevice.device_changed.connect(func(_d: Binding.Device) -> void: _refresh_weave(true))
 	Settings.bindings_changed.connect(func() -> void: _refresh_weave(true))
 	Settings.value_changed.connect(func(_k: StringName, _v: Variant) -> void: _refresh_weave(true))
@@ -76,6 +79,8 @@ func _build() -> void:
 	var bars := VBoxContainer.new()
 	bars.add_theme_constant_override(&"separation", 2)
 	vrow.add_child(bars)
+	_name = UiKit.label("", 22, UiKit.INK, &"display")
+	bars.add_child(_name)
 	_health_bar = InkBar.new()
 	_health_bar.ink_color = UiKit.HEALTH
 	_health_text = UiKit.label("", 20, UiKit.INK, &"bold")
@@ -230,6 +235,11 @@ func _process(_delta: float) -> void:
 		_reticle.position = screen - _reticle.size * 0.5
 
 
+func _refresh_name() -> void:
+	var affinity: int = Profile.get_value(&"affinity")
+	_name.text = "%s  %s" % [Profile.get_value(&"name"), Element.kanji(affinity)]
+
+
 func _on_health(current: float, maximum: float) -> void:
 	_health_bar.set_ratio(current / maximum)
 	_health_text.text = "%d / %d" % [ceili(current), int(maximum)]
@@ -348,7 +358,7 @@ func _refresh_slots() -> void:
 		(r["stamp"] as Hanko).color = _element_stamp(j.element)
 		var cd := player.caster.cooldown_left(j.id)
 		var status := "%.1fs" % cd if cd > 0.0 else ""
-		if cd <= 0.0 and player.stats.chakra < j.chakra_cost:
+		if cd <= 0.0 and player.stats.chakra < player.caster.cost_of(j):
 			status = "low chakra"
 		r["status"].text = status
 		(r["row"] as Control).modulate = Color(1, 1, 1, 0.5) if status != "" else Color.WHITE
