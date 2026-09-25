@@ -8,6 +8,8 @@ enum { NONE, FIRE, WIND, LIGHTNING, EARTH, WATER }
 
 const NAMES: PackedStringArray = ["none", "fire", "wind", "lightning", "earth", "water"]
 const BEATS := {FIRE: WIND, WIND: LIGHTNING, LIGHTNING: EARTH, EARTH: WATER, WATER: FIRE}
+## Kanji stamped on element seals in the UI (always shown with the name too).
+const KANJI: PackedStringArray = ["無", "火", "風", "雷", "土", "水"]
 
 const ADVANTAGE_MULTIPLIER := 1.5
 const DISADVANTAGE_MULTIPLIER := 0.75
@@ -29,6 +31,10 @@ static func from_name(element_name: String) -> int:
 
 static func display_name(element: int) -> String:
 	return NAMES[element].capitalize() if element >= 0 and element < NAMES.size() else "?"
+
+
+static func kanji(element: int) -> String:
+	return KANJI[element] if element >= 0 and element < KANJI.size() else "?"
 
 
 static func color(element: int) -> Color:

@@ -28,6 +28,8 @@ const DIRECTION_ACTIONS: Array[StringName] = [&"seal_down", &"seal_right", &"sea
 ## Modifier action for each bank (bank 0 has none).
 const BANK_ACTIONS: Array[StringName] = [&"", &"seal_layer_1", &"seal_layer_2"]
 const BANK_NAMES: PackedStringArray = ["I", "II", "III"]
+## The zodiac (earthly branch) character for each seal, shown on talismans.
+const KANJI: PackedStringArray = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]
 
 
 static func from_input(bank: int, direction: int) -> int:
@@ -52,6 +54,10 @@ static func from_name(seal_name: String) -> int:
 
 static func display_name(seal: int) -> String:
 	return NAMES[seal].capitalize() if is_valid(seal) else "?"
+
+
+static func kanji(seal: int) -> String:
+	return KANJI[seal] if is_valid(seal) else "?"
 
 
 static func sequence_to_names(sequence: Array) -> PackedStringArray:

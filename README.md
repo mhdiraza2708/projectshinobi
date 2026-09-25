@@ -10,9 +10,13 @@ controls can be remapped.
 > polished indie/AA quality, not "AAA" (a budget no small team has). See
 > [docs/DESIGN.md](docs/DESIGN.md) for the reasoning.
 
-![Weaving seals: the HUD shows each seal, its input on your device, and which jutsu the sequence can still become](docs/images/weaving.png)
+![Weaving seals on a controller: each seal is stamped as a talisman with its zodiac kanji and the button that makes it; a fuse burns down the timing window and hints show what the sequence can still become](docs/images/weaving.png)
 
-![Casting Sunfall Orb and Ember Volley at a locked-on training dummy](docs/images/casting.png)
+![Casting Ember Volley and Sunfall Orb at a locked-on training dummy](docs/images/casting.png)
+
+| Hand-seal pose (IK, works on any VRoid rig) | Pause menu (controller mode) |
+|---|---|
+| ![The placeholder VRM character pressing its palms together for a seal](docs/images/seal_pose.png) | ![Scroll-styled pause menu with drawn keyboard and controller glyphs](docs/images/pause_menu_controller.png) |
 
 ## What you can do right now (M1: training ground)
 
@@ -27,6 +31,10 @@ controls can be remapped.
   assign any jutsu from the Jutsu Scroll in the pause menu.
 - Three **training dummies** (Neutral, Earth, Wind) show **WEAK!/RESIST**
   damage numbers, so you learn the element cycle by playing.
+- **Ink-and-scroll UI:** washi-paper panels, brush-stroke health/chakra
+  bars, talisman seals with zodiac kanji, a burning-fuse timing window, a
+  shuriken lock-on marker, and drawn keyboard/mouse/Xbox/PlayStation/Nintendo
+  button icons that switch the moment you change device.
 - **Pause menu:** rebind every action on both devices, accessibility
   options (hold/toggle weaving, seal timing window or no limit, seal hints,
   sensitivities, invert Y, deadzone, vibration, screen shake, UI scale), and
