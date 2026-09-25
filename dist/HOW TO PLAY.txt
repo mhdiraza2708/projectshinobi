@@ -4,6 +4,11 @@ PROJECT SHINOBI - how to play
 Run ProjectShinobi.exe. There's nothing to install. Windows may warn
 because the exe isn't code-signed: click "More info" then "Run anyway".
 
+The game opens on the title screen:
+  Trial of the Five Natures - five waves of enemy shinobi, one nature each.
+  Training Ground           - dummies that don't hit back, for practice.
+  Customize                 - your look, gear, name and chakra nature.
+
 Keyboard + mouse and controller both work, and you can switch mid-game.
 Controller buttons are named Xbox-style below. PlayStation and Nintendo
 pads get their own labels in game.
@@ -24,6 +29,13 @@ IN THE FIELD                 KEYBOARD + MOUSE        CONTROLLER
 
 Kunai aim at whatever is near the middle of the screen, so there's no need
 to lock on first.
+
+FIGHTING ENEMIES
+  Each enemy shows its nature. Hit it with the nature that beats it for
+  1.5x damage: Fire > Wind > Lightning > Earth > Water > Fire.
+  SEALS ABOVE AN ENEMY'S HEAD = A JUTSU IS COMING. Hit it before the last
+  seal to interrupt. A kunai stops a genin; chunin and jonin need more.
+  A red "!" means a strike is winding up: guard or dash away.
 
 WEAVING HAND SEALS
   Hold Weave, enter seals, release to cast.
