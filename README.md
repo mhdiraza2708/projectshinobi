@@ -49,7 +49,7 @@ Full control scheme and seal chart: [docs/CONTROLS.md](docs/CONTROLS.md).
 
 ## Requirements
 - [Godot 4.7](https://godotengine.org/download) (standard build, not .NET)
-- Optional, to regenerate models: Blender 4.5 LTS, or `pip install bpy==4.5.14` on Python 3.11
+- Optional, to regenerate models: Blender 4.5 LTS, or `pip install -r art/blender/requirements.txt` on Python 3.11
 
 ## Running
 

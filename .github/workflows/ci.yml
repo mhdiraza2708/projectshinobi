@@ -6,7 +6,6 @@ on:
 
 env:
   GODOT_VERSION: 4.7.2
-  BPY_VERSION: 4.5.14
 
 jobs:
   godot-tests:
@@ -65,9 +64,10 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: art/blender/requirements.txt
 
       - name: Install Blender (bpy)
-        run: pip install "bpy==${BPY_VERSION}"
+        run: pip install -r art/blender/requirements.txt
 
       - name: Build every asset
         run: python art/blender/build_assets.py --out /tmp/assets

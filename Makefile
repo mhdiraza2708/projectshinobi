@@ -1,6 +1,6 @@
 # Common tasks. Override tool paths, e.g. `make test GODOT=~/bin/godot`.
 GODOT ?= godot
-# Any Python with `bpy` installed (pip install bpy==4.5.14, Python 3.11),
+# Any Python with `bpy` installed (pip install -r art/blender/requirements.txt, Python 3.11),
 # or use: make assets BLENDER_RUN="blender --background --python"
 BLENDER_RUN ?= python
 SHOTS ?= screenshots

@@ -1,0 +1,2 @@
+# Blender as a Python module (needs Python 3.11). Pinned to the 4.5 LTS line.
+bpy==4.5.14

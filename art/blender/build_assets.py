@@ -2,7 +2,7 @@
 
 Run with either:
     blender --background --python art/blender/build_assets.py -- [options]
-    python art/blender/build_assets.py [options]        # needs `pip install bpy==4.5.14`
+    python art/blender/build_assets.py [options]        # needs `pip install -r art/blender/requirements.txt`
 
 Options:
     --out DIR        output directory (default: game/assets/models)
