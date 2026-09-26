@@ -41,6 +41,10 @@ menu still works during dialogue.
 
 ## Fighting enemies
 
+- Health regenerates slowly (3 per second) once you've gone about 4 seconds
+  without taking a hit. Chakra regenerates all the time, and much faster
+  while you hold Charge.
+
 - Enemies show their nature (kanji and name) and a health bar overhead.
   Hit them with the nature that beats theirs for 1.5× damage (**WEAK!**).
 - **Seals above an enemy's head mean a jutsu is coming.** Hit it before the

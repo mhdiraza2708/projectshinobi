@@ -30,6 +30,8 @@ IN THE FIELD                 KEYBOARD + MOUSE        CONTROLLER
 
 Kunai aim at whatever is near the middle of the screen, so there's no need
 to lock on first.
+Health slowly regenerates after about 4 seconds without taking a hit.
+Hold Charge to refill chakra.
 
 STORY
   A / Enter / Space / click: next line. Hold it to fast-forward.

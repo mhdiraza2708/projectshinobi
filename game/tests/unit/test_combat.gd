@@ -178,3 +178,34 @@ func test_attack_power_buff_scales_damage() -> void:
 	_caster.cast(_jutsu(&"chakra_bolt"), dummy)
 	await physics_frames(30)
 	assert_near(dummy.stats.max_health - dummy.stats.health, 8.0 * 1.5, 0.01)
+
+
+func test_health_regenerates_only_after_a_quiet_spell() -> void:
+	_stats.health_regen = 10.0
+	_stats.regen_delay = 1.0
+	_stats.take_damage(40.0)
+	_stats._process(0.5)
+	assert_near(_stats.health, 60.0, 0.01, "no regen straight after a hit")
+	_stats._process(0.6)
+	_stats._process(1.0)
+	assert_true(_stats.health > 65.0, "regenerating after the delay (%.1f)" % _stats.health)
+	_stats.take_damage(10.0)
+	var after_hit := _stats.health
+	_stats._process(0.5)
+	assert_near(_stats.health, after_hit, 0.01, "a new hit resets the delay")
+	_stats._process(100.0)
+	assert_near(_stats.health, _stats.max_health, 0.01, "capped at max")
+	_stats.take_damage(999.0)
+	_stats._process(5.0)
+	assert_near(_stats.health, 0.0, 0.01, "no regen once defeated")
+
+
+func test_player_regenerates_but_enemies_do_not() -> void:
+	var scene: Node3D = preload("res://scenes/training_ground.tscn").instantiate()
+	root.add_child(scene)
+	await physics_frames(2)
+	assert_true(scene.player.stats.health_regen > 0.0)
+	var e := EnemyShinobi.new()
+	scene.add_child(e)
+	await physics_frames(1)
+	assert_eq(e.stats.health_regen, 0.0)

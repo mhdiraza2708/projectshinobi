@@ -38,6 +38,10 @@ enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING, DOWN }
 @export var dash_cooldown := 0.35
 ## Seconds of invulnerability at the start of a dash.
 @export var dash_iframes := 0.15
+@export_group("Recovery")
+## Health per second once out of combat for `regen_delay` seconds.
+@export var health_regen := 3.0
+@export var regen_delay := 4.0
 @export_group("Combat")
 @export var strike_damage := 7.0
 @export var strike_reach := 1.1
@@ -92,6 +96,8 @@ func _ready() -> void:
 	collision_mask = Combat.BODY_MASK
 	caster.stats = stats
 	caster.body = self
+	stats.health_regen = health_regen
+	stats.regen_delay = regen_delay
 	animator = model.animator
 	model.model_loaded.connect(func() -> void: animator = model.animator)
 	caster.affinity = Profile.get_value(&"affinity")

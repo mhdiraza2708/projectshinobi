@@ -16,6 +16,10 @@ signal modifier_changed(stat: StringName, magnitude: float, time_left: float)
 @export var chakra_regen := 3.0
 ## Regeneration per second while charging.
 @export var charge_regen := 35.0
+## Health regained per second once `regen_delay` seconds have passed
+## without taking damage (0 = none).
+@export var health_regen := 0.0
+@export var regen_delay := 4.0
 ## The target's own nature, used for elemental matchups when it is hit.
 @export var affinity := Element.NONE
 
@@ -25,6 +29,8 @@ var is_charging := false
 var is_invulnerable := false
 ## Damage multiplier from guarding (1.0 = not guarding).
 var guard_multiplier := 1.0
+## Seconds since damage was last taken.
+var since_hit := INF
 
 # stat -> {"magnitude": float, "time": float}
 var _modifiers: Dictionary = {}
@@ -36,6 +42,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	since_hit += delta
+	if health_regen > 0.0 and since_hit >= regen_delay and health < max_health and not is_dead():
+		health = minf(max_health, health + health_regen * delta)
+		health_changed.emit(health, max_health)
 	var regen := charge_regen if is_charging else chakra_regen
 	if chakra < max_chakra and regen > 0.0:
 		chakra = minf(max_chakra, chakra + regen * delta)
@@ -67,6 +77,7 @@ func take_damage(amount: float, element: int = Element.NONE) -> float:
 	var mult := Element.multiplier(element, affinity)
 	var dealt := amount * mult * guard_multiplier * (1.0 - modifier(&"damage_reduction"))
 	health = maxf(0.0, health - dealt)
+	since_hit = 0.0
 	damaged.emit(dealt, element, mult)
 	health_changed.emit(health, max_health)
 	if is_dead():
