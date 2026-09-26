@@ -6,7 +6,7 @@ extends Node3D
 ##   godot --path game --rendering-driver opengl3 -- --screenshot=out.png [--demo=NAME] [--device=gamepad]
 ## NAME is one of: overview (default), weave, cast, kunai, menu, customize,
 ## customize_colours, customize_gear, title, trial, results, story,
-## story_boss, story_menu, chapter_card, night, and the close-up character
+## story_boss, story_menu, chapter_card, night, chapter:<id>, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
 const KILL_PLANE_Y := -20.0
@@ -243,6 +243,16 @@ func set_weather(kind: String) -> void:
 	p.mesh = quad
 	var world := $WorldEnvironment as WorldEnvironment
 	world.environment = world.environment.duplicate(true)
+	if kind in ["rain", "storm", "snow"]:
+		# Overcast: a greyer sky and a weaker sun.
+		var sky := world.environment.sky.sky_material as ProceduralSkyMaterial
+		var grey := Color(0.42, 0.45, 0.5) if kind != "snow" else Color(0.72, 0.74, 0.78)
+		var amount := 0.65 if kind == "storm" else 0.55
+		sky.sky_top_color = sky.sky_top_color.lerp(grey * sky.sky_top_color.get_luminance() * 2.0, amount)
+		sky.sky_horizon_color = sky.sky_horizon_color.lerp(grey, amount * 0.8)
+		sky.ground_horizon_color = sky.sky_horizon_color
+		world.environment.fog_light_color = sky.sky_horizon_color
+		($Sun as DirectionalLight3D).light_energy *= 0.6
 	match kind:
 		"rain", "storm":
 			quad.size = Vector2(0.018, 0.7)
@@ -490,6 +500,10 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		"chapter_card":
 			start_story("ch3_vault")
 			await _frames(12)
+		_ when demo.begins_with("chapter:"):
+			# Any chapter's opening scene: --demo=chapter:ch8_dam
+			start_story(demo.trim_prefix("chapter:"), true)
+			await _frames(60)
 		"customize", "customize_colours", "customize_gear":
 			if demo == "customize_gear":
 				Profile.set_value(&"headband", "hachigane")

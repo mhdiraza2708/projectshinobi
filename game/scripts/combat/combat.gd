@@ -27,7 +27,11 @@ static func find_hittable(node: Node) -> Node:
 	return null
 
 
-static func apply_hit(target: Node, amount: float, element: int, source: Node) -> float:
+## `source` may be a fighter that has since been freed (a kunai still in
+## flight when its thrower fell); it then counts as no source.
+static func apply_hit(target: Node, amount: float, element: int, source: Variant) -> float:
+	if not is_instance_valid(source):
+		source = null
 	if target == null or target == source or not target.has_method("take_hit"):
 		return 0.0
 	if same_team(target, source):
@@ -37,7 +41,7 @@ static func apply_hit(target: Node, amount: float, element: int, source: Node) -
 
 ## Fighters with the same non-empty `team` never hurt each other. A team name
 ## is also the group its members are in.
-static func same_team(a: Node, b: Node) -> bool:
+static func same_team(a: Variant, b: Variant) -> bool:
 	if a == null or b == null or not is_instance_valid(a) or not is_instance_valid(b):
 		return false
 	var ta: Variant = a.get(&"team")

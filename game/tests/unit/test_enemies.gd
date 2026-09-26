@@ -231,3 +231,24 @@ func test_lock_on_prefers_enemies_over_dummies() -> void:
 	e.dismiss()
 	await physics_frames(2)
 	assert_true(player.find_lock_target() is TrainingDummy, "dummies are still targetable on their own")
+
+
+func test_projectile_outlives_its_thrower_safely() -> void:
+	await _load()
+	# Off to the side, clear of the training dummies.
+	var a := _spawn(&"genin", Element.FIRE, player.global_position + Vector3(10, 0, 0))
+	var b := _spawn(&"genin", Element.WATER, player.global_position + Vector3(10, 0, 4))
+	await _await_fight(a)
+	var p := JutsuProjectile.new()
+	p.caster = a
+	p.target = player
+	p.direction = Vector3(-1, 0, 0)
+	p.speed = 30.0
+	scene.add_child(p)
+	p.global_position = a.global_position + Vector3(-1, 1, 0)
+	a.free()
+	# The other enemy scans projectiles for dodging; the hit must still land.
+	var before := player.stats.health
+	await physics_frames(40)
+	assert_true(is_instance_valid(b))
+	assert_true(player.stats.health < before, "an orphaned projectile still hits")

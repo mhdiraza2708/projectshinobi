@@ -537,7 +537,7 @@ func _dodge() -> void:
 func _incoming_projectile() -> bool:
 	for node in get_tree().get_nodes_in_group(&"projectiles"):
 		var p := node as JutsuProjectile
-		if p == null or p.caster == self or Combat.same_team(p.caster, self):
+		if p == null or not is_instance_valid(p.caster) or p.caster == self or Combat.same_team(p.caster, self):
 			continue
 		if p.get_instance_id() == _last_projectile_rolled:
 			continue
