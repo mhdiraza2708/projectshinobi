@@ -116,6 +116,7 @@ func _enter_npc(b: Dictionary) -> void:
 	npc.display_name = "%s %s" % [info["kanji"], info["name"]]
 	npc.element = info["element"]
 	npc.style = info["style"]
+	npc.model_name = info["model"]
 	npc.look_at_node = player
 	var at: Vector2 = b["at"]
 	npc.position = Vector3(at.x, 0.0, at.y)
@@ -246,7 +247,8 @@ func _start_boss(b: Dictionary) -> void:
 	boss.title_override = info["name"]
 	boss.health_override = b["health"]
 	boss.style_override = info["style"]
-	boss.model_path = EnemyShinobi.pick_model(b["who"])
+	var chosen := CharacterModel.resolve_roster(info["model"])
+	boss.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(b["who"])
 	boss.phases = b["phases"]
 	boss.target = player
 	boss.position = pos

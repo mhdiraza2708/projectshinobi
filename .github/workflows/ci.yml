@@ -104,6 +104,11 @@ jobs:
           mkdir -p build/windows
           ~/godot/godot --headless --path game --export-release "Windows Desktop" ../build/windows/ProjectShinobi.exe
           test -s build/windows/ProjectShinobi.exe
+          # Characters ship as packs next to the exe (loaded at startup).
+          for i in 1 2 3; do
+            ~/godot/godot --headless --path game --export-pack "Characters $i" ../build/windows/characters_$i.pck
+            test -s build/windows/characters_$i.pck
+          done
           cp "dist/HOW TO PLAY.txt" build/windows/
 
       - name: Upload build

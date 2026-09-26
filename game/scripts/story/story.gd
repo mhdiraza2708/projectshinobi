@@ -21,7 +21,7 @@ const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_
 const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
 const CHAPTER_REQUIRED: PackedStringArray = ["id", "number", "title", "location", "time", "beats"]
 const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at"]
-const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "style"]
+const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "style"]
 const NUMERALS: PackedStringArray = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 ## The player speaks as "player".
 const PLAYER := "player"
@@ -149,11 +149,14 @@ func _parse_character(id: String, data: Variant) -> void:
 	var element := Element.from_name(str(data["element"]))
 	if element < 0:
 		errors.append("%s: unknown element '%s'" % [label, data["element"]])
+	if data.has("model") and CharacterModel.resolve_roster(str(data["model"])) == "":
+		errors.append("%s: no roster character '%s' in %s" % [label, data["model"], CharacterModel.ROSTER_DIR])
 	characters[id] = {
 		"name": str(data["name"]),
 		"title": str(data.get("title", "")),
 		"kanji": str(data["kanji"]),
 		"element": maxi(element, 0),
+		"model": str(data.get("model", "")),
 		"style": _parse_style(label, data.get("style", {})),
 	}
 
@@ -179,6 +182,9 @@ func _parse_style(label: String, raw: Variant) -> Dictionary:
 			continue
 		if not Profile.DEFAULTS.has(StringName(key)) or key in ["model", "name", "affinity"]:
 			errors.append("%s: unknown style key '%s'" % [label, key])
+			continue
+		if key in ["hair_from", "outfit_from"] and CharacterModel.resolve_roster(str(value)) == "":
+			errors.append("%s: no roster character '%s' for %s" % [label, value, key])
 			continue
 		var want: Variant = Profile.DEFAULTS[StringName(key)]
 		if want is Color:

@@ -15,6 +15,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+Packs="*res://autoload/packs.gd"
 Settings="*res://autoload/settings.gd"
 InputDevice="*res://autoload/input_device.gd"
 JutsuRegistry="*res://autoload/jutsu_registry.gd"

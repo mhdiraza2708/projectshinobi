@@ -1,8 +1,36 @@
 # Characters: VRoid Studio → game
 
-The game loads the player character from a **VRM** file, the format
-[VRoid Studio](https://vroid.com/en/studio) exports. Until you add one, a
-placeholder (Godette, CC-BY) is used.
+Characters are **VRM** files, the format
+[VRoid Studio](https://vroid.com/en/studio) exports. The game ships nine
+VRoid Studio sample characters that pixiv released under **CC0** (Shino,
+Shibu, Darkness Shibu, Fumiriya, Victoria, Vita, Vivi, Kai and Nene), plus
+the low-poly Godette as a light fallback. The default is Kai.
+
+## Wardrobe: mix and match
+
+Customize → **Look** has three pickers:
+
+- **Face & body**: which character you are (face, head, skeleton).
+- **Hair**: any character's hair, or your own.
+- **Outfit**: any character's clothes (and the body under them), or your own.
+
+These are the characters' real VRoid meshes, not stand-ins. The wardrobe
+copies the chosen parts with their skin weights, rebinds them to your
+skeleton by bone name, and carries over the hair and skirt joints and their
+spring bones, so borrowed hair still sways. Recolour each part on the
+**Colours** tab (hair, eyes, skin, outfit, lower, shoes). New players get a
+dark shinobi dye on their outfit; pick white for the original colours.
+
+Limits: parts come from characters of different builds, so a borrowed
+outfit can be slightly loose or tight on another body. Only characters that
+keep hair and clothes on separate materials can swap (every VRoid export
+does; Godette doesn't). Any VRoid character you add to the roster joins the
+wardrobe automatically.
+
+Bundled models were shrunk to 1024 px textures with
+`art/characters/prepare_vrm.py` (about half the file size, no visible
+difference at game distance). Do the same for your own exports if size
+matters: `python art/characters/prepare_vrm.py in.vrm out.vrm`.
 
 Nothing in the character is hard-coded. At load time the game:
 

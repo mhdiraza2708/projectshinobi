@@ -217,16 +217,31 @@ func _select_tab(i: int) -> void:
 
 func _build_look() -> Control:
 	var list := _list()
-	list.add_child(_section("Character"))
-	var roster := VBoxContainer.new()
+	list.add_child(_section("Face & body"))
 	var current := player.model.loaded_path
-	for entry in CharacterModel.roster():
-		var path: String = entry["path"]
-		roster.add_child(_choice(entry["name"], path == current, func() -> void:
+	var roster := CharacterModel.roster()
+	list.add_child(_pick_grid(roster.map(func(e: Dictionary) -> Array: return [e["name"], e["path"]]), current,
+		func(path: String) -> void:
 			Profile.set_value(&"model", path)
 			_rebuild_tabs()))
-	list.add_child(roster)
-	list.add_child(_hint("Add more characters by exporting them from VRoid Studio into assets/characters/roster/."))
+
+	# Hair and outfit from any other VRoid-built character.
+	var parts := roster.filter(func(e: Dictionary) -> bool: return e["path"] != CharacterModel.PLACEHOLDER_MODEL)
+	var options: Array = [["Own", ""]]
+	options.append_array(parts.map(func(e: Dictionary) -> Array: return [e["name"], e["path"]]))
+	if player.model.swappable:
+		list.add_child(_section("Hair"))
+		list.add_child(_pick_grid(options, Profile.get_value(&"hair_from"), func(path: String) -> void:
+			Profile.set_value(&"hair_from", path)
+			_rebuild_tabs()))
+		list.add_child(_section("Outfit"))
+		list.add_child(_pick_grid(options, Profile.get_value(&"outfit_from"), func(path: String) -> void:
+			Profile.set_value(&"outfit_from", path)
+			_rebuild_tabs()))
+		list.add_child(_hint("Hair and outfits are the real VRoid parts of each character, fitted to yours. Recolour them on the Colours tab."))
+	else:
+		list.add_child(_hint("This character's hair and clothes are one piece, so they can't be swapped. Pick a VRoid character to mix and match."))
+	list.add_child(_hint("Add your own characters by exporting them from VRoid Studio into assets/characters/roster/."))
 
 	list.add_child(_section("Height"))
 	list.add_child(_slider(&"height", 0.9, 1.1, 0.01, "%.0f%%", 100.0))
@@ -413,6 +428,21 @@ func _choices(options: Array, key: StringName) -> HBoxContainer:
 				(c as Button).remove_theme_stylebox_override(&"normal")
 			(row.get_child(options.find(opt)) as Button).add_theme_stylebox_override(&"normal", _selected_box())))
 	return row
+
+
+## A grid of mutually exclusive choices [[label, value]]; `on_pick(value)`.
+func _pick_grid(options: Array, current: Variant, on_pick: Callable) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override(&"h_separation", 6)
+	grid.add_theme_constant_override(&"v_separation", 6)
+	for opt: Array in options:
+		var value: Variant = opt[1]
+		var b := _choice(opt[0], value == current, func() -> void: on_pick.call(value))
+		b.custom_minimum_size.x = 220
+		b.clip_text = true
+		grid.add_child(b)
+	return grid
 
 
 func _swatches(current: Color, on_pick: Callable, allow_original := true) -> GridContainer:

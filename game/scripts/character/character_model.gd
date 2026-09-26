@@ -12,8 +12,11 @@ extends Node3D
 signal model_loaded
 
 const USER_MODEL := "res://assets/characters/player.vrm"
-const DEFAULT_MODEL := "res://assets/characters/default/godette.vrm"
 const ROSTER_DIR := "res://assets/characters/roster"
+## Used when nothing else is chosen: a CC0 VRoid Studio sample character.
+const DEFAULT_MODEL := "res://assets/characters/roster/hairsample_male.vrm"
+## The low-poly Godette (CC-BY), kept as a light fallback.
+const PLACEHOLDER_MODEL := "res://assets/characters/default/godette.vrm"
 
 ## Force a specific model (used by tests); empty = follow the profile.
 @export_file("*.vrm", "*.glb", "*.gltf", "*.fbx", "*.tscn") var model_path := ""
@@ -39,6 +42,8 @@ var expressions: AnimationPlayer
 var styler := CharacterStyler.new()
 var gear := CharacterGear.new()
 var loaded_path := ""
+## Whether this model's hair and outfit can be swapped (VRoid-style parts).
+var swappable := false
 
 var _base_scale := Vector3.ONE
 
@@ -56,9 +61,37 @@ func resolve_path() -> String:
 		var chosen: String = Profile.get_value(&"model")
 		if chosen != "" and ResourceLoader.exists(chosen):
 			return chosen
+	return resolve_path_default()
+
+
+## The character used when the profile names none.
+static func resolve_path_default() -> String:
 	if ResourceLoader.exists(USER_MODEL):
 		return USER_MODEL
-	return DEFAULT_MODEL
+	return DEFAULT_MODEL if ResourceLoader.exists(DEFAULT_MODEL) else PLACEHOLDER_MODEL
+
+
+## A roster entry by file name ("vivi") or path, or "" if there's none.
+static func resolve_roster(value: String) -> String:
+	if value == "":
+		return ""
+	if value.begins_with("res://"):
+		return value if ResourceLoader.exists(value) else ""
+	var path := ROSTER_DIR.path_join(value + ".vrm")
+	return path if ResourceLoader.exists(path) else ""
+
+
+## Friendlier names for the bundled CC0 VRoid Studio samples.
+const DISPLAY_NAMES := {
+	"hairsample_male": "Kai", "hairsample_female": "Nene",
+	"sendagaya_shino": "Shino", "sendagaya_shibu": "Shibu", "darkness_shibu": "Darkness Shibu",
+	"sakurada_fumiriya": "Fumiriya", "victoria_rubin": "Victoria", "vita": "Vita", "vivi": "Vivi",
+}
+
+
+static func display_name(path: String) -> String:
+	var stem := path.get_file().get_basename()
+	return DISPLAY_NAMES.get(stem, stem.capitalize())
 
 
 ## Every selectable character: [{path, name}].
@@ -71,8 +104,8 @@ static func roster() -> Array[Dictionary]:
 		files.sort()
 		for file: String in files:
 			if file.get_extension().to_lower() in ["vrm", "glb"]:
-				out.append({"path": ROSTER_DIR.path_join(file), "name": file.get_basename().capitalize()})
-	out.append({"path": DEFAULT_MODEL, "name": "Godette (placeholder)"})
+				out.append({"path": ROSTER_DIR.path_join(file), "name": display_name(file)})
+	out.append({"path": PLACEHOLDER_MODEL, "name": "Godette (low-poly)"})
 	return out
 
 
@@ -98,6 +131,9 @@ func load_model(path: String) -> void:
 		return
 	skeleton = skeletons[0]
 	expressions = instance.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	var look := current_look()
+	swappable = CharacterWardrobe.is_swappable(instance)
+	CharacterWardrobe.apply(instance, skeleton, resolve_roster(look[&"hair_from"]), resolve_roster(look[&"outfit_from"]))
 
 	poser = HumanoidPoser.new()
 	poser.name = "HumanoidPoser"
@@ -129,14 +165,21 @@ const GEAR_KEYS: PackedStringArray = ["headband", "headband_color", "mask", "mas
 var style: Dictionary = {}
 
 
+## The look to wear: the Profile's, or `style` (over Profile defaults) when
+## use_profile is off.
+func current_look() -> Dictionary:
+	var look := {}
+	for key: StringName in Profile.DEFAULTS:
+		look[key] = Profile.get_value(key) if use_profile else style.get(String(key), Profile.DEFAULTS[key])
+	return look
+
+
 ## Applies colours, gear, height and expression from the Profile, or from
 ## `style` when use_profile is off.
 func apply_profile() -> void:
 	if instance == null:
 		return
-	var look := {}
-	for key: StringName in Profile.DEFAULTS:
-		look[key] = Profile.get_value(key) if use_profile else style.get(String(key), Profile.DEFAULTS[key])
+	var look := current_look()
 	for slot in styler.available_slots():
 		var tints: Dictionary = look[&"tints"]
 		styler.apply_tint(slot, tints.get(slot, Color.WHITE))
@@ -156,6 +199,9 @@ func apply_style(new_style: Dictionary) -> void:
 
 
 func _on_profile_changed(key: StringName) -> void:
+	if key in [&"hair_from", &"outfit_from"]:
+		load_model(resolve_path())
+		return
 	if key == &"model" or key == &"":
 		var path := resolve_path()
 		if path != loaded_path:

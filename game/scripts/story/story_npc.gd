@@ -5,6 +5,8 @@ extends Node3D
 ## (the body flicker every shinobi learns), so no walking is needed.
 
 var who := ""
+## Roster character (file name) to use; empty picks one from the roster.
+var model_name := ""
 var display_name := ""
 var element := Element.NONE
 var style: Dictionary = {}
@@ -19,7 +21,8 @@ func _ready() -> void:
 	model = CharacterModel.new()
 	model.name = "Model"
 	model.use_profile = false
-	model.model_path = EnemyShinobi.pick_model(who)
+	var chosen := CharacterModel.resolve_roster(model_name)
+	model.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(who)
 	model.style = style
 	add_child(model)
 	_tag = Label3D.new()

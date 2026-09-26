@@ -1,14 +1,18 @@
 PROJECT SHINOBI - how to play
 =============================
 
-Run ProjectShinobi.exe. There's nothing to install. Windows may warn
-because the exe isn't code-signed: click "More info" then "Run anyway".
+Put ProjectShinobi.exe and the characters_1/2/3.pck files in the SAME
+folder, then run ProjectShinobi.exe. There's nothing to install. Windows may
+warn because the exe isn't code-signed: click "More info" then "Run anyway".
+(Without the .pck files the game still runs, with only the low-poly
+placeholder character.)
 
 The game opens on the title screen:
   Story                     - Part One: The Stolen Scroll, five chapters.
   Trial of the Five Natures - five waves of enemy shinobi, one nature each.
   Training Ground           - dummies that don't hit back, for practice.
-  Customize                 - your look, gear, name and chakra nature.
+  Customize                 - face, hair and outfit from 9 VRoid characters,
+                              colours, ninja gear, name and chakra nature.
 
 Keyboard + mouse and controller both work, and you can switch mid-game.
 Controller buttons are named Xbox-style below. PlayStation and Nintendo

@@ -175,6 +175,8 @@ static func style_for(nature: int, rank_id: StringName) -> Dictionary:
 		"back": "ninjato" if rank_id == &"jonin" else "none",
 		"pouch": true,
 		"expression": "angry",
+		# Every clone wears the same hooded shinobi outfit, dyed by nature.
+		"outfit_from": "hairsample_male",
 	}
 
 
@@ -194,13 +196,15 @@ static func jutsu_for(nature: int, max_cost: float) -> Array[JutsuDefinition]:
 ## With `key` (a story character id) the pick is always the same one.
 static func pick_model(key := "") -> String:
 	var mine: String = Profile.get_value(&"model")
+	if mine == "":
+		mine = CharacterModel.DEFAULT_MODEL
 	var options: Array[String] = []
 	for entry in CharacterModel.roster():
 		var path: String = entry["path"]
-		if path != CharacterModel.USER_MODEL and path != mine and path != CharacterModel.DEFAULT_MODEL:
+		if path != CharacterModel.USER_MODEL and path != mine and path != CharacterModel.PLACEHOLDER_MODEL:
 			options.append(path)
 	if options.is_empty():
-		return CharacterModel.DEFAULT_MODEL
+		return CharacterModel.PLACEHOLDER_MODEL
 	if key != "":
 		return options[absi(hash(key)) % options.size()]
 	return options.pick_random()

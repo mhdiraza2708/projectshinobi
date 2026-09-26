@@ -20,7 +20,11 @@ const DEFAULTS := {
 	&"affinity": Element.FIRE,
 	&"height": 1.0,
 	&"expression": "neutral",
-	&"tints": {},
+	# A dark shinobi dye over whatever outfit is worn. White = original colours.
+	&"tints": {"outfit": Color("2f3444"), "lower": Color("26262c"), "shoes": Color("2e2a28")},
+	# Wardrobe: wear another roster character's hair / outfit ("" = own).
+	&"hair_from": "",
+	&"outfit_from": "",
 	&"headband": "cloth",
 	&"headband_color": Color("b8321f"),
 	&"mask": false,

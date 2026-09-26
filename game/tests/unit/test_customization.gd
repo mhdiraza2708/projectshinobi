@@ -12,9 +12,9 @@ func after_each() -> void:
 	Profile.save_path = Profile.SAVE_PATH
 
 
-func _model() -> CharacterModel:
+func _model(path := CharacterModel.DEFAULT_MODEL) -> CharacterModel:
 	model = CharacterModel.new()
-	model.model_path = CharacterModel.DEFAULT_MODEL
+	model.model_path = path
 	root.add_child(model)
 	return model
 
@@ -47,12 +47,12 @@ func test_material_names_map_to_colour_slots() -> void:
 
 
 func test_unrecognised_models_get_one_body_slot() -> void:
-	_model()
+	_model(CharacterModel.PLACEHOLDER_MODEL)
 	assert_eq(model.styler.available_slots(), PackedStringArray(["body"]), "Godette's Face/Body materials")
 
 
 func test_tint_recolours_this_character_only() -> void:
-	_model()
+	_model(CharacterModel.PLACEHOLDER_MODEL)
 	var entry: Dictionary = model.styler.slots["body"][0]
 	var original: Color = entry["lit"]
 	Profile.set_tint("body", Color(0.5, 0.25, 1.0))
@@ -62,7 +62,7 @@ func test_tint_recolours_this_character_only() -> void:
 	assert_near(now.g, original.g * 0.25, 0.01)
 	# The imported resource shared by other instances is untouched.
 	var fresh := CharacterModel.new()
-	fresh.model_path = CharacterModel.DEFAULT_MODEL
+	fresh.model_path = CharacterModel.PLACEHOLDER_MODEL
 	fresh.use_profile = false
 	root.add_child(fresh)
 	var fresh_color: Color = (fresh.styler.slots["body"][0]["material"] as ShaderMaterial).get_shader_parameter(&"_Color")

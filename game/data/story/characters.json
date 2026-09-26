@@ -4,8 +4,14 @@
 		"title": "Sensei",
 		"kanji": "雨",
 		"element": "water",
+		"model": "victoria_rubin",
 		"style": {
-			"tints": {"body": "#b3c4dc", "outfit": "#1f3552", "hair": "#d9e0ea"},
+			"tints": {
+				"outfit": "#2c3a5c",
+				"lower": "#232833",
+				"hair": "#e3e8f0",
+				"shoes": "#2a2a30"
+			},
 			"headband": "cloth",
 			"headband_color": "#2f5fb3",
 			"scarf": true,
@@ -14,7 +20,8 @@
 			"mask": false,
 			"pouch": true,
 			"expression": "relaxed",
-			"height": 1.05
+			"height": 1.05,
+			"outfit_from": "hairsample_male"
 		}
 	},
 	"asahi": {
@@ -22,8 +29,13 @@
 		"title": "Rival",
 		"kanji": "朝",
 		"element": "lightning",
+		"model": "sakurada_fumiriya",
 		"style": {
-			"tints": {"body": "#f2e3b6", "outfit": "#3a3226", "hair": "#f2c94c"},
+			"tints": {
+				"hair": "#f2c94c",
+				"outfit": "#3a3226",
+				"lower": "#2b2b31"
+			},
 			"headband": "hachigane",
 			"headband_color": "#c9a45c",
 			"scarf": true,
@@ -32,7 +44,8 @@
 			"mask": false,
 			"pouch": true,
 			"expression": "happy",
-			"height": 1.0
+			"height": 1.0,
+			"hair_from": "vita"
 		}
 	},
 	"iwao": {
@@ -40,8 +53,13 @@
 		"title": "Rogue",
 		"kanji": "巌",
 		"element": "earth",
+		"model": "hairsample_male",
 		"style": {
-			"tints": {"body": "#a8927a", "outfit": "#4a3b2a", "hair": "#3b3228"},
+			"tints": {
+				"outfit": "#5a4631",
+				"lower": "#3a3026",
+				"hair": "#3b3228"
+			},
 			"headband": "hachigane",
 			"headband_color": "#6b5433",
 			"mask": true,
@@ -58,8 +76,14 @@
 		"title": "Rogue",
 		"kanji": "陽",
 		"element": "fire",
+		"model": "sendagaya_shibu",
 		"style": {
-			"tints": {"body": "#8c7474", "outfit": "#1b1a1f", "hair": "#3a1d1d"},
+			"tints": {
+				"outfit": "#1d1b20",
+				"lower": "#18171b",
+				"hair": "#b53a2e",
+				"shoes": "#1b1a1f"
+			},
 			"headband": "hachigane",
 			"headband_color": "#7a1e12",
 			"mask": true,
@@ -69,7 +93,9 @@
 			"back": "ninjato",
 			"pouch": false,
 			"expression": "angry",
-			"height": 1.08
+			"height": 1.08,
+			"hair_from": "darkness_shibu",
+			"outfit_from": "sakurada_fumiriya"
 		}
 	}
 }
