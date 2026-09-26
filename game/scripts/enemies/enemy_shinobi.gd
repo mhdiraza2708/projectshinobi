@@ -11,6 +11,8 @@ extends CharacterBody3D
 signal defeated(enemy: EnemyShinobi)
 ## A story boss crossed one of its `phases` health thresholds.
 signal phase_reached(phase: Dictionary)
+## A hit from `by` broke this fighter's weave.
+signal interrupted(by: Node)
 
 enum State { SPAWNING, FIGHT, WEAVING, WINDUP, GUARDING, DODGING, STAGGERED, DEFEATED }
 
@@ -61,8 +63,17 @@ var style_override: Dictionary = {}
 var phases: Array = []
 ## Who to fight (normally the player).
 var target: Node3D
-## Combat team (see Combat.same_team); also this node's group.
+## Combat team (see Combat.same_team); also this node's group. &"player"
+## makes an ally that fights the player's enemies.
 var team := &"enemies"
+## Re-pick the nearest opponent from time to time (off after stand_down()).
+var hunt := true
+## Practice clone: only weaves (slowly, weakly) so it can be interrupted.
+var drill := false
+## Body scale for oversized bosses.
+var size := 1.0
+## A glowing aura in this colour (alpha 0 = none), for possessed bosses.
+var aura_color := Color(0, 0, 0, 0)
 var state := State.SPAWNING
 
 var stats: Stats
@@ -94,18 +105,25 @@ var _next_phase := 0
 
 
 func _ready() -> void:
-	_r = RANKS.get(rank, RANKS[&"genin"])
-	add_to_group(&"lockable")
+	_r = RANKS.get(rank, RANKS[&"genin"]).duplicate()
+	if drill:
+		_r["seal_time"] = 0.6
+		_r["power"] = 0.25
+		_r["jutsu_cd"] = Vector2(1.2, 2.0)
+		_r["dodge"] = 0.0
+		_r["guard"] = 0.0
+	if not is_ally():
+		add_to_group(&"lockable")
 	add_to_group(team)
 	collision_layer = Combat.LAYER_TARGETS
 	collision_mask = Combat.BODY_MASK | Combat.LAYER_PLAYER
 
 	var shape := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.35
-	capsule.height = 1.75
+	capsule.radius = 0.35 * size
+	capsule.height = 1.75 * size
 	shape.shape = capsule
-	shape.position.y = 0.875
+	shape.position.y = 0.875 * size
 	add_child(shape)
 
 	stats = Stats.new()
@@ -122,8 +140,14 @@ func _ready() -> void:
 	model.name = "Model"
 	model.use_profile = false
 	model.model_path = model_path if model_path != "" else pick_model()
-	model.style = style_override if not style_override.is_empty() else style_for(element, rank)
+	model.style = (style_override if not style_override.is_empty() else style_for(element, rank)).duplicate()
+	model.style["height"] = float(model.style.get("height", 1.0)) * size
 	add_child(model)
+	if aura_color.a > 0.0:
+		var aura := Vfx.sphere(0.9 * size, Vfx.glow_material(aura_color, 1.6, aura_color.a))
+		aura.position.y = 0.95 * size
+		aura.scale = Vector3(0.8, 1.15, 0.8)
+		add_child(aura)
 
 	caster = JutsuCaster.new()
 	caster.name = "Caster"
@@ -210,6 +234,34 @@ static func pick_model(key := "") -> String:
 	return options.pick_random()
 
 
+func is_ally() -> bool:
+	return team == &"player"
+
+
+## Stops fighting for good (a trial or fight ended).
+func stand_down() -> void:
+	hunt = false
+	target = null
+
+
+## The nearest opponent still standing; the player counts as a little
+## nearer, so enemies favour them over allies.
+func pick_target() -> Node3D:
+	var foes := &"enemies" if is_ally() else &"player"
+	var best: Node3D = null
+	var best_d := INF
+	for node in get_tree().get_nodes_in_group(foes):
+		var n := node as Node3D
+		if n == null or n == self or (n.has_method("is_down") and n.is_down()) \
+				or (n.has_method("is_defeated") and n.is_defeated()):
+			continue
+		var d := global_position.distance_to(n.global_position) * (0.75 if n is Player else 1.0)
+		if d < best_d:
+			best_d = d
+			best = n
+	return best
+
+
 func display_name() -> String:
 	if title_override != "":
 		return "%s %s" % [Element.kanji(element), title_override]
@@ -235,6 +287,17 @@ func set_element(nature: int) -> void:
 
 func is_defeated() -> bool:
 	return state == State.DEFEATED
+
+
+## Leaves in a puff of smoke without counting as defeated (an ally
+## stepping out of the story).
+func leave() -> void:
+	state = State.DEFEATED
+	remove_from_group(&"lockable")
+	remove_from_group(team)
+	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(0.9, 0.9, 0.92), 1.4, 0.45)
+	Sfx.play_at(&"smoke", global_position + Vector3.UP, -3.0)
+	queue_free()
 
 
 ## Vanishes at once, whatever state it is in (a boss's clones when it falls).
@@ -299,10 +362,14 @@ func _enter(new_state: State) -> void:
 func _target_ok() -> bool:
 	if not is_instance_valid(target) or not target.is_inside_tree():
 		return false
+	if target.has_method("is_defeated") and target.is_defeated():
+		return false
 	return not (target.has_method("is_down") and target.is_down())
 
 
 func _fight(delta: float) -> void:
+	if not _target_ok() and hunt:
+		target = pick_target()
 	if not _target_ok():
 		_decelerate(delta)
 		return
@@ -330,7 +397,7 @@ func _fight(delta: float) -> void:
 	var speed: float = _r["run"] * (1.15 if _rush > 0.0 else 1.0)
 	_move(dir.limit_length(1.0) * speed, delta)
 
-	if dist < 2.2 and _melee_cd <= 0.0:
+	if dist < 2.2 and _melee_cd <= 0.0 and not drill:
 		_start_windup()
 		return
 	_think -= delta
@@ -338,8 +405,17 @@ func _fight(delta: float) -> void:
 		return
 	var span: Vector2 = _r["think"]
 	_think = randf_range(span.x, span.y)
+	if hunt and randf() < 0.35:
+		var better := pick_target()
+		if better:
+			target = better
+			return
 	if randf() < 0.3:
 		_strafe_sign = -_strafe_sign
+	if drill:
+		if _jutsu_cd <= 0.0 and not jutsu_list.is_empty():
+			_start_weave(jutsu_list[0])
+		return
 	if _jutsu_cd <= 0.0:
 		var j := _pick_jutsu(dist)
 		if j:
@@ -498,6 +574,7 @@ func take_hit(amount: float, hit_element: int, source: Node) -> float:
 	var interrupt: float = _r["interrupt"]
 	if state == State.WEAVING and dealt >= interrupt:
 		_interrupted()
+		interrupted.emit(source)
 	elif dealt >= interrupt * 2.5 or (state == State.WINDUP and dealt >= interrupt * 1.5):
 		_stagger()
 	elif state == State.FIGHT and source is Player and randf() < float(_r["guard"]):
@@ -589,7 +666,7 @@ func _build_overhead() -> void:
 	add_child(_ring)
 
 	_name_label = _label3d(display_name(), 30, c.lightened(0.35))
-	_name_label.position.y = 2.35
+	_name_label.position.y = 2.35 * size
 	add_child(_name_label)
 
 	_bar_image = Image.create(BAR_SIZE.x, BAR_SIZE.y, false, Image.FORMAT_RGBA8)
@@ -598,13 +675,13 @@ func _build_overhead() -> void:
 	_bar.no_depth_test = true
 	_bar.pixel_size = 0.009
 	_bar.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	_bar.position.y = 2.05
+	_bar.position.y = 2.05 * size
 	_bar.texture = ImageTexture.create_from_image(_bar_image)
 	add_child(_bar)
 	_draw_bar()
 
 	_seal_label = _label3d("", 64, c)
-	_seal_label.position.y = 2.85
+	_seal_label.position.y = 2.85 * size
 	add_child(_seal_label)
 
 
@@ -630,7 +707,8 @@ func _draw_bar() -> void:
 	_bar_image.fill(Color(UiKit.INK, 0.85))
 	_bar_image.fill_rect(Rect2i(2, 2, BAR_SIZE.x - 4, BAR_SIZE.y - 4), Color(0.25, 0.08, 0.06, 0.9))
 	if fill > 0:
-		_bar_image.fill_rect(Rect2i(2, 2, fill, BAR_SIZE.y - 4), UiKit.HEALTH.lightened(0.15))
+		_bar_image.fill_rect(Rect2i(2, 2, fill, BAR_SIZE.y - 4),
+			Color("5fbf6a") if is_ally() else UiKit.HEALTH.lightened(0.15))
 	(_bar.texture as ImageTexture).update(_bar_image)
 
 

@@ -15,7 +15,17 @@ Part One, *The Stolen Scroll*, has five chapters:
 | 四 | The Ashen Pass | night | Ambush at the abandoned shrine. Boss: Iwao (earth), who summons stone clones. |
 | 五 | Kagerou | night | Final boss. Kagerou changes nature at 80/60/40/20% health, so answer each one with the nature that beats it. |
 
-All story content is original. Keep it that way: see the IP section in
+Part Two, *The Last Seal*:
+
+| # | Chapter | Time / weather | What happens |
+|---|---|---|---|
+| 六 | Rain Lessons | day, rain | Interrupt drill: break a practice clone's weave three times. Tsumugi (wind hunter) arrives and duels you. |
+| 七 | The Autumn Wood | dusk, leaves | Fight clone waves beside Asahi. Plans for Iwao's dam. |
+| 八 | The Old Dam | night, storm | Survive 45 s beside Tsumugi while Hisame breaks the barrier, then Iwao (earth, then water). |
+| 九 | Kagerou's Reason | dusk, snow | Kagerou's story, and a duel on his terms. |
+| 十 | Nue | night, storm | A possessed, oversized Kagerou cycles all five natures while your allies hold the clones. Seal it with the Five-Nature Seal (Rat, Tiger, Dragon, Snake, Boar). |
+
+The Nue is a spirit from Japanese folklore (public domain). All story content is original. Keep it that way: see the IP section in
 [DESIGN.md](DESIGN.md).
 
 ## Characters: `characters.json`
@@ -64,6 +74,10 @@ All story content is original. Keep it that way: see the IP section in
 - `number`: chapters play in order 1, 2, 3… and each unlocks when the one
   before it is cleared.
 - `time`: `dawn`, `day`, `dusk` or `night` (night lights the lanterns).
+- `weather`: `none`, `rain`, `storm` (rain with lightning and thunder),
+  `snow` or `leaves`.
+- `part`: which part of the story the chapter belongs to (headers in the
+  chapter list).
 - `dummies`: keep the training dummies (default false).
 - Positions are `[x, z]` in metres. The arena is roughly 30 m across, centred
   on `[0, 0]`. The torii gate is at `[0, -24]`.
@@ -75,9 +89,11 @@ All story content is original. Keep it that way: see the IP section in
 | `enter` | `who`, `at` | The character appears in a puff of smoke and faces you. |
 | `exit` | `who` | They leave in a puff of smoke. |
 | `say` | `lines` | Dialogue. Each line is `[who, text]` or `[who, text, mood]`. The mood is one of neutral, angry, happy, relaxed or sad. Speakers must be on stage (or `player`). |
-| `task` | `text`, `goal`, optional `count`, `jutsu` | A tutorial objective. The goal is one of `kunai_hit`, `strike_hit`, `jutsu_hit`, `weak_hit`, `cast` (optionally a specific `jutsu`), `guard`, `dash`, `charge` or `lock_on`. |
+| `task` | `text`, `goal`, optional `count`, `jutsu`, `enemies` | A tutorial objective. The goal is one of `kunai_hit`, `strike_hit`, `jutsu_hit`, `weak_hit`, `cast` (optionally a specific `jutsu`), `guard`, `dash`, `charge`, `lock_on` or `interrupt`. `enemies` adds practice clones that only weave, slowly, so you can interrupt them; they come back if they fall. |
 | `fight` | `waves`, optional `text` | Waves of clones: `[{"element": "wind", "enemies": ["genin", "chunin"]}]`. |
-| `boss` | `who`, `rank`, `health`, optional `element`, `taunt`, `at`, `phases` | A named boss fight with a health bar. If the character is on stage, they step into the fight from where they stand. |
+| `boss` | `who`, `rank`, `health`, optional `element`, `taunt`, `at`, `phases`, `size` (1.35 = oversized), `aura` (colour) | A named boss fight with a health bar. If the character is on stage, they step into the fight from where they stand. |
+| `ally` | `who`, `rank`, optional `health`, `at` | The character fights beside you, hunting the nearest enemy, until an `exit` (or until you talk to them again). If they're beaten they retreat; a retried fight brings them back. |
+| `survive` | `seconds`, `enemies` (`[[rank, element], ...]`), optional `max_alive`, `text` | Hold out: enemies keep arriving (up to `max_alive` at once) until the timer runs out. |
 | `wait` | `seconds` | A pause with control. |
 | `banner` | `text` | A big banner (for example "End of Part One"). |
 

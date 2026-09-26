@@ -131,7 +131,7 @@ func _finish(won: bool) -> void:
 	running = false
 	for e in alive:
 		if is_instance_valid(e):
-			e.target = null
+			e.stand_down()
 	var record := Game.record_time(record_id, elapsed) if won and record_id != "" else false
 	Sfx.play(&"victory" if won else &"defeat")
 	finished.emit(won, elapsed, record)

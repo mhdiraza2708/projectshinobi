@@ -11,20 +11,24 @@ const BEATS := {
 	"enter": [["who", "at"], []],
 	"exit": [["who"], []],
 	"say": [["lines"], []],
-	"task": [["text", "goal"], ["count", "jutsu"]],
+	"task": [["text", "goal"], ["count", "jutsu", "enemies"]],
 	"fight": [["waves"], ["text"]],
-	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases"]],
+	"survive": [["seconds", "enemies"], ["text", "max_alive"]],
+	"ally": [["who", "rank"], ["health", "at"]],
+	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "size", "aura"]],
 	"wait": [["seconds"], []],
 	"banner": [["text"], []],
 }
-const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_hit", "cast", "guard", "dash", "charge", "lock_on"]
+const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_hit", "cast", "guard", "dash", "charge", "lock_on", "interrupt"]
 const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
+const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
 const CHAPTER_REQUIRED: PackedStringArray = ["id", "number", "title", "location", "time", "beats"]
-const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at"]
+const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part"]
 const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "style"]
 const NUMERALS: PackedStringArray = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 ## The player speaks as "player".
 const PLAYER := "player"
+const PART_TITLES := {1: "The Stolen Scroll", 2: "The Last Seal"}
 
 ## id -> {name, title, kanji, element: int, style: Dictionary}
 var characters: Dictionary = {}
@@ -218,11 +222,15 @@ func _parse_chapter(file: String, data: Dictionary) -> Dictionary:
 		"time": str(data["time"]),
 		"summary": str(data.get("summary", "")),
 		"dummies": bool(data.get("dummies", false)),
+		"weather": str(data.get("weather", "none")),
+		"part": int(data.get("part", 1)),
 		"player_at": _vec2(file, data.get("player_at", [0, 4])),
 		"beats": [],
 	}
 	if not TIMES.has(c["time"]):
 		errors.append("%s: time must be one of %s" % [file, TIMES])
+	if not WEATHERS.has(c["weather"]):
+		errors.append("%s: weather must be one of %s" % [file, WEATHERS])
 	if not data["beats"] is Array or data["beats"].is_empty():
 		errors.append("%s: beats must be a non-empty list" % file)
 		return {}
@@ -284,6 +292,7 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 			b["goal"] = str(raw["goal"])
 			b["count"] = int(raw.get("count", 1))
 			b["jutsu"] = StringName(str(raw.get("jutsu", "")))
+			b["enemies"] = _pairs(label, raw.get("enemies", []))
 			if not GOALS.has(b["goal"]):
 				errors.append("%s: unknown goal '%s' (one of %s)" % [label, b["goal"], GOALS])
 			if b["jutsu"] != &"" and JutsuRegistry.get_jutsu(b["jutsu"]) == null:
@@ -299,7 +308,25 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 						errors.append("%s: each wave is {element, enemies}" % label)
 						continue
 					b["waves"].append({"element": _element(label, w["element"]), "enemies": _ranks(label, w["enemies"])})
+		"survive":
+			b["seconds"] = float(raw["seconds"])
+			b["enemies"] = _pairs(label, raw["enemies"])
+			b["max_alive"] = int(raw.get("max_alive", 3))
+			b["text"] = str(raw.get("text", "Hold out"))
+			if b["enemies"].is_empty():
+				errors.append("%s: survive needs enemies [[rank, element], ...]" % label)
+		"ally":
+			b["who"] = _who(label, raw["who"], false)
+			var ally_rank := _ranks(label, [raw["rank"]])
+			b["rank"] = ally_rank[0] if not ally_rank.is_empty() else &"chunin"
+			b["health"] = float(raw.get("health", 0.0))
+			b["at"] = _vec2(label, raw.get("at", [2, 3]))
+			present[b["who"]] = true
 		"boss":
+			b["size"] = float(raw.get("size", 1.0))
+			b["aura"] = Color.html(str(raw["aura"])) if raw.has("aura") and Color.html_is_valid(str(raw["aura"])) else Color(0, 0, 0, 0)
+			if raw.has("aura") and not Color.html_is_valid(str(raw["aura"])):
+				errors.append("%s: aura must be a colour" % label)
 			b["who"] = _who(label, raw["who"], false)
 			# A character on stage steps into the fight; enter them again after.
 			present.erase(b["who"])
@@ -336,6 +363,21 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 		"banner":
 			b["text"] = str(raw["text"])
 	return b
+
+
+## [[rank, element], ...] -> [[StringName rank, int element], ...]
+func _pairs(label: String, raw: Variant) -> Array:
+	var out: Array = []
+	if not raw is Array:
+		errors.append("%s: expected a list of [rank, element]" % label)
+		return out
+	for p: Variant in raw:
+		if not p is Array or p.size() != 2:
+			errors.append("%s: entries are [rank, element]" % label)
+			continue
+		var rank := _ranks(label, [p[0]])
+		out.append([rank[0] if not rank.is_empty() else &"genin", _element(label, p[1])])
+	return out
 
 
 func _who(label: String, raw: Variant, allow_player: bool) -> String:

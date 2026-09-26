@@ -1,0 +1,53 @@
+{
+	"id": "ch8_dam",
+	"number": 8,
+	"part": 2,
+	"title": "The Old Dam",
+	"location": "The Old Dam, Ashen Valley",
+	"time": "night",
+	"weather": "storm",
+	"summary": "Hold the line while Hisame breaks Iwao's barrier, then face him.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "enter", "who": "hisame", "at": [-3, 3]},
+		{"do": "enter", "who": "tsumugi", "at": [3, 3]},
+		{"do": "enter", "who": "iwao", "at": [0, -7]},
+		{"do": "say", "lines": [
+			["iwao", "Emberwood again. You should have stayed home and let the stone settle.", "angry"],
+			["hisame", "Iwao. You were never a bad man. Only a stubborn one."],
+			["iwao", "Kagerou gave me a reason. The academy gave me a door. Guess which one I kept."],
+			["iwao", "The array wakes at the top of the hour. Stop me if you can. Clones, rise!"],
+			["hisame", "His barrier is tied to the array. I need time to cut the seal lines. Hold them off!", "angry"]
+		]},
+		{"do": "exit", "who": "iwao"},
+		{"do": "exit", "who": "hisame"},
+		{"do": "ally", "who": "tsumugi", "rank": "chunin", "health": 240},
+		{"do": "survive", "seconds": 45, "max_alive": 3, "text": "Hold until Hisame breaks the barrier",
+			"enemies": [["genin", "earth"], ["genin", "water"], ["chunin", "earth"]]},
+		{"do": "enter", "who": "hisame", "at": [-3, 3]},
+		{"do": "enter", "who": "iwao", "at": [0, -6]},
+		{"do": "say", "lines": [
+			["hisame", "The barrier's down! Iwao, it's over."],
+			["iwao", "Not while I'm standing. Earth, and now water. Kagerou taught me that much.", "angry"]
+		]},
+		{"do": "exit", "who": "hisame"},
+		{"do": "boss", "who": "iwao", "rank": "jonin", "health": 300,
+			"taunt": "Stone first, then the flood.",
+			"phases": [
+				{"at": 0.6, "element": "water", "say": "Water now. Let's see your circle.", "summon": [["genin", "water"], ["genin", "water"]]},
+				{"at": 0.25, "element": "earth", "say": "Enough! I'll bury you under the dam!"}
+			]},
+		{"do": "enter", "who": "iwao", "at": [0, -5]},
+		{"do": "enter", "who": "hisame", "at": [-3, 3]},
+		{"do": "say", "lines": [
+			["iwao", "...He told me the Nue would make us something the academy couldn't throw away.", "sad"],
+			["hisame", "And what did it make you?"],
+			["iwao", "A man who fought children at a dam.", "sad"],
+			["iwao", "The unsealing is at the Shrine of the Five Winds, at the new moon. Two nights from now. Stop him. I couldn't."],
+			["tsumugi", "He comes with me to the Watch. They'll want to hear all of it."]
+		]},
+		{"do": "exit", "who": "iwao"},
+		{"do": "exit", "who": "tsumugi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

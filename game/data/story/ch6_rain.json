@@ -1,0 +1,49 @@
+{
+	"id": "ch6_rain",
+	"number": 6,
+	"part": 2,
+	"title": "Rain Lessons",
+	"location": "Emberwood Academy yard",
+	"time": "day",
+	"weather": "rain",
+	"summary": "Hisame teaches you to break a weave. A hunter arrives.",
+	"player_at": [0, 4],
+	"beats": [
+		{"do": "enter", "who": "hisame", "at": [-3.5, -0.5]},
+		{"do": "say", "lines": [
+			["hisame", "Three days of rain, and you're still out here. Good.", "relaxed"],
+			["player", "Kagerou's still out there too."],
+			["hisame", "Which is why today's lesson matters. Last time you won by hitting harder. Next time he'll weave faster."],
+			["hisame", "So you'll learn to break a weave. Watch the seals over a clone's head. Before the last one lands, hit it. A kunai is enough for these."]
+		]},
+		{"do": "task", "text": "Break a clone's weave: hit it before its last seal ({throw_tool} throws a kunai)", "goal": "interrupt", "count": 3,
+			"enemies": [["genin", "fire"]]},
+		{"do": "say", "lines": [
+			["hisame", "Better. You stopped watching their hands and started watching their seals.", "happy"]
+		]},
+		{"do": "enter", "who": "tsumugi", "at": [4, -5]},
+		{"do": "say", "lines": [
+			["tsumugi", "Hisame of Emberwood. Your yard is loud."],
+			["hisame", "Tsumugi. The Windward Watch doesn't visit without a reason."],
+			["tsumugi", "I've tracked a man with a stolen seal across three valleys. He came from here."],
+			["player", "Kagerou."],
+			["tsumugi", "So the academy knows his name. Does it know what the last seal holds?"],
+			["hisame", "...A binding. The scroll's makers put something inside it.", "sad"],
+			["tsumugi", "Something with a name. Nue. A spirit stitched together from five beasts, one for each nature. Break the seal and it wakes."],
+			["tsumugi", "I don't work with academies. But I'll work with anyone who can keep up. Show me, {name}."]
+		]},
+		{"do": "boss", "who": "tsumugi", "rank": "chunin", "health": 210,
+			"taunt": "Keep up, or go home.",
+			"phases": [
+				{"at": 0.5, "say": "Wind clone! Let's see you handle two of me.", "summon": [["genin", "wind"]]}
+			]},
+		{"do": "enter", "who": "tsumugi", "at": [2, -4]},
+		{"do": "say", "lines": [
+			["tsumugi", "...You fight like someone who reads the seals. Fine. You'll do.", "relaxed"],
+			["tsumugi", "Kagerou's people were seen in the Autumn Wood, gathering clones. Tomorrow we go through them."],
+			["hisame", "Take Asahi. He'll never forgive either of us otherwise.", "relaxed"]
+		]},
+		{"do": "exit", "who": "tsumugi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

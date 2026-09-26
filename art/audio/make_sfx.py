@@ -463,6 +463,47 @@ def smoke():
     return mix(lp(noise(d, 361), 1800) * env(n, 0.005, 0.3), svf_sweep(noise(d, 362), 3000, 1200, 500, q=1.0) * env(n, 0.005, 0.3) * 0.5)
 
 
+def _seamless(x: np.ndarray, n: int, fade_s: float = 0.3) -> np.ndarray:
+    """Crossfades the tail past n samples into the head so x[:n] loops cleanly."""
+    f = int(fade_s * SR)
+    out = x[:n].copy()
+    ramp = np.linspace(0.0, 1.0, f)
+    out[:f] = x[:f] * ramp + x[n : n + f] * (1 - ramp)
+    return out
+
+
+def rain_loop():
+    """4 s of steady rain: a hiss bed plus scattered drop ticks, seamless."""
+    d = 4.0
+    n = int(d * SR)
+    bed = bp(noise(d + 0.4, 401), 900, 7000) * 0.35 + lp(brown(d + 0.4, 402), 400) * 0.25
+    rng = np.random.default_rng(403)
+    drops = np.zeros(n + int(0.4 * SR))
+    tick = hp(noise(0.012, 404), 3000) * env(int(0.012 * SR), 0.0003, 0.006)
+    for pos in rng.integers(0, n, 260):
+        drops[pos : pos + len(tick)] += tick * rng.uniform(0.15, 0.6)
+    return _seamless(bed + drops, n)
+
+
+def wind_loop():
+    """4 s of gusting wind, seamless: band-passed noise with a slow swell."""
+    d = 4.0
+    n = int(d * SR)
+    t = np.arange(n + int(0.4 * SR)) / SR
+    swell = 0.55 + 0.45 * np.sin(2 * np.pi * 0.25 * t) ** 2
+    x = bp(noise(d + 0.4, 411), 250, 1400) * swell
+    return _seamless(x, n)
+
+
+def thunder():
+    d = 3.2
+    n = int(d * SR)
+    crack = hp(noise(d, 421), 1200) * env(n, 0.002, 0.18) * 0.6
+    rumble = lp(brown(d, 422), 160) * env(n, 0.05, 2.4) * 1.4
+    roll = lp(noise(d, 423), 500) * env(n, 0.3, 1.8) * 0.5
+    return mix(crack, rumble, roll)
+
+
 SOUNDS = {
     "seal_1": lambda: seal(0), "seal_2": lambda: seal(1), "seal_3": lambda: seal(2),
     "weave_start": weave_start, "seal_break": seal_break, "misfire": misfire,
@@ -475,9 +516,10 @@ SOUNDS = {
     "ui_move": ui_move, "ui_select": ui_select, "ui_back": ui_back, "ui_open": ui_open,
     "ui_close": ui_close, "wave_start": wave_start, "victory": victory, "defeat": defeat,
     "enemy_down": enemy_down, "weak_hit": weak_hit, "smoke": smoke,
+    "rain_loop": rain_loop, "wind_loop": wind_loop, "thunder": thunder,
 }
 # Loops must not be faded or DC-shifted at the seam.
-LOOPS = {"charge_loop"}
+LOOPS = {"charge_loop", "rain_loop", "wind_loop"}
 
 
 def main() -> int:

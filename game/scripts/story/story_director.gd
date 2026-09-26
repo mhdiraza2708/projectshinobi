@@ -25,9 +25,20 @@ var task_done := 0
 var fight: TrialDirector
 var boss: EnemyShinobi
 var adds: Array[EnemyShinobi] = []
+## Characters fighting on your side: who -> EnemyShinobi (team player).
+var allies: Dictionary = {}
+## Practice clones kept alive while a task needs them.
+var drills: Array[EnemyShinobi] = []
+## Seconds left in a "survive" beat (0 when none is running).
+var survive_left := 0.0
 
 var _checkpoint := 0
 var _task_hooks_ready := false
+## who -> the ally beat that brought them, so a retry can bring them back.
+var _ally_beats: Dictionary = {}
+var _survive: Dictionary = {}
+var _survive_spawned := 0
+var _survive_timer := 0.0
 
 
 func setup(p: Player, h: Hud, d: DialogueBox, where: Node3D, s: Story) -> void:
@@ -76,7 +87,19 @@ func _next() -> void:
 			if npc:
 				npc.vanish()
 			npcs.erase(b["who"])
+			var ally: EnemyShinobi = allies.get(b["who"])
+			if is_instance_valid(ally):
+				ally.leave()
+			allies.erase(b["who"])
+			_ally_beats.erase(b["who"])
 			_next.call_deferred()
+		"ally":
+			_spawn_ally(b)
+			_next.call_deferred()
+		"survive":
+			_checkpoint = beat_index
+			_begin_play()
+			_start_survive(b)
 		"say":
 			_begin_talk(b)
 			dialogue.play(b["lines"], story)
@@ -86,6 +109,8 @@ func _next() -> void:
 			task_done = 0
 			_show_task()
 			hud.show_banner(Story.format(b["text"]))
+			for pair: Array in b["enemies"]:
+				_spawn_drill(pair)
 		"fight":
 			_checkpoint = beat_index
 			_begin_play()
@@ -109,6 +134,12 @@ func _enter_npc(b: Dictionary) -> void:
 	var who: String = b["who"]
 	if npcs.has(who):
 		npcs[who].queue_free()
+	# An ally stepping back into the conversation stops fighting.
+	var ally: EnemyShinobi = allies.get(who)
+	if is_instance_valid(ally):
+		ally.leave()
+	allies.erase(who)
+	_ally_beats.erase(who)
 	var info: Dictionary = story.characters[who]
 	var npc := StoryNpc.new()
 	npc.name = "Npc_" + who
@@ -176,6 +207,12 @@ func _hook_tasks() -> void:
 		(dummy as TrainingDummy).stats.damaged.connect(func(_a: float, _e: int, m: float) -> void:
 			if m > 1.0:
 				report(&"weak_hit"))
+	# Breaking any enemy's weave counts for "interrupt" tasks.
+	stage.child_entered_tree.connect(func(n: Node) -> void:
+		if n is EnemyShinobi:
+			(n as EnemyShinobi).interrupted.connect(func(by: Node) -> void:
+				if by == player:
+					report(&"interrupt")))
 
 
 func _on_player_state(s: Player.State) -> void:
@@ -199,6 +236,10 @@ func report(goal: StringName, jutsu := &"") -> void:
 		task = {}
 		hud.set_objective("")
 		hud.show_banner("Done!", &"info")
+		for d in drills:
+			if is_instance_valid(d):
+				d.leave()
+		drills.clear()
 		await get_tree().create_timer(0.8, false).timeout
 		_next()
 
@@ -230,6 +271,104 @@ func _start_fight(b: Dictionary) -> void:
 	fight.start(player)
 
 
+## A practice clone for a task; replaced if it falls before the task is done.
+func _spawn_drill(pair: Array) -> void:
+	var e := EnemyShinobi.new()
+	e.rank = pair[0]
+	e.element = pair[1]
+	e.drill = true
+	e.target = player
+	e.position = _spawn_point(drills.size(), 2)
+	e.defeated.connect(func(_x: EnemyShinobi) -> void:
+		drills.erase(e)
+		await get_tree().create_timer(1.0, false).timeout
+		if running and not task.is_empty() and current_beat() == task:
+			_spawn_drill(pair))
+	drills.append(e)
+	stage.add_child(e)
+
+
+## A story character fighting on the player's side until they exit.
+func _spawn_ally(b: Dictionary) -> void:
+	var who: String = b["who"]
+	var info: Dictionary = story.characters[who]
+	var at: Vector2 = b["at"]
+	var pos := Vector3(at.x, 0.2, at.y)
+	var npc: StoryNpc = npcs.get(who)
+	if npc:
+		pos = npc.global_position + Vector3.UP * 0.2
+		npc.vanish()
+		npcs.erase(who)
+	var ally := EnemyShinobi.new()
+	ally.name = "Ally_" + who
+	ally.team = &"player"
+	ally.rank = b["rank"]
+	ally.element = info["element"]
+	ally.title_override = info["name"]
+	ally.health_override = b["health"]
+	ally.style_override = info["style"]
+	var chosen := CharacterModel.resolve_roster(info["model"])
+	ally.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(who)
+	ally.position = pos
+	ally.defeated.connect(func(_x: EnemyShinobi) -> void:
+		allies.erase(who)
+		hud.say(info["name"], "I'm hurt... Finish it without me!", Element.color(info["element"])))
+	stage.add_child(ally)
+	# Allies hit softer than enemies of their rank: the player leads.
+	ally.caster.power_scale *= 0.7
+	allies[who] = ally
+	_ally_beats[who] = b
+
+
+func _start_survive(b: Dictionary) -> void:
+	_survive = b
+	survive_left = b["seconds"]
+	_survive_spawned = 0
+	_survive_timer = 0.0
+	hud.show_banner(b["text"], &"cast")
+	Sfx.play(&"wave_start")
+
+
+func _process(delta: float) -> void:
+	if survive_left <= 0.0 or not running or player.is_down():
+		return
+	survive_left -= delta
+	var alive := stage.find_children("*", "EnemyShinobi", true, false).filter(
+		func(e: EnemyShinobi) -> bool: return not e.is_ally() and not e.is_defeated())
+	hud.set_objective("%s  ·  %s" % [_survive["text"], Game.format_time(maxf(survive_left, 0.0))])
+	_survive_timer -= delta
+	if _survive_timer <= 0.0 and alive.size() < int(_survive["max_alive"]):
+		_survive_timer = 1.6
+		var pairs: Array = _survive["enemies"]
+		var pair: Array = pairs[_survive_spawned % pairs.size()]
+		var e := EnemyShinobi.new()
+		e.rank = pair[0]
+		e.element = pair[1]
+		e.target = player
+		e.position = _spawn_point(_survive_spawned % 3, 3)
+		_survive_spawned += 1
+		stage.add_child(e)
+	if survive_left <= 0.0:
+		survive_left = 0.0
+		for e in alive:
+			(e as EnemyShinobi).dismiss()
+		hud.set_objective("")
+		hud.show_banner("You held out!", &"cast")
+		Sfx.play(&"victory", -4.0)
+		_next()
+
+
+## Around the player, in front of the camera, inside the arena.
+func _spawn_point(index: int, count: int) -> Vector3:
+	var look := player.camera_rig.flat_forward()
+	var angle := (index - (count - 1) * 0.5) * deg_to_rad(40.0)
+	var p := player.global_position + look.rotated(Vector3.UP, angle) * 10.0
+	var flat := Vector2(p.x, p.z)
+	if flat.length() > 19.0:
+		flat = flat.normalized() * 19.0
+	return Vector3(flat.x, 0.2, flat.y)
+
+
 func _start_boss(b: Dictionary) -> void:
 	var info: Dictionary = story.characters[b["who"]]
 	var npc: StoryNpc = npcs.get(b["who"])
@@ -250,6 +389,8 @@ func _start_boss(b: Dictionary) -> void:
 	var chosen := CharacterModel.resolve_roster(info["model"])
 	boss.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(b["who"])
 	boss.phases = b["phases"]
+	boss.size = b["size"]
+	boss.aura_color = b["aura"]
 	boss.target = player
 	boss.position = pos
 	boss.defeated.connect(_on_boss_defeated)
@@ -305,7 +446,7 @@ func _on_player_defeated() -> void:
 	if fight:
 		fight.running = false
 	for e in stage.find_children("*", "EnemyShinobi", true, false):
-		(e as EnemyShinobi).target = null
+		(e as EnemyShinobi).stand_down()
 	hud.set_objective("")
 	fight_lost.emit()
 
@@ -313,12 +454,22 @@ func _on_player_defeated() -> void:
 ## Clears the lost fight and starts it again with the player back on their feet.
 func retry() -> void:
 	for e in stage.find_children("*", "EnemyShinobi", true, false):
-		e.queue_free()
+		if not (e as EnemyShinobi).is_ally():
+			e.queue_free()
 	adds.clear()
 	boss = null
+	survive_left = 0.0
 	hud.hide_boss()
 	_end_fight()
 	player.revive()
+	# Allies come back to full strength (or return if they had retreated).
+	for who: String in _ally_beats.keys():
+		var ally: EnemyShinobi = allies.get(who)
+		if is_instance_valid(ally) and not ally.is_defeated():
+			ally.hunt = true
+			ally.stats.restore()
+		else:
+			_spawn_ally(_ally_beats[who])
 	var at: Vector2 = chapter["player_at"]
 	player.global_position = Vector3(at.x, 0.1, at.y)
 	beat_index = _checkpoint - 1
@@ -327,6 +478,10 @@ func retry() -> void:
 
 func _finish() -> void:
 	running = false
+	for who: String in allies:
+		if is_instance_valid(allies[who]):
+			allies[who].leave()
+	allies.clear()
 	_begin_play()
 	player.input_enabled = false
 	hud.set_objective("")

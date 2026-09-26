@@ -39,5 +39,19 @@
     "chakra_cost": 25,
     "cooldown": 10,
     "power": 30
+  },
+  {
+    "id": "five_nature_seal",
+    "name": "Five-Nature Seal",
+    "description": "The sealing technique of the scroll's makers: all five natures woven into one binding circle. Crushing on anything inside it, and costly.",
+    "rank": "S",
+    "element": "none",
+    "form": "area",
+    "seals": ["rat", "tiger", "dragon", "snake", "boar"],
+    "chakra_cost": 45,
+    "cooldown": 20,
+    "power": 45,
+    "range": 0,
+    "radius": 5
   }
 ]

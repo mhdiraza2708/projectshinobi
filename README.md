@@ -26,10 +26,12 @@ controls can be remapped.
 
 ## What you can do right now
 
-- **Story mode, Part One: The Stolen Scroll.** Five chapters with dialogue,
-  a tutorial run by your sensei, a rival duel, clone ambushes, and bosses
-  with health bars and mid-fight lines. The final boss changes chakra
-  nature as it weakens. Chapters are plain data files. See
+- **Story mode: two parts, ten chapters.** *Part One: The Stolen Scroll*
+  (tutorial, rival duel, clone ambushes, a boss who changes nature as it
+  weakens) and *Part Two: The Last Seal* (interrupt training, a hunter's
+  duel, fighting beside allies, a survival stand in a storm, and a
+  possessed giant sealed with a five-seal technique). Chapters have their
+  own time of day and weather (rain, storm, snow, falling leaves). Chapters are plain data files. See
   [docs/STORY.md](docs/STORY.md) to write your own.
 - **Trial of the Five Natures** (from the title screen): five waves of
   enemy shinobi (chakra clones), one nature per wave: Fire, Wind, Lightning,

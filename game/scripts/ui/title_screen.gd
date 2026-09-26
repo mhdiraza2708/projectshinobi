@@ -48,7 +48,7 @@ func show_main() -> void:
 	if story == null:
 		story = Story.load_all()
 	var cleared := story.chapters.filter(func(c: Dictionary) -> bool: return Game.chapter_done(c["id"])).size()
-	_first = _entry("物", "Story", "Part One: The Stolen Scroll. %d chapters, %d cleared." % [story.chapters.size(), cleared], show_chapters)
+	_first = _entry("物", "Story", "Two parts, %d chapters, %d cleared." % [story.chapters.size(), cleared], show_chapters)
 	var best := Game.best_time(TrialDirector.TRIAL_ID)
 	_entry("試", "Trial of the Five Natures", "Five waves of shinobi clones. %s" % (
 		"Best time %s." % Game.format_time(best) if best > 0.0 else "Beat each nature with the one that overcomes it."), trial_chosen.emit)
@@ -62,10 +62,29 @@ func show_main() -> void:
 func show_chapters() -> void:
 	_on_chapters = true
 	_clear_menu()
-	_menu.add_child(UiKit.label("物語  PART ONE: THE STOLEN SCROLL", 22, UiKit.CRIMSON_DARK, &"bold"))
+	# Ten chapters don't fit the scroll: list them in a scrolling column that
+	# follows controller focus.
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	scroll.custom_minimum_size.y = 540
+	_menu.add_child(scroll)
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override(&"separation", 6)
+	scroll.add_child(column)
+	var outer := _menu
+	_menu = column
 	var focus: Button = null
+	var part := 0
 	for c: Dictionary in story.chapters:
 		var id: String = c["id"]
+		if c["part"] != part:
+			part = c["part"]
+			var title: String = Story.PART_TITLES.get(part, "")
+			_menu.add_child(UiKit.label("第%s部  PART %s%s" % [Story.numeral(part), ["", "ONE", "TWO", "THREE"][mini(part, 3)],
+				(": " + title.to_upper()) if title != "" else ""], 22, UiKit.CRIMSON_DARK, &"bold"))
 		var unlocked := story.is_unlocked(id)
 		var done := Game.chapter_done(id)
 		var status := "Cleared" if done else ("New" if unlocked else "Sealed: clear the chapter before it")
@@ -74,6 +93,7 @@ func show_chapters() -> void:
 		b.disabled = not unlocked
 		if unlocked and (focus == null or not done):
 			focus = b
+	_menu = outer
 	_entry("戻", "Back", "", show_main)
 	if focus:
 		focus.grab_focus.call_deferred()

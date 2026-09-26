@@ -1,0 +1,61 @@
+{
+	"id": "ch10_nue",
+	"number": 10,
+	"part": 2,
+	"title": "Nue",
+	"location": "Shrine of the Five Winds",
+	"time": "night",
+	"weather": "storm",
+	"summary": "The last seal breaks. Seal the spirit, and bring Kagerou back.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "enter", "who": "hisame", "at": [-3, 4]},
+		{"do": "enter", "who": "asahi", "at": [3, 4]},
+		{"do": "enter", "who": "tsumugi", "at": [5, 2]},
+		{"do": "enter", "who": "kagerou", "at": [0, -6]},
+		{"do": "say", "lines": [
+			["kagerou", "You came, and you brought everyone. Good. Someone should see this."],
+			["hisame", "Kagerou, stop. It isn't too late."],
+			["kagerou", "It was too late the day they made me leave.", "angry"],
+			["kagerou", "Five natures, bound in one. Wake, Nue!"],
+			["tsumugi", "The seal's broken! That chakra... it's inside him!"],
+			["asahi", "Clones everywhere! We've got them. {name}, the big one's yours!"],
+			["hisame", "Wear it down. When it breaks, I'll give you the seals. Go!"]
+		]},
+		{"do": "exit", "who": "kagerou"},
+		{"do": "exit", "who": "hisame"},
+		{"do": "ally", "who": "asahi", "rank": "chunin", "health": 260},
+		{"do": "ally", "who": "tsumugi", "rank": "chunin", "health": 240},
+		{"do": "boss", "who": "nue", "rank": "jonin", "health": 460, "size": 1.35, "aura": "#8a4fd0aa", "at": [0, -6],
+			"taunt": "...Hungry...",
+			"phases": [
+				{"at": 0.85, "element": "wind", "say": "The thrush's cry...", "summon": [["genin", "wind"], ["genin", "wind"]]},
+				{"at": 0.7, "element": "lightning", "say": "Tiger's claws!"},
+				{"at": 0.55, "element": "earth", "say": "The tanuki's weight!", "summon": [["chunin", "earth"]]},
+				{"at": 0.4, "element": "water", "say": "The serpent's tide!"},
+				{"at": 0.25, "element": "fire", "say": "The monkey's fire!", "summon": [["genin", "fire"], ["genin", "fire"]]}
+			]},
+		{"do": "enter", "who": "hisame", "at": [-3, 4]},
+		{"do": "say", "lines": [
+			["hisame", "It's out of him, but it's loose! {name}: the Five-Nature Seal. Rat, Tiger, Dragon, Snake, Boar. Now!", "angry"]
+		]},
+		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Tiger, Dragon, Snake, Boar (hold {weave}; {charge_chakra} charges chakra)",
+			"goal": "cast", "jutsu": "five_nature_seal"},
+		{"do": "banner", "text": "The Nue is sealed"},
+		{"do": "enter", "who": "kagerou", "at": [0, -5]},
+		{"do": "enter", "who": "asahi", "at": [3, 3]},
+		{"do": "enter", "who": "tsumugi", "at": [5, 1]},
+		{"do": "say", "lines": [
+			["kagerou", "...It's quiet. For the first time in years, it's quiet.", "sad"],
+			["hisame", "You're still here, Kagerou. That's more than the Nue wanted."],
+			["kagerou", "Why stop it from taking me? I'd have deserved it."],
+			["player", "Because you held back too, on the frozen road. I felt it."],
+			["tsumugi", "The Watch will want him."],
+			["hisame", "The Watch can have him after the academy hears me speak for him. This time I won't stay quiet.", "happy"],
+			["asahi", "So... do we finally get our rematch?", "happy"],
+			["player", "Tomorrow. Noon."],
+			["asahi", "Wear something you don't mind getting singed.", "happy"]
+		]},
+		{"do": "banner", "text": "End of Part Two"}
+	]
+}

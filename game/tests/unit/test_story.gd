@@ -77,7 +77,8 @@ func _jump_to(kind: String) -> void:
 func test_story_files_load_cleanly() -> void:
 	var story := Story.load_all()
 	assert_eq(story.errors, [] as Array[String], "story data errors")
-	assert_eq(story.chapters.size(), 5)
+	assert_eq(story.chapters.size(), 10)
+	assert_eq(story.chapters.filter(func(c: Dictionary) -> bool: return c["part"] == 2).size(), 5, "Part Two")
 	for c: Dictionary in story.chapters:
 		var kinds: Array = c["beats"].map(func(b: Dictionary) -> String: return b["do"])
 		assert_true(kinds.has("say"), "%s has dialogue" % c["id"])
@@ -241,12 +242,13 @@ func test_chapters_unlock_in_order() -> void:
 	await physics_frames(1)
 	var buttons: Array = scene.title_screen.find_children("*", "Button", true, false)
 	var locked: int = buttons.filter(func(b: Button) -> bool: return b.disabled).size()
-	assert_eq(locked, 4, "only chapter 1 is open at first")
+	var total: int = scene.title_screen.story.chapters.size()
+	assert_eq(locked, total - 1, "only chapter 1 is open at first")
 	Game.mark_chapter_done("ch1_graduation")
 	scene.title_screen.show_chapters()
 	await physics_frames(1)
 	buttons = scene.title_screen.find_children("*", "Button", true, false)
-	assert_eq(buttons.filter(func(b: Button) -> bool: return b.disabled).size(), 3)
+	assert_eq(buttons.filter(func(b: Button) -> bool: return b.disabled).size(), total - 2)
 	var chosen := []
 	scene.title_screen.chapter_chosen.connect(func(id: String) -> void: chosen.append(id))
 	scene.title_screen.chapter_chosen.disconnect(scene.start_story)

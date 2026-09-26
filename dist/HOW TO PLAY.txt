@@ -8,7 +8,7 @@ warn because the exe isn't code-signed: click "More info" then "Run anyway".
 placeholder character.)
 
 The game opens on the title screen:
-  Story                     - Part One: The Stolen Scroll, five chapters.
+  Story                     - Two parts, ten chapters.
   Trial of the Five Natures - five waves of enemy shinobi, one nature each.
   Training Ground           - dummies that don't hit back, for practice.
   Customize                 - face, hair and outfit from 9 VRoid characters,

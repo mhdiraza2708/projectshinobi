@@ -33,6 +33,10 @@ var dialogue: DialogueBox
 var chapter_card: ChapterCard
 ## Point lights added to the lanterns for dusk and night.
 var lantern_lights: Array[OmniLight3D] = []
+## "none", "rain", "storm", "snow" or "leaves".
+var weather := "none"
+var weather_particles: CPUParticles3D
+var _next_flash := 0.0
 
 var _customize_from_title := false
 
@@ -128,6 +132,7 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 		for dummy in find_children("*", "TrainingDummy", true, false):
 			dummy.free()
 	set_time_of_day(chapter["time"])
+	set_weather(chapter["weather"])
 	dialogue = DialogueBox.new()
 	add_child(dialogue)
 	chapter_card = ChapterCard.new()
@@ -213,6 +218,100 @@ func set_time_of_day(time: String) -> void:
 				lantern_lights.append(light)
 
 
+## Rain, storm (rain with lightning), snow or falling leaves around the player.
+func set_weather(kind: String) -> void:
+	weather = kind
+	if weather_particles:
+		weather_particles.queue_free()
+		weather_particles = null
+	Sfx.stop_loop(&"weather")
+	if kind == "none" or not ["rain", "storm", "snow", "leaves"].has(kind):
+		weather = "none"
+		return
+	var p := CPUParticles3D.new()
+	p.name = "Weather"
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	p.position = Vector3(0, 10, 0)
+	var quad := QuadMesh.new()
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.vertex_color_use_as_albedo = true
+	quad.material = mat
+	p.mesh = quad
+	var world := $WorldEnvironment as WorldEnvironment
+	world.environment = world.environment.duplicate(true)
+	match kind:
+		"rain", "storm":
+			quad.size = Vector2(0.018, 0.7)
+			mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+			p.amount = 1400
+			p.lifetime = 0.55
+			p.emission_box_extents = Vector3(16, 1, 16)
+			p.direction = Vector3(0.08, -1, 0)
+			p.spread = 2.0
+			p.initial_velocity_min = 26.0
+			p.initial_velocity_max = 32.0
+			p.gravity = Vector3(0, -10, 0)
+			p.color = Color(0.78, 0.84, 0.95, 0.4)
+			world.environment.fog_density *= 4.0
+			Sfx.start_loop(&"weather", &"rain_loop", -5.0)
+		"snow":
+			quad.size = Vector2(0.06, 0.06)
+			mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+			p.amount = 900
+			p.lifetime = 7.0
+			p.emission_box_extents = Vector3(18, 2, 18)
+			p.direction = Vector3(0.3, -1, 0.1)
+			p.spread = 25.0
+			p.initial_velocity_min = 1.2
+			p.initial_velocity_max = 2.2
+			p.gravity = Vector3(0, -0.4, 0)
+			p.color = Color(1, 1, 1, 0.9)
+			world.environment.fog_density *= 3.0
+			Sfx.start_loop(&"weather", &"wind_loop", -9.0)
+		"leaves":
+			quad.size = Vector2(0.09, 0.06)
+			p.amount = 160
+			p.lifetime = 8.0
+			p.emission_box_extents = Vector3(16, 2, 16)
+			p.direction = Vector3(1, -0.6, 0.3)
+			p.spread = 35.0
+			p.initial_velocity_min = 1.0
+			p.initial_velocity_max = 2.2
+			p.gravity = Vector3(0.3, -0.5, 0)
+			p.angular_velocity_min = -220.0
+			p.angular_velocity_max = 220.0
+			var g := Gradient.new()
+			g.set_color(0, Color(0.85, 0.35, 0.12))
+			g.set_color(1, Color(0.95, 0.7, 0.2))
+			p.color_initial_ramp = g
+			Sfx.start_loop(&"weather", &"wind_loop", -12.0)
+	player.add_child(p)
+	weather_particles = p
+	_next_flash = randf_range(4.0, 8.0)
+
+
+func _flash_lightning() -> void:
+	var sun := $Sun as DirectionalLight3D
+	var env := ($WorldEnvironment as WorldEnvironment).environment
+	var energy := sun.light_energy
+	var ambient := env.ambient_light_energy
+	sun.light_energy = energy + 2.5
+	env.ambient_light_energy = ambient + 1.2
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(sun, "light_energy", energy, 0.35).set_delay(0.08)
+	tw.tween_property(env, "ambient_light_energy", ambient, 0.35).set_delay(0.08)
+	await get_tree().create_timer(randf_range(0.4, 1.4)).timeout
+	Sfx.play(&"thunder", -2.0, 0.1)
+
+
+func _exit_tree() -> void:
+	Sfx.stop_loop(&"weather")
+
+
 func _leave_title() -> void:
 	title_screen.close()
 	hud.visible = true
@@ -257,9 +356,14 @@ func _refresh_objective() -> void:
 	hud.set_objective("  ·  ".join(parts))
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if director and director.running:
 		_refresh_objective()
+	if weather == "storm":
+		_next_flash -= delta
+		if _next_flash <= 0.0:
+			_next_flash = randf_range(7.0, 15.0)
+			_flash_lightning()
 
 
 func _on_trial_finished(won: bool, seconds: float, new_record: bool) -> void:

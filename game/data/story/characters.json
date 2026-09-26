@@ -97,5 +97,57 @@
 			"hair_from": "darkness_shibu",
 			"outfit_from": "sakurada_fumiriya"
 		}
+	},
+	"tsumugi": {
+		"name": "Tsumugi",
+		"title": "Hunter",
+		"kanji": "紬",
+		"element": "wind",
+		"model": "sendagaya_shino",
+		"style": {
+			"tints": {
+				"outfit": "#2f5a55",
+				"lower": "#243030",
+				"hair": "#26343a",
+				"shoes": "#252a2a"
+			},
+			"headband": "cloth",
+			"headband_color": "#3f8f6f",
+			"scarf": true,
+			"scarf_color": "#2f5a55",
+			"back": "ninjato",
+			"mask": false,
+			"pouch": true,
+			"expression": "neutral",
+			"height": 1.0,
+			"outfit_from": "vita"
+		}
+	},
+	"nue": {
+		"name": "Nue",
+		"title": "Spirit",
+		"kanji": "鵺",
+		"element": "fire",
+		"model": "sendagaya_shibu",
+		"style": {
+			"tints": {
+				"outfit": "#1a1020",
+				"lower": "#140c18",
+				"hair": "#6a2f8f",
+				"shoes": "#140c18"
+			},
+			"headband": "hachigane",
+			"headband_color": "#3b1f4f",
+			"mask": true,
+			"mask_color": "#0d0a10",
+			"scarf": true,
+			"scarf_color": "#4a2266",
+			"back": "ninjato",
+			"pouch": false,
+			"expression": "angry",
+			"height": 1.08,
+			"hair_from": "darkness_shibu",
+			"outfit_from": "sakurada_fumiriya"
+		}
 	}
 }

@@ -113,7 +113,11 @@ func ui(sound: StringName, volume_db := 0.0) -> void:
 ## Starts a looping sound under `key` (fades in). Restarting a running key is
 ## a no-op.
 func start_loop(key: StringName, sound: StringName, volume_db := 0.0) -> void:
-	if _loops.has(key) or not _accept(sound):
+	# Loops skip the instant-retrigger guard: switching loops quickly is fine.
+	if _loops.has(key):
+		return
+	if not _streams.has(sound):
+		push_warning("Sfx: no sound named '%s' in %s" % [sound, DIR])
 		return
 	var p := AudioStreamPlayer.new()
 	p.process_mode = Node.PROCESS_MODE_PAUSABLE

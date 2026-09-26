@@ -1,0 +1,45 @@
+{
+	"id": "ch9_snow",
+	"number": 9,
+	"part": 2,
+	"title": "Kagerou's Reason",
+	"location": "The frozen shrine road",
+	"time": "dusk",
+	"weather": "snow",
+	"summary": "Kagerou finds you alone and tells you why.",
+	"player_at": [0, 5],
+	"beats": [
+		{"do": "enter", "who": "kagerou", "at": [0, -5]},
+		{"do": "say", "lines": [
+			["kagerou", "Alone, {name}? Your sensei sends children out and lets them walk the road by themselves.", "relaxed"],
+			["player", "Maybe she trusts us."],
+			["kagerou", "She trusted me too. Did she ever tell you why they threw me out?"],
+			["player", "No."],
+			["kagerou", "A training accident. My fire, a friend's arm. Forty stitches. The academy decided I was too strong to be safe.", "sad"],
+			["kagerou", "The Nue can't be held by anyone careful. It needs someone who isn't afraid of his own strength."],
+			["player", "It needs someone who isn't afraid of hurting people. That's not the same thing."],
+			["kagerou", "...Then show me the difference. Fire only. No tricks."]
+		]},
+		{"do": "boss", "who": "kagerou", "rank": "jonin", "health": 260,
+			"taunt": "Fire only. Like the old days.",
+			"phases": [
+				{"at": 0.5, "element": "wind", "say": "Still standing? Then wind, just this once."}
+			]},
+		{"do": "enter", "who": "kagerou", "at": [0, -5]},
+		{"do": "say", "lines": [
+			["kagerou", "You hold back. Every strike, you hold back. And you still win."],
+			["kagerou", "Maybe that's the difference.", "sad"],
+			["kagerou", "It changes nothing. New moon, the Shrine of the Five Winds. Bring the scroll, or I break the seal without it. Without the scroll the Nue won't be bound. It'll be free.", "angry"]
+		]},
+		{"do": "exit", "who": "kagerou"},
+		{"do": "enter", "who": "hisame", "at": [-2, 3]},
+		{"do": "say", "lines": [
+			["hisame", "You found him."],
+			["player", "He told me about the accident."],
+			["hisame", "The friend was me.", "sad"],
+			["hisame", "I never blamed him. The academy did, and I let them. I should have fought them harder."],
+			["hisame", "Tomorrow night we finish this. And I'll teach you the one technique in that scroll no one has used in a hundred years."]
+		]},
+		{"do": "exit", "who": "hisame"}
+	]
+}

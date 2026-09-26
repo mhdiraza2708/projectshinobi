@@ -1,0 +1,40 @@
+{
+	"id": "ch7_wood",
+	"number": 7,
+	"part": 2,
+	"title": "The Autumn Wood",
+	"location": "Autumn Wood, north of Emberwood",
+	"time": "dusk",
+	"weather": "leaves",
+	"summary": "Cut through Kagerou's clones with Asahi at your side.",
+	"player_at": [0, 5],
+	"beats": [
+		{"do": "enter", "who": "asahi", "at": [-2.5, 3]},
+		{"do": "enter", "who": "tsumugi", "at": [2.5, 3]},
+		{"do": "say", "lines": [
+			["asahi", "So this is the famous hunter. You're shorter than the stories.", "happy"],
+			["tsumugi", "You're louder than the stories."],
+			["player", "Focus. There's chakra moving in the trees."],
+			["asahi", "Clones. Dozens of them. Wind and fire, from the feel of it."],
+			["tsumugi", "Then we cut through. {name}, take the centre. Asahi, try not to set the forest on fire."],
+			["asahi", "I'm lightning!", "angry"],
+			["tsumugi", "Then try not to set it on lightning. I'll take the ridge.", "relaxed"]
+		]},
+		{"do": "exit", "who": "tsumugi"},
+		{"do": "ally", "who": "asahi", "rank": "chunin", "health": 240},
+		{"do": "fight", "text": "Cut through the clones", "waves": [
+			{"element": "wind", "enemies": ["genin", "genin", "genin"]},
+			{"element": "fire", "enemies": ["genin", "chunin"]}
+		]},
+		{"do": "enter", "who": "tsumugi", "at": [3, -3]},
+		{"do": "say", "lines": [
+			["tsumugi", "The ridge was worse. Look what they were guarding."],
+			["asahi", "Plans for... a dam? Out here?"],
+			["tsumugi", "The Old Dam in the Ashen Valley. Iwao is carving a seal array into it. Finished, it turns the whole valley into a ritual circle."],
+			["player", "For breaking the last seal."],
+			["asahi", "Then we knock his dam down. Metaphorically. Mostly.", "happy"]
+		]},
+		{"do": "exit", "who": "asahi"},
+		{"do": "exit", "who": "tsumugi"}
+	]
+}
