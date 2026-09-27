@@ -81,8 +81,63 @@ func test_default_gear_is_fitted_to_measured_body() -> void:
 	assert_true(head.size.x > 0.05 and head.size.y > 0.05, "head measured from skinned mesh")
 	var band_att: BoneAttachment3D = model.gear.attachments().filter(
 		func(n: BoneAttachment3D) -> bool: return n.bone_name == "Head")[0]
-	var ring := band_att.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
-	assert_true(ring.scale.x >= head.size.x * 0.5, "headband wraps outside the head")
+	var band := band_att.find_child("Band", true, false) as MeshInstance3D
+	assert_true(band.get_aabb().size.x >= head.size.x * 0.8, "headband wraps round the head")
+
+
+func test_headband_hugs_the_head_and_hair() -> void:
+	_model()
+	var shape := model.gear.headband
+	assert_true(shape != null, "headband fitted")
+	var head := model.gear.region(&"Head")
+	var face := model.gear.face_or(head)
+	var around := head.grow(0.03)
+	for i in 16:
+		var ang := TAU * i / 16.0
+		var p := shape.point(ang)
+		assert_true(around.has_point(p), "band stays on the head at %d deg (%s)" % [i * 22.5, p])
+		assert_true(shape.radius_at(ang) > face.size.x * 0.35, "band clears the skull at %d deg" % [i * 22.5])
+	# Across the forehead, above the eyes and below the top of the head.
+	assert_true(shape.point(0.0).y > face.position.y + face.size.y * 0.6)
+	assert_true(shape.point(0.0).y < head.end.y)
+	assert_true(shape.point(PI).y < shape.point(0.0).y, "lower at the back")
+
+
+func test_hachigane_has_an_engraved_plate_and_cloth_does_not() -> void:
+	_model()
+	Profile.set_value(&"headband", "hachigane")
+	await root.get_tree().process_frame
+	var plate := model.find_child("Plate", true, false) as MeshInstance3D
+	assert_true(plate != null, "steel plate")
+	assert_eq((plate.material_override as ShaderMaterial).shader, CharacterGear.PLATE_SHADER)
+	assert_true(plate.get_aabb().size.y > 0.02 and plate.get_aabb().size.x > 0.05, "plate has real size")
+	Profile.set_value(&"headband", "cloth")
+	await root.get_tree().process_frame
+	assert_true(model.find_child("Plate", true, false) == null, "cloth band has no plate")
+	assert_eq(model.find_children("Tail*", "GearRibbon", true, false).size(), 2, "two knot tails")
+
+
+func test_headband_tails_hang_and_swing() -> void:
+	_model()
+	await physics_frames(30)
+	var tails := model.find_children("Tail*", "GearRibbon", true, false)
+	assert_eq(tails.size(), 2)
+	var tail: GearRibbon = tails[0]
+	var pts := tail.points().duplicate()
+	assert_true(pts[pts.size() - 1].y < pts[0].y - 0.05, "hangs down from the knot")
+	var seg := pts[0].distance_to(pts[1])
+	for i in range(1, pts.size()):
+		assert_near(pts[i - 1].distance_to(pts[i]), seg, 0.002, "cloth doesn't stretch")
+	# Whip the head round: the tip lags behind the knot, then settles.
+	var tip_before := pts[pts.size() - 1]
+	model.rotation.y += 1.2
+	# process_frame fires before nodes process: wait for the tail's own step.
+	await root.get_tree().process_frame
+	await root.get_tree().process_frame
+	var knot_moved := tail.points()[0].distance_to(pts[0])
+	var tip_moved := tail.points()[pts.size() - 1].distance_to(tip_before)
+	assert_true(knot_moved > 0.01, "the knot turns with the head")
+	assert_true(tip_moved < knot_moved, "the tip trails behind")
 
 
 func test_gear_options_rebuild_live() -> void:

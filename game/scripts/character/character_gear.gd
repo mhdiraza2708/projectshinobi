@@ -9,6 +9,7 @@ extends RefCounted
 ## those, then attached to bones so it follows every pose.
 
 const REFERENCE_HEIGHT := 1.6
+const PLATE_SHADER := preload("res://assets/shaders/hitai_plate.gdshader")
 
 var _skel: Skeleton3D
 var _frame := Basis.IDENTITY          # canonical -> skeleton
@@ -18,12 +19,19 @@ var _regions: Dictionary = {}         # bone index -> AABB (canonical space)
 var _face := AABB()
 var _height := REFERENCE_HEIGHT
 var _attachments: Array[Node] = []
+## Every skinned vertex of the head and hair (canonical space, rest pose):
+## headbands are fitted around these.
+var _head_points := PackedVector3Array()
+## The last headband's fitted shape (null when none is worn).
+var headband: HeadbandShape
 
 
 func bind(skeleton: Skeleton3D, canonical_to_skeleton: Basis) -> void:
 	_skel = skeleton
 	_frame = canonical_to_skeleton
-	_regions = measure_regions(skeleton, _frame)
+	var head_points: Array = []
+	_regions = measure_regions(skeleton, _frame, head_points)
+	_head_points = PackedVector3Array(head_points)
 	_face = measure_face(skeleton, _frame)
 	var head := region(&"Head")
 	var foot_y := INF
@@ -75,12 +83,24 @@ func face_or(head: AABB) -> AABB:
 	return _face if _face.size.x > 0.05 else head
 
 
-static func measure_regions(skel: Skeleton3D, frame: Basis) -> Dictionary:
+## `head_points`, when given, also receives every vertex that the Head bone
+## or anything below it (hair joints) dominates.
+static func measure_regions(skel: Skeleton3D, frame: Basis, head_points = null) -> Dictionary:
 	var to_canonical := frame.inverse()
 	var regions := {}
 	var rests: Array[Transform3D] = []
 	for b in skel.get_bone_count():
 		rests.append(skel.get_bone_global_rest(b))
+	var head_bone := skel.find_bone(&"Head")
+	var under_head := PackedByteArray()
+	under_head.resize(skel.get_bone_count())
+	for b in skel.get_bone_count():
+		var walk := b
+		while walk >= 0:
+			if walk == head_bone:
+				under_head[b] = 1
+				break
+			walk = skel.get_bone_parent(walk)
 	for node in skel.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.mesh == null or mi.skin == null or mi.has_meta(&"gear"):
@@ -112,6 +132,8 @@ static func measure_regions(skel: Skeleton3D, frame: Basis) -> Dictionary:
 					continue
 				var p := to_canonical * (bind_xf[bi] * verts[v])
 				var bone: int = bind_bone[bi]
+				if head_points != null and head_bone >= 0 and under_head[bone] == 1:
+					head_points.append(p)
 				if regions.has(bone):
 					regions[bone] = (regions[bone] as AABB).expand(p)
 				else:
@@ -132,34 +154,10 @@ func rebuild(settings: Dictionary) -> void:
 	var c := head.get_center()
 
 	var face := face_or(head)
-	var headband: String = settings.get("headband", "none")
-	if headband != "none":
-		# Across the forehead, measured on the face itself (hair excluded).
-		# The face mesh runs chin to crown; the brow sits about two thirds up.
-		var band_y := face.position.y + face.size.y * 0.66 + lift if face != head \
-			else head.position.y + head.size.y * 0.7 + lift
-		var band := Node3D.new()
-		band.transform = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(-8.0)), Vector3(c.x, band_y, c.z))
-		var scale := float(settings.get("gear_scale", 1.0))
-		band.add_child(_ring(rx * 1.06 * scale, rz * 1.08 * scale, head.size.y * 0.1, settings["headband_color"]))
-		# Knot tails at the back.
-		for side in [-1.0, 1.0]:
-			var tail := _box(Vector3(0.025, 0.14, 0.006) * k, settings["headband_color"])
-			tail.transform = Transform3D(
-				Basis(Vector3.RIGHT, deg_to_rad(-28.0)) * Basis(Vector3.FORWARD, deg_to_rad(10.0 * side)),
-				Vector3(0.018 * side * k, -0.06 * k, rz * 1.08 * scale + 0.02 * k))
-			band.add_child(tail)
-		if headband == "hachigane":
-			# A forehead plate the width of the face, just in front of the band.
-			var plate_w := face.size.x * 0.62 * scale
-			var plate_h := face.size.y * 0.12
-			var plate := _box(Vector3(plate_w, plate_h, 0.006 * k), Color("7d838b"))
-			plate.position = Vector3(0, 0, -rz * 1.08 * scale - 0.004 * k)
-			band.add_child(plate)
-			var rim := _box(Vector3(plate_w * 1.06, plate_h * 1.14, 0.003 * k), Color("2b2e33"))
-			rim.position = plate.position + Vector3(0, 0, 0.004 * k)
-			band.add_child(rim)
-		_attach(&"Head", band)
+	headband = null
+	var kind: String = settings.get("headband", "none")
+	if kind != "none":
+		_attach(&"Head", _build_headband(kind, settings, head, face, k, lift))
 
 	if settings.get("mask", false):
 		# Cloth over the nose and mouth, snug to the face (not the hair).
@@ -221,6 +219,86 @@ func rebuild(settings: Dictionary) -> void:
 		var pouch := _box(Vector3(0.035, 0.07, 0.075) * k, Color("4a3322"))
 		pouch.position = Vector3(thigh.end.x + 0.02 * k, thigh.get_center().y + thigh.size.y * 0.12, thigh.get_center().z)
 		_attach(&"RightUpperLeg", pouch)
+
+
+## A cloth band fitted round the head and hair, knotted at the back with two
+## tails that swing; "hachigane" adds a curved steel plate on the forehead.
+func _build_headband(kind: String, settings: Dictionary, head: AABB, face: AABB, k: float, lift: float) -> Node3D:
+	var color: Color = settings["headband_color"]
+	var scale := float(settings.get("gear_scale", 1.0))
+	var measured := face != head
+	# Across the forehead, above the brows (the face mesh runs chin to hairline).
+	var y := (face.position.y + face.size.y * 0.76 if measured else head.position.y + head.size.y * 0.72) + lift
+	var axis := Vector2(face.get_center().x if measured else head.get_center().x, head.get_center().z)
+	var half := Vector2(head.size.x * 0.5, head.size.z * 0.5)
+	# Lower at the back, under the curve of the skull.
+	var drop := 0.05 * k
+	var shape: HeadbandShape
+	if _head_points.size() > 500:
+		shape = HeadbandShape.fit(_head_points, axis, y, drop, 0.018 * k, half)
+	else:
+		shape = HeadbandShape.ellipse(axis, y, drop, half * 1.02)
+	if not is_equal_approx(scale, 1.0):
+		for i in shape.radii.size():
+			shape.radii[i] *= scale
+	headband = shape
+
+	var root := Node3D.new()
+	root.name = "Headband"
+	var band_h := 0.034 * k
+	var thick := 0.006 * k
+	var band := MeshInstance3D.new()
+	band.name = "Band"
+	band.mesh = shape.band_mesh(band_h, thick)
+	var cloth := Toon.flat(color, 0.95)
+	cloth.vertex_color_use_as_albedo = true
+	cloth.next_pass = Toon.outline(0.0025)
+	band.material_override = cloth
+	root.add_child(band)
+
+	# The knot at the back: two lobes and the wrap between them.
+	var back := shape.point(PI, thick * 1.2)
+	var outward := HeadbandShape.direction(PI)
+	var knot_mat := Toon.flat(color.darkened(0.12), 0.95)
+	knot_mat.next_pass = Toon.outline(0.002)
+	for lobe_at: Array in [[-1.0, Vector3(1.0, 0.75, 0.55)], [1.0, Vector3(1.0, 0.75, 0.55)], [0.0, Vector3(0.6, 0.9, 0.7)]]:
+		var ball := SphereMesh.new()
+		ball.radius = 0.014 * k
+		ball.height = 0.028 * k
+		ball.radial_segments = 12
+		ball.rings = 6
+		var lobe := MeshInstance3D.new()
+		lobe.mesh = ball
+		lobe.material_override = knot_mat
+		lobe.scale = lobe_at[1]
+		lobe.position = back + outward * 0.006 * k + Vector3(float(lobe_at[0]) * 0.016 * k, 0, 0)
+		root.add_child(lobe)
+	for side in [-1.0, 1.0]:
+		var tail := GearRibbon.new()
+		tail.name = "TailLeft" if side < 0.0 else "TailRight"
+		tail.anchor = back + outward * 0.008 * k + Vector3(side * 0.008 * k, -0.006 * k, 0)
+		tail.head_center = Vector3(axis.x, y - 0.06 * k, axis.y)
+		tail.head_radius = shape.radius_at(PI) * 0.97
+		tail.length = (0.13 if side < 0.0 else 0.105) * k
+		tail.width = 0.026 * k
+		tail.side = side
+		tail.color = color.darkened(0.04)
+		root.add_child(tail)
+
+	if kind == "hachigane":
+		var plate_w := (face.size.x if measured else head.size.x * 0.8) * 0.66 * scale
+		var plate_h := 0.05 * k
+		var half_angle := plate_w * 0.5 / (shape.radius_at(0.0) + thick)
+		var plate := MeshInstance3D.new()
+		plate.name = "Plate"
+		plate.mesh = shape.plate_mesh(half_angle, plate_h, 0.005 * k, thick * 1.05)
+		var steel := ShaderMaterial.new()
+		steel.shader = PLATE_SHADER
+		steel.set_shader_parameter(&"aspect", plate_w / plate_h)
+		steel.next_pass = Toon.outline(0.002)
+		plate.material_override = steel
+		root.add_child(plate)
+	return root
 
 
 ## The bone attachments currently holding gear (excludes the model's own).
