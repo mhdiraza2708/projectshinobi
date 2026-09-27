@@ -61,3 +61,21 @@ static func find_packs(dir: String, depth: int) -> PackedStringArray:
 ## True when the bundled VRoid characters are available.
 static func characters_installed() -> bool:
 	return ResourceLoader.exists(CharacterModel.DEFAULT_MODEL)
+
+
+## True when the music and voices (audio_1.pck) are available.
+static func audio_installed() -> bool:
+	return ResourceLoader.exists("res://assets/audio/music/title.ogg")
+
+
+## What the title screen should warn about, or "" when everything is there.
+static func missing_warning(characters: bool, audio: bool) -> String:
+	var lines := PackedStringArray()
+	if not characters:
+		lines.append("CHARACTERS MISSING: the game can't find characters_1.pck, characters_2.pck and characters_3.pck, so everyone is the low-poly placeholder.")
+	if not audio:
+		lines.append("MUSIC AND VOICES MISSING: the game can't find audio_1.pck.")
+	if lines.is_empty():
+		return ""
+	lines.append("Put the .pck files in the same folder as ProjectShinobi.exe and restart.")
+	return "\n".join(lines)

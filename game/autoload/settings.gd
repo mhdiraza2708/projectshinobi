@@ -26,10 +26,12 @@ const DEFAULTS := {
 	&"vibration": true,
 	&"screen_shake": 1.0,
 	&"ui_scale": 1.0,
-	# Linear 0-1 volumes for the Master, SFX and UI audio buses.
+	# Linear 0-1 volumes for the Master, SFX, UI, Music and Voice audio buses.
 	&"master_volume": 1.0,
 	&"sfx_volume": 1.0,
 	&"ui_volume": 0.8,
+	&"music_volume": 0.6,
+	&"voice_volume": 1.0,
 }
 
 const TRIGGER_DEADZONE := 0.35

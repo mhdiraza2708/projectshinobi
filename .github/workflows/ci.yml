@@ -109,6 +109,9 @@ jobs:
             ~/godot/godot --headless --path game --export-pack "Characters $i" ../build/windows/characters_$i.pck
             test -s build/windows/characters_$i.pck
           done
+          # Music and voices too.
+          ~/godot/godot --headless --path game --export-pack "Audio" ../build/windows/audio_1.pck
+          test -s build/windows/audio_1.pck
           cp "dist/HOW TO PLAY.txt" build/windows/
 
       - name: Upload build

@@ -428,6 +428,8 @@ func _build_accessibility() -> Control:
 	list.add_child(_option_row("Master volume", _slider(&"master_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
 	list.add_child(_option_row("Effects volume", _slider(&"sfx_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
 	list.add_child(_option_row("Menu sounds volume", _slider(&"ui_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
+	list.add_child(_option_row("Music volume", _slider(&"music_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
+	list.add_child(_option_row("Voice volume", _slider(&"voice_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
 	return list
 
 

@@ -91,11 +91,13 @@ func show_title() -> void:
 	player.input_enabled = false
 	player.camera_rig.begin_showcase(-1.1)
 	title_screen.open()
+	Music.play(&"title")
 
 
 func start_training() -> void:
 	mode = Game.Mode.TRAINING
 	_leave_title()
+	Music.play(&"calm")
 	hud.show_banner("Hold %s and enter seals to weave a jutsu" % InputDevice.glyph(&"weave"))
 
 
@@ -103,6 +105,7 @@ func start_training() -> void:
 func start_trial(waves: Array = []) -> void:
 	mode = Game.Mode.TRIAL
 	_leave_title()
+	Music.play(&"battle")
 	for dummy in find_children("*", "TrainingDummy", true, false):
 		dummy.queue_free()
 	director = TrialDirector.new()
@@ -128,6 +131,7 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 		return
 	mode = Game.Mode.STORY
 	_leave_title()
+	Music.play(&"calm")
 	if not chapter["dummies"]:
 		for dummy in find_children("*", "TrainingDummy", true, false):
 			dummy.free()
@@ -165,7 +169,7 @@ func _on_chapter_finished(chapter: Dictionary) -> void:
 	if not is_inside_tree():
 		return
 	var body := "Next:  %s %s" % [Story.numeral(next["number"]), next["title"]] if not next.is_empty() \
-		else "End of Part One. Thank you for playing."
+		else "The end. Thank you for playing."
 	results.show_panel("完", true, "第%s章" % Story.numeral(chapter["number"]), "CHAPTER COMPLETE",
 		"%s %s" % [Story.numeral(chapter["number"]), chapter["title"]], body, false,
 		"Next chapter" if not next.is_empty() else "Play it again", "Title screen")
@@ -380,6 +384,7 @@ func _on_trial_finished(won: bool, seconds: float, new_record: bool) -> void:
 	hud.set_objective("")
 	hud.show_banner("Trial complete!" if won else "Defeated", &"cast" if won else &"fail")
 	player.input_enabled = false
+	Music.stop()
 	await get_tree().create_timer(1.6).timeout
 	if is_inside_tree():
 		results.show_result(won, seconds, new_record, director.waves_cleared, director.waves.size())

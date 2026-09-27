@@ -44,3 +44,13 @@ func assert_near(actual: float, expected: float, tolerance := 0.001, message := 
 func physics_frames(count: int) -> void:
 	for i in count:
 		await root.get_tree().physics_frame
+
+
+## Waits `t` seconds of real frames (a timer alone can fire on the long first
+## frame after startup, before tweens have run at all).
+func seconds(t: float) -> void:
+	var end := Time.get_ticks_msec() + int(t * 1000.0)
+	await root.get_tree().process_frame
+	while Time.get_ticks_msec() < end:
+		await root.get_tree().process_frame
+	await root.get_tree().process_frame

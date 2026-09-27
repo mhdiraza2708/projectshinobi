@@ -6,7 +6,8 @@ extends Node
 ##   Sfx.play(&"ui_select")                 # flat, for UI
 ##   Sfx.play_at(&"impact", hit_position)   # positional, for the world
 ##   Sfx.start_loop(&"charge", &"charge_loop") / Sfx.stop_loop(&"charge")
-## Volumes come from Settings (master/sfx/ui).
+## Volumes come from Settings (master/sfx/ui/music/voice). Sfx also makes the
+## Music and Voice buses that the Music and Voice autoloads play on.
 
 ## Emitted for every sound that actually starts (tests, debugging).
 signal played(sound: StringName)
@@ -14,6 +15,8 @@ signal played(sound: StringName)
 const DIR := "res://assets/audio/sfx/"
 const BUS_SFX := &"SFX"
 const BUS_UI := &"UI"
+const BUS_MUSIC := &"Music"
+const BUS_VOICE := &"Voice"
 const POOL_2D := 12
 const POOL_3D := 24
 ## The same sound retriggered faster than this is dropped, so a volley of
@@ -22,7 +25,8 @@ const MIN_REPEAT_MSEC := 35
 ## Focus moves this soon after another UI sound stay silent (a menu opening
 ## grabs focus, which shouldn't also tick).
 const UI_MOVE_QUIET_MSEC := 120
-const VOLUME_KEYS := {&"master_volume": &"Master", &"sfx_volume": BUS_SFX, &"ui_volume": BUS_UI}
+const VOLUME_KEYS := {&"master_volume": &"Master", &"sfx_volume": BUS_SFX, &"ui_volume": BUS_UI,
+	&"music_volume": BUS_MUSIC, &"voice_volume": BUS_VOICE}
 
 ## The last sounds played, newest last (for tests).
 var history: Array[StringName] = []
@@ -40,7 +44,7 @@ func _ready() -> void:
 	for file in ResourceLoader.list_directory(DIR):
 		if file.get_extension() == "wav":
 			_streams[StringName(file.get_basename())] = load(DIR + file)
-	for bus: StringName in [BUS_SFX, BUS_UI]:
+	for bus: StringName in [BUS_SFX, BUS_UI, BUS_MUSIC, BUS_VOICE]:
 		if AudioServer.get_bus_index(bus) < 0:
 			AudioServer.add_bus()
 			AudioServer.set_bus_name(AudioServer.bus_count - 1, bus)

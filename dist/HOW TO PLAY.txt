@@ -6,14 +6,15 @@ extract it, and run ProjectShinobi.exe. Everything is already together.
 
 If you got separate downloads instead, extract all of them into the same
 place (for example all into Downloads). The game looks for
-characters_1/2/3.pck beside the exe and in the folders next to it.
+characters_1/2/3.pck and audio_1.pck (music and voices) beside the exe and
+in the folders next to it.
 There's nothing to install. Windows may warn because the exe isn't
 code-signed: click "More info" then "Run anyway".
 
-If the title screen shows red CHARACTERS MISSING text, the game couldn't
-find the .pck files and every character is the low-poly placeholder. Move
-characters_1.pck, characters_2.pck and characters_3.pck into the same folder
-as ProjectShinobi.exe and restart.
+If the title screen shows red CHARACTERS MISSING or MUSIC AND VOICES MISSING
+text, the game couldn't find those .pck files. Move characters_1.pck,
+characters_2.pck, characters_3.pck and audio_1.pck into the same folder as
+ProjectShinobi.exe and restart.
 
 The game opens on the title screen:
   Story                     - Two parts, ten chapters.

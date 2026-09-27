@@ -35,8 +35,10 @@ func is_open() -> bool:
 func open() -> void:
 	visible = true
 	# Without the character packs every character falls back to the low-poly
-	# placeholder: say so plainly instead of letting it look like the game.
-	_warning.visible = not Packs.characters_installed()
+	# placeholder, and without the audio pack there's no music: say so
+	# plainly instead of letting it look like the game.
+	_warning.text = Packs.missing_warning(Packs.characters_installed(), Packs.audio_installed())
+	_warning.visible = _warning.text != ""
 	show_main()
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -178,8 +180,7 @@ func _build() -> void:
 	vbox.add_child(header)
 	vbox.add_child(_rule())
 
-	_warning = UiKit.label("CHARACTERS MISSING: the game can't find characters_1.pck, characters_2.pck and characters_3.pck, so everyone is the low-poly placeholder. Put all three in the same folder as ProjectShinobi.exe and restart.",
-		19, UiKit.CRIMSON, &"bold")
+	_warning = UiKit.label("", 19, UiKit.CRIMSON, &"bold")
 	_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_warning.custom_minimum_size.x = 560
 	_warning.visible = false

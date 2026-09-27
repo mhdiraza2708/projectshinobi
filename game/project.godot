@@ -21,6 +21,7 @@ InputDevice="*res://autoload/input_device.gd"
 JutsuRegistry="*res://autoload/jutsu_registry.gd"
 Profile="*res://autoload/profile.gd"
 Sfx="*res://autoload/sfx.gd"
+Music="*res://autoload/music.gd"
 Game="*res://autoload/game.gd"
 
 [display]

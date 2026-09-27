@@ -80,6 +80,8 @@ func _ready() -> void:
 			Profile.load_from_disk()
 			Game.load_records()
 			Game.start_mode = Game.Mode.TRAINING
+			Music.stop(0.0)
+			Music.duck(false)
 			for child in get_children():
 				child.queue_free()
 			await get_tree().process_frame

@@ -8,7 +8,7 @@ SHOTS ?= screenshots
 # Any Python with numpy and scipy (pip install -r art/audio/requirements.txt).
 PYTHON ?= python3
 
-.PHONY: run editor import test assets animations sfx fonts screenshots
+.PHONY: run editor import test assets animations sfx music fonts screenshots
 
 run:
 	$(GODOT) --path game
@@ -35,6 +35,12 @@ animations: import
 # Regenerate the synthesised sound effects in game/assets/audio/sfx/.
 sfx:
 	$(PYTHON) art/audio/make_sfx.py
+	$(MAKE) import
+
+# Re-render the music in game/assets/audio/music/ (needs mido, plus
+# fluidsynth, fluid-soundfont-gm and vorbis-tools from apt).
+music:
+	$(PYTHON) art/audio/make_music.py
 	$(MAKE) import
 
 # Re-subset the Japanese UI fonts after adding kanji (needs fonttools).

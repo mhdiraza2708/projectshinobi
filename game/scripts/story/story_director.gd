@@ -78,6 +78,7 @@ func _next() -> void:
 		return
 	var b: Dictionary = beats[beat_index]
 	beat_started.emit(beat_index, b)
+	_score(b["do"])
 	match b["do"]:
 		"enter":
 			_enter_npc(b)
@@ -126,6 +127,18 @@ func _next() -> void:
 		"banner":
 			hud.show_banner(Story.format(b["text"]), &"cast")
 			_next.call_deferred()
+
+
+## Music follows the beat: battle for fights, the boss theme for bosses, calm
+## for talking and lessons. Entrances, banners and waits keep what's playing.
+func _score(kind: String) -> void:
+	match kind:
+		"fight", "survive":
+			Music.play(&"battle")
+		"boss":
+			Music.play(&"boss")
+		"say", "task":
+			Music.play(&"calm")
 
 
 # --- Talking ---------------------------------------------------------------------
@@ -448,6 +461,7 @@ func _on_player_defeated() -> void:
 	for e in stage.find_children("*", "EnemyShinobi", true, false):
 		(e as EnemyShinobi).stand_down()
 	hud.set_objective("")
+	Music.stop()
 	fight_lost.emit()
 
 
@@ -485,5 +499,6 @@ func _finish() -> void:
 	_begin_play()
 	player.input_enabled = false
 	hud.set_objective("")
+	Music.stop(2.5)
 	Game.mark_chapter_done(chapter["id"])
 	chapter_finished.emit(chapter)
