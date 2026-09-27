@@ -1,11 +1,19 @@
 PROJECT SHINOBI - how to play
 =============================
 
-Put ProjectShinobi.exe and the characters_1/2/3.pck files in the SAME
-folder, then run ProjectShinobi.exe. There's nothing to install. Windows may
-warn because the exe isn't code-signed: click "More info" then "Run anyway".
-(Without the .pck files the game still runs, with only the low-poly
-placeholder character.)
+EASIEST: download the one "ProjectShinobi-Windows" zip from GitHub Actions,
+extract it, and run ProjectShinobi.exe. Everything is already together.
+
+If you got separate downloads instead, extract all of them into the same
+place (for example all into Downloads). The game looks for
+characters_1/2/3.pck beside the exe and in the folders next to it.
+There's nothing to install. Windows may warn because the exe isn't
+code-signed: click "More info" then "Run anyway".
+
+If the title screen shows red CHARACTERS MISSING text, the game couldn't
+find the .pck files and every character is the low-poly placeholder. Move
+characters_1.pck, characters_2.pck and characters_3.pck into the same folder
+as ProjectShinobi.exe and restart.
 
 The game opens on the title screen:
   Story                     - Two parts, ten chapters.
