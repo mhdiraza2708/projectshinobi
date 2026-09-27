@@ -24,6 +24,7 @@ func _ready() -> void:
 	var chosen := CharacterModel.resolve_roster(model_name)
 	model.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(who)
 	model.style = style
+	model.voice_id = who
 	add_child(model)
 	_tag = Label3D.new()
 	_tag.text = display_name

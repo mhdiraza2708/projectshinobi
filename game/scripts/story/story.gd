@@ -24,7 +24,10 @@ const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
 const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
 const CHAPTER_REQUIRED: PackedStringArray = ["id", "number", "title", "location", "time", "beats"]
 const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part"]
-const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "style"]
+const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "voice", "style"]
+## A character's recorded voice (see art/audio/make_voices.py).
+const VOICE_KEYS: PackedStringArray = ["speaker", "speed", "pitch", "effect"]
+const VOICE_EFFECTS: PackedStringArray = ["", "spirit"]
 const NUMERALS: PackedStringArray = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 ## The player speaks as "player".
 const PLAYER := "player"
@@ -155,12 +158,22 @@ func _parse_character(id: String, data: Variant) -> void:
 		errors.append("%s: unknown element '%s'" % [label, data["element"]])
 	if data.has("model") and CharacterModel.resolve_roster(str(data["model"])) == "":
 		errors.append("%s: no roster character '%s' in %s" % [label, data["model"], CharacterModel.ROSTER_DIR])
+	var voice: Variant = data.get("voice", {})
+	if not voice is Dictionary:
+		errors.append("%s: 'voice' must be an object" % label)
+		voice = {}
+	for key: String in voice:
+		if not VOICE_KEYS.has(key):
+			errors.append("%s: unknown voice key '%s'" % [label, key])
+	if not VOICE_EFFECTS.has(str(voice.get("effect", ""))):
+		errors.append("%s: unknown voice effect '%s'" % [label, voice["effect"]])
 	characters[id] = {
 		"name": str(data["name"]),
 		"title": str(data.get("title", "")),
 		"kanji": str(data["kanji"]),
 		"element": maxi(element, 0),
 		"model": str(data.get("model", "")),
+		"voice": voice,
 		"style": _parse_style(label, data.get("style", {})),
 	}
 

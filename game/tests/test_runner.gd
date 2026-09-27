@@ -80,6 +80,7 @@ func _ready() -> void:
 			Profile.load_from_disk()
 			Game.load_records()
 			Game.start_mode = Game.Mode.TRAINING
+			Voice.stop()
 			Music.stop(0.0)
 			Music.duck(false)
 			for child in get_children():

@@ -22,6 +22,7 @@ JutsuRegistry="*res://autoload/jutsu_registry.gd"
 Profile="*res://autoload/profile.gd"
 Sfx="*res://autoload/sfx.gd"
 Music="*res://autoload/music.gd"
+Voice="*res://autoload/voice.gd"
 Game="*res://autoload/game.gd"
 
 [display]

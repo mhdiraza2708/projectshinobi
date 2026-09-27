@@ -36,6 +36,7 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
 	"title": "Sensei",
 	"kanji": "雨",
 	"element": "water",
+	"voice": {"speaker": 312, "speed": 1.08, "pitch": -0.5},
 	"style": {
 		"tints": {"body": "#b3c4dc", "outfit": "#1f3552", "hair": "#d9e0ea"},
 		"headband": "cloth", "headband_color": "#2f5fb3",
@@ -47,6 +48,9 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
 ```
 
 - `kanji` is the character's seal in the dialogue box.
+- `voice` is how their lines are recorded: `speaker` (0-903, a LibriTTS
+  reader in the Piper voice model), `speed` (1 = normal, higher is slower),
+  `pitch` (semitones) and optional `effect` (`spirit`: doubled and hollow).
 - `style` uses the same keys as the Customize screen (see
   `game/autoload/profile.gd`). Colour slots are hair, eyes, skin, outfit,
   lower, shoes, accessory and body. Models without recognisable material
@@ -117,6 +121,15 @@ Its clones vanish when it falls.
 **Defeat** in a fight or boss shows a panel, and **Retry fight** restarts
 that fight, not the chapter.
 
+## Voices
+
+Every line a story character says is recorded. Run `make voices` after
+adding or editing dialogue (see `art/audio/make_voices.py` for where to get
+Piper and the voice model). A line whose text changed plays silently until
+you do, and `make test` lists what's unrecorded. The player is never voiced,
+and `{name}` is left out of spoken lines. Lines with `{nature}` are recorded
+once per nature.
+
 ## Checking your work
 
 ```sh
@@ -136,6 +149,7 @@ plays chapter 1 start to finish.
   unless you add VRoid models to the roster (see
   [CHARACTERS.md](CHARACTERS.md)). Story characters draw from the same
   roster.
-- Conversations have no animation beyond a gesture and a facial
-  expression, and there's no voice acting.
+- Conversations have no animation beyond a gesture, a facial expression
+  and a mouth that opens with the voice (no real lip shapes).
+- The voices are text-to-speech: clear, but read rather than acted.
 - Choices and branches aren't supported. Chapters are linear.

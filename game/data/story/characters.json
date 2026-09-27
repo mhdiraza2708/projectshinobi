@@ -5,6 +5,11 @@
 		"kanji": "雨",
 		"element": "water",
 		"model": "victoria_rubin",
+		"voice": {
+			"speaker": 312,
+			"speed": 1.08,
+			"pitch": -0.5
+		},
 		"style": {
 			"tints": {
 				"outfit": "#2c3a5c",
@@ -30,6 +35,11 @@
 		"kanji": "朝",
 		"element": "lightning",
 		"model": "sakurada_fumiriya",
+		"voice": {
+			"speaker": 72,
+			"speed": 0.98,
+			"pitch": 0.5
+		},
 		"style": {
 			"tints": {
 				"hair": "#f2c94c",
@@ -54,6 +64,11 @@
 		"kanji": "巌",
 		"element": "earth",
 		"model": "hairsample_male",
+		"voice": {
+			"speaker": 636,
+			"speed": 1.14,
+			"pitch": -2.5
+		},
 		"style": {
 			"tints": {
 				"outfit": "#5a4631",
@@ -77,6 +92,11 @@
 		"kanji": "陽",
 		"element": "fire",
 		"model": "sendagaya_shibu",
+		"voice": {
+			"speaker": 288,
+			"speed": 1.1,
+			"pitch": 0.0
+		},
 		"style": {
 			"tints": {
 				"outfit": "#1d1b20",
@@ -104,6 +124,11 @@
 		"kanji": "紬",
 		"element": "wind",
 		"model": "sendagaya_shino",
+		"voice": {
+			"speaker": 354,
+			"speed": 1.04,
+			"pitch": -0.5
+		},
 		"style": {
 			"tints": {
 				"outfit": "#2f5a55",
@@ -129,6 +154,12 @@
 		"kanji": "鵺",
 		"element": "fire",
 		"model": "sendagaya_shibu",
+		"voice": {
+			"speaker": 288,
+			"speed": 1.15,
+			"pitch": -4.0,
+			"effect": "spirit"
+		},
 		"style": {
 			"tints": {
 				"outfit": "#1a1020",

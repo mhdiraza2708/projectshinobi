@@ -60,6 +60,8 @@ var title_override := ""
 var kanji_override := ""
 var health_override := 0.0
 var style_override: Dictionary = {}
+## Story character id whose recorded lines move this fighter's mouth.
+var voice_id := ""
 var phases: Array = []
 ## Who to fight (normally the player).
 var target: Node3D
@@ -142,6 +144,7 @@ func _ready() -> void:
 	model.model_path = model_path if model_path != "" else pick_model()
 	model.style = (style_override if not style_override.is_empty() else style_for(element, rank)).duplicate()
 	model.style["height"] = float(model.style.get("height", 1.0)) * size
+	model.voice_id = voice_id
 	add_child(model)
 	if aura_color.a > 0.0:
 		var aura := Vfx.sphere(0.9 * size, Vfx.glow_material(aura_color, 1.6, aura_color.a))

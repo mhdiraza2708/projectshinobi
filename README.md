@@ -103,6 +103,11 @@ with IK (including the hand-seal pose) on any humanoid rig.
   taiko, strings and choir. That sounds like good MIDI, not a recorded
   orchestra. Replace any `game/assets/audio/music/*.ogg` with a real
   recording of the same name.
+- **Voices are text-to-speech.** Every story character is voiced
+  (`art/audio/make_voices.py`, Piper with a LibriTTS voice per character,
+  pitched and paced per character and mood). It's clear, audiobook-style
+  reading, not acting: no shouting, crying or real emotional range. Your
+  own character is silent on purpose (you choose the name and look).
 - **One arena.** Every story chapter happens in the same arena, relit for
   dawn, day, dusk or night. There's no voice acting, and conversations have
   no animation beyond a gesture and a facial expression.
@@ -137,6 +142,7 @@ make assets       # regenerate models with Blender, then re-import
 make animations   # set up Mixamo clips you added for retargeting
 make sfx          # regenerate the sound effects (needs numpy + scipy)
 make music        # re-render the music (needs mido, fluidsynth, fluid-soundfont-gm, vorbis-tools)
+make voices PIPER=path/to/piper VOICE_MODEL=path/to/en-us-libritts-high.onnx  # re-record story lines
 make fonts        # re-subset the Japanese UI fonts after adding kanji (needs fonttools)
 make screenshots  # render demo screenshots (needs Xvfb without a display)
 ```

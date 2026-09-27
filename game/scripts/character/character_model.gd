@@ -44,14 +44,60 @@ var gear := CharacterGear.new()
 var loaded_path := ""
 ## Whether this model's hair and outfit can be swapped (VRoid-style parts).
 var swappable := false
+## The story character this model voices: its mouth moves while Voice plays
+## their lines. Empty for a model that never speaks.
+var voice_id := "":
+	set(value):
+		voice_id = value
+		set_process(value != "")
 
 var _base_scale := Vector3.ONE
+## [mesh, blend shape index, weight] per mouth shape used for talking.
+var _mouth: Array = []
+var _mouth_open := 0.0
+var _mouth_time := 0.0
 
 
 func _ready() -> void:
+	set_process(voice_id != "")
 	load_model(resolve_path())
 	if use_profile:
 		Profile.changed.connect(_on_profile_changed)
+
+
+func _process(delta: float) -> void:
+	var target := Voice.level() if Voice.speaker == voice_id else 0.0
+	_mouth_open = lerpf(_mouth_open, target, 1.0 - exp(-(30.0 if target > _mouth_open else 14.0) * delta))
+	_mouth_time += delta
+	set_mouth_open(_mouth_open)
+
+
+## Opens the mouth 0-1: mostly "A", shading into "O" so it doesn't just
+## hinge. VRoid models only; others keep a still mouth.
+func set_mouth_open(amount: float) -> void:
+	var o_mix := 0.5 + 0.5 * sin(_mouth_time * 9.0)
+	for entry: Array in _mouth:
+		var mi: MeshInstance3D = entry[0]
+		if is_instance_valid(mi):
+			mi.set_blend_shape_value(entry[1], amount * (1.0 - 0.45 * o_mix if entry[2] == &"A" else 0.45 * o_mix))
+
+
+func has_talking_mouth() -> bool:
+	return not _mouth.is_empty()
+
+
+func _find_mouth() -> void:
+	_mouth.clear()
+	for node in instance.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.mesh == null or not mi.visible:
+			continue
+		for i in mi.mesh.get_blend_shape_count():
+			var shape := String(mi.mesh.get_blend_shape_name(i))
+			if shape.ends_with("Fcl_MTH_A"):
+				_mouth.append([mi, i, &"A"])
+			elif shape.ends_with("Fcl_MTH_O"):
+				_mouth.append([mi, i, &"O"])
 
 
 func resolve_path() -> String:
@@ -150,6 +196,7 @@ func load_model(path: String) -> void:
 	animator.setup(instance, poser, clip_dir)
 
 	styler.bind(instance)
+	_find_mouth()
 	if humanoid:
 		gear.bind(skeleton, poser.canonical_frame())
 	apply_profile()

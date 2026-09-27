@@ -9,6 +9,9 @@ signal beat_started(index: int, beat: Dictionary)
 signal fight_lost
 signal chapter_finished(chapter: Dictionary)
 
+## What an ally shouts when they're beaten (recorded by make_voices.py).
+const ALLY_RETREAT_LINE := "I'm hurt... Finish it without me!"
+
 var story: Story
 var chapter: Dictionary = {}
 var player: Player
@@ -320,12 +323,14 @@ func _spawn_ally(b: Dictionary) -> void:
 	ally.title_override = info["name"]
 	ally.health_override = b["health"]
 	ally.style_override = info["style"]
+	ally.voice_id = who
 	var chosen := CharacterModel.resolve_roster(info["model"])
 	ally.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(who)
 	ally.position = pos
 	ally.defeated.connect(func(_x: EnemyShinobi) -> void:
 		allies.erase(who)
-		hud.say(info["name"], "I'm hurt... Finish it without me!", Element.color(info["element"])))
+		hud.say(info["name"], ALLY_RETREAT_LINE, Element.color(info["element"]))
+		Voice.speak(who, ALLY_RETREAT_LINE))
 	stage.add_child(ally)
 	# Allies hit softer than enemies of their rank: the player leads.
 	ally.caster.power_scale *= 0.7
@@ -399,6 +404,7 @@ func _start_boss(b: Dictionary) -> void:
 	boss.title_override = info["name"]
 	boss.health_override = b["health"]
 	boss.style_override = info["style"]
+	boss.voice_id = b["who"]
 	var chosen := CharacterModel.resolve_roster(info["model"])
 	boss.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(b["who"])
 	boss.phases = b["phases"]
@@ -407,18 +413,20 @@ func _start_boss(b: Dictionary) -> void:
 	boss.target = player
 	boss.position = pos
 	boss.defeated.connect(_on_boss_defeated)
-	boss.phase_reached.connect(_on_boss_phase.bind(info["name"]))
+	boss.phase_reached.connect(_on_boss_phase.bind(b["who"]))
 	stage.add_child(boss)
 	hud.show_boss(boss, "%s %s" % [info["kanji"], info["name"]])
 	hud.set_objective("Defeat %s" % info["name"])
 	Sfx.play(&"wave_start")
 	if b["taunt"] != "":
 		hud.say(info["name"], Story.format(b["taunt"]), Element.color(boss.element))
+		Voice.speak(b["who"], b["taunt"])
 
 
-func _on_boss_phase(phase: Dictionary, speaker: String) -> void:
+func _on_boss_phase(phase: Dictionary, who: String) -> void:
 	if phase["say"] != "":
-		hud.say(speaker, Story.format(phase["say"]), Element.color(boss.element))
+		hud.say(story.speaker_name(who), Story.format(phase["say"]), Element.color(boss.element))
+		Voice.speak(who, phase["say"])
 	var summons: Array = phase["summon"]
 	for i in summons.size():
 		var e := EnemyShinobi.new()
@@ -462,6 +470,7 @@ func _on_player_defeated() -> void:
 		(e as EnemyShinobi).stand_down()
 	hud.set_objective("")
 	Music.stop()
+	Voice.stop()
 	fight_lost.emit()
 
 

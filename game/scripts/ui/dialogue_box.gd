@@ -1,7 +1,7 @@
 class_name DialogueBox
 extends CanvasLayer
 ## Story dialogue: a paper strip along the bottom with the speaker's seal,
-## name and a typewriter line. Confirm (A / Enter / Space / click) finishes
+## name and a typewriter line, voiced when there's a recording. Confirm (A / Enter / Space / click) finishes
 ## the line, then moves on; holding it fast-forwards.
 
 ## A new line started (the director uses it for expressions and gestures).
@@ -63,6 +63,7 @@ func advance() -> void:
 func _advance() -> void:
 	index += 1
 	if index >= lines.size():
+		Voice.stop()
 		visible = false
 		set_process(false)
 		finished.emit()
@@ -80,6 +81,8 @@ func _advance() -> void:
 	_text.visible_ratio = 0.0
 	_typing = 0.0
 	Sfx.ui(&"ui_move", -6.0)
+	# Recorded lines play as they appear; moving on cuts the last one off.
+	Voice.speak(who, line["text"])
 	line_started.emit(index, line)
 
 
