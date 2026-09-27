@@ -118,3 +118,26 @@ func test_customize_hair_picker_reloads_the_player() -> void:
 		"the player wears Vita's hair")
 	assert_true(scene.player.animator != null, "animator follows the reload")
 	menu.close()
+
+
+func test_packs_are_found_in_sibling_download_folders() -> void:
+	# Windows' "Extract All" gives every archive its own folder.
+	var base := OS.get_user_data_dir().path_join("pack_search_test")
+	for dir in ["Game/ProjectShinobi", "Chars1/ProjectShinobi", "Chars2", "Other/a/b/c/d"]:
+		DirAccess.make_dir_recursive_absolute(base.path_join(dir))
+	for f in ["Chars1/ProjectShinobi/characters_1.pck", "Chars2/characters_2.pck",
+			"Chars2/something_else.pck", "Other/a/b/c/d/characters_3.pck"]:
+		FileAccess.open(base.path_join(f), FileAccess.WRITE).store_8(0)
+	var found := Array(Packs.find_packs(base, Packs.SEARCH_DEPTH)).map(func(p: String) -> String: return p.get_file())
+	found.sort()
+	assert_eq(found, ["characters_1.pck", "characters_2.pck"], "this game's packs within reach, nothing else")
+	_remove_tree(base)
+	assert_true(Packs.characters_installed(), "the roster is available in tests")
+
+
+func _remove_tree(dir: String) -> void:
+	for d in DirAccess.get_directories_at(dir):
+		_remove_tree(dir.path_join(d))
+	for f in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir.path_join(f))
+	DirAccess.remove_absolute(dir)

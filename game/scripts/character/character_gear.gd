@@ -13,6 +13,9 @@ const REFERENCE_HEIGHT := 1.6
 var _skel: Skeleton3D
 var _frame := Basis.IDENTITY          # canonical -> skeleton
 var _regions: Dictionary = {}         # bone index -> AABB (canonical space)
+## The face's own skin (VRoid "Face" mesh), without hair: masks and plates
+## fit this. Zero size when the model has no separate face mesh.
+var _face := AABB()
 var _height := REFERENCE_HEIGHT
 var _attachments: Array[Node] = []
 
@@ -21,6 +24,7 @@ func bind(skeleton: Skeleton3D, canonical_to_skeleton: Basis) -> void:
 	_skel = skeleton
 	_frame = canonical_to_skeleton
 	_regions = measure_regions(skeleton, _frame)
+	_face = measure_face(skeleton, _frame)
 	var head := region(&"Head")
 	var foot_y := INF
 	for foot in [&"LeftFoot", &"RightFoot", &"LeftToes", &"RightToes"]:
@@ -39,6 +43,36 @@ func region(bone_name: StringName) -> AABB:
 
 func character_height() -> float:
 	return _height
+
+
+## Canonical-space bounds of the face skin: surfaces of a mesh named Face*
+## whose material is skin. Hair is excluded, so gear fits the face itself.
+static func measure_face(skel: Skeleton3D, frame: Basis) -> AABB:
+	var to_canonical := frame.inverse()
+	var out := AABB()
+	var first := true
+	for node in skel.find_children("Face*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.mesh == null or mi.has_meta(&"gear"):
+			continue
+		var to_skel := skel.global_transform.affine_inverse() * mi.global_transform
+		for s in mi.mesh.get_surface_count():
+			var mat := mi.get_active_material(s)
+			if mat == null or CharacterStyler.classify(mat.resource_name) != "skin":
+				continue
+			for v: Vector3 in mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]:
+				var p := to_canonical * (to_skel * v)
+				if first:
+					out = AABB(p, Vector3.ZERO)
+					first = false
+				else:
+					out = out.expand(p)
+	return out
+
+
+## The face bounds, or `head` when the model has no separate face.
+func face_or(head: AABB) -> AABB:
+	return _face if _face.size.x > 0.05 else head
 
 
 static func measure_regions(skel: Skeleton3D, frame: Basis) -> Dictionary:
@@ -97,9 +131,13 @@ func rebuild(settings: Dictionary) -> void:
 	var rz := head.size.z * 0.5
 	var c := head.get_center()
 
+	var face := face_or(head)
 	var headband: String = settings.get("headband", "none")
 	if headband != "none":
-		var band_y := head.position.y + head.size.y * 0.7 + lift
+		# Across the forehead, measured on the face itself (hair excluded).
+		# The face mesh runs chin to crown; the brow sits about two thirds up.
+		var band_y := face.position.y + face.size.y * 0.66 + lift if face != head \
+			else head.position.y + head.size.y * 0.7 + lift
 		var band := Node3D.new()
 		band.transform = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(-8.0)), Vector3(c.x, band_y, c.z))
 		var scale := float(settings.get("gear_scale", 1.0))
@@ -112,17 +150,25 @@ func rebuild(settings: Dictionary) -> void:
 				Vector3(0.018 * side * k, -0.06 * k, rz * 1.08 * scale + 0.02 * k))
 			band.add_child(tail)
 		if headband == "hachigane":
-			var plate := _box(Vector3(rx * 1.05, head.size.y * 0.13, 0.008 * k), Color("a7adb6"), true)
+			# A forehead plate the width of the face, just in front of the band.
+			var plate_w := face.size.x * 0.62 * scale
+			var plate_h := face.size.y * 0.12
+			var plate := _box(Vector3(plate_w, plate_h, 0.006 * k), Color("7d838b"))
 			plate.position = Vector3(0, 0, -rz * 1.08 * scale - 0.004 * k)
 			band.add_child(plate)
-			var rim := _box(Vector3(rx * 1.1, head.size.y * 0.15, 0.004 * k), Color("3b3f46"), true)
-			rim.position = plate.position + Vector3(0, 0, 0.003 * k)
+			var rim := _box(Vector3(plate_w * 1.06, plate_h * 1.14, 0.003 * k), Color("2b2e33"))
+			rim.position = plate.position + Vector3(0, 0, 0.004 * k)
 			band.add_child(rim)
 		_attach(&"Head", band)
 
 	if settings.get("mask", false):
-		var mask := _ring(rx * 1.03, rz * 1.04, head.size.y * 0.3, settings["mask_color"])
-		mask.position = Vector3(c.x, head.position.y + head.size.y * 0.24, c.z - head.size.z * 0.03)
+		# Cloth over the nose and mouth, snug to the face (not the hair).
+		var fc := face.get_center()
+		var mask_rx := face.size.x * 0.5 * 1.04
+		var mask_rz := face.size.z * 0.55 if face != head else rz * 1.04
+		var mask := _ring(mask_rx, mask_rz, face.size.y * 0.3, settings["mask_color"])
+		var mask_z := face.position.z + mask_rz * 0.98 if face != head else c.z - head.size.z * 0.03
+		mask.position = Vector3(fc.x, face.position.y + face.size.y * 0.2, mask_z)
 		_attach(&"Head", mask)
 
 	if settings.get("scarf", false) and _skel.find_bone(&"Neck") >= 0:
@@ -131,7 +177,7 @@ func rebuild(settings: Dictionary) -> void:
 		var neck_region := region(&"Neck")
 		var neck_r := maxf(neck_region.size.x, neck_region.size.z) * 0.5 * 1.15 \
 			if neck_region.size != Vector3.ZERO else rx * 0.45
-		var tube := 0.022 * k
+		var tube := 0.015 * k
 		var scarf := Node3D.new()
 		scarf.position = Vector3(neck.x, neck.y + 0.005 * k, neck_region.get_center().z if neck_region.size != Vector3.ZERO else neck.z)
 		var torus := TorusMesh.new()
@@ -172,7 +218,7 @@ func rebuild(settings: Dictionary) -> void:
 
 	var thigh := region(&"RightUpperLeg")
 	if settings.get("pouch", false) and thigh.size != Vector3.ZERO:
-		var pouch := _box(Vector3(0.045, 0.085, 0.09) * k, Color("5a3e27"))
+		var pouch := _box(Vector3(0.035, 0.07, 0.075) * k, Color("4a3322"))
 		pouch.position = Vector3(thigh.end.x + 0.02 * k, thigh.get_center().y + thigh.size.y * 0.12, thigh.get_center().z)
 		_attach(&"RightUpperLeg", pouch)
 
