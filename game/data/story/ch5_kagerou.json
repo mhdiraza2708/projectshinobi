@@ -4,6 +4,7 @@
 	"title": "Kagerou",
 	"location": "Abandoned shrine, Ashen Pass",
 	"time": "night",
+	"island": "ashen_pass",
 	"summary": "The thief and all five natures.",
 	"player_at": [0, 6],
 	"beats": [

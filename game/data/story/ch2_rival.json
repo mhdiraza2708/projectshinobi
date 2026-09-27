@@ -4,6 +4,7 @@
 	"title": "Lightning at Noon",
 	"location": "Emberwood Academy yard",
 	"time": "day",
+	"island": "emberwood",
 	"summary": "Asahi's challenge.",
 	"player_at": [0, 4],
 	"beats": [

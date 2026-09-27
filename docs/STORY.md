@@ -82,9 +82,36 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
   `snow` or `leaves`.
 - `part`: which part of the story the chapter belongs to (headers in the
   chapter list).
+- `island`: where the chapter happens (default `emberwood`). You're
+  teleported there by a summoning seal when the chapter starts, and away
+  again when it ends. See **Islands** below.
 - `dummies`: keep the training dummies (default false).
-- Positions are `[x, z]` in metres. The arena is roughly 30 m across, centred
-  on `[0, 0]`. The torii gate is at `[0, -24]`.
+- Positions are `[x, z]` in metres. Every island has a flat clearing about
+  40 m across, centred on `[0, 0]`, and an invisible wall about 38 m out.
+  Keep characters within 15 m of the centre.
+
+## Islands
+
+Each island is built when the chapter starts, from a preset in
+`game/scripts/world/island.gd` (`Island.PRESETS`): the terrain around the
+clearing, its colours, the sea, landmarks at fixed spots and trees and rocks
+scattered by seed.
+
+| Island | Chapters | Look |
+|---|---|---|
+| `emberwood` | 1, 2, 3, 6 | Green hills, the academy's houses and shrine, torii, bamboo, pines |
+| `ashen_pass` | 4, 5 | Grey ash, dead trees, a broken torii before an abandoned shrine |
+| `autumn_wood` | 7 | Red and gold maples, a forest shrine |
+| `old_dam` | 8 | A stone dam with a reservoir behind it and a waterfall |
+| `frozen_road` | 9 | Snow, snowy pines, a lantern-lined road to a shrine |
+| `five_winds` | 10 | A summit above the sea, ringed by five pillars with glowing orbs, one per nature |
+
+A new island is a new entry in `PRESETS`: colours, `hills` (height), `coast`
+(radius), `open_dir` (the low side, for a sea view), `props` (landmarks),
+`scatter` (trees and rocks) and optional `paths`, `carve`, `reservoir`,
+`waterfall` or `plateau`. Props come from `game/assets/models/`, built by
+`art/blender/build_assets.py`. Preview an island from the air with
+`--demo=island:<id>` (see the screenshot command in the README).
 
 ## Beats
 
@@ -143,8 +170,9 @@ plays chapter 1 start to finish.
 
 ## Limits (honest)
 
-- Every chapter happens in the same arena, relit for the time of day. New
-  locations need new level art.
+- Islands are stylised low-poly blockouts (procedural terrain, simple
+  props), not hand-built levels, and the fighting always happens in the
+  central clearing.
 - Characters use the placeholder model, tinted and geared differently,
   unless you add VRoid models to the roster (see
   [CHARACTERS.md](CHARACTERS.md)). Story characters draw from the same

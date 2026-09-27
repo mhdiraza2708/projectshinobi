@@ -23,7 +23,7 @@ const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_
 const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
 const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
 const CHAPTER_REQUIRED: PackedStringArray = ["id", "number", "title", "location", "time", "beats"]
-const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part"]
+const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part", "island"]
 const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "voice", "style"]
 ## A character's recorded voice (see art/audio/make_voices.py).
 const VOICE_KEYS: PackedStringArray = ["speaker", "speed", "pitch", "effect"]
@@ -236,6 +236,7 @@ func _parse_chapter(file: String, data: Dictionary) -> Dictionary:
 		"summary": str(data.get("summary", "")),
 		"dummies": bool(data.get("dummies", false)),
 		"weather": str(data.get("weather", "none")),
+		"island": str(data.get("island", "emberwood")),
 		"part": int(data.get("part", 1)),
 		"player_at": _vec2(file, data.get("player_at", [0, 4])),
 		"beats": [],
@@ -244,6 +245,8 @@ func _parse_chapter(file: String, data: Dictionary) -> Dictionary:
 		errors.append("%s: time must be one of %s" % [file, TIMES])
 	if not WEATHERS.has(c["weather"]):
 		errors.append("%s: weather must be one of %s" % [file, WEATHERS])
+	if not Island.exists(c["island"]):
+		errors.append("%s: no island '%s' (see Island.PRESETS)" % [file, c["island"]])
 	if not data["beats"] is Array or data["beats"].is_empty():
 		errors.append("%s: beats must be a non-empty list" % file)
 		return {}

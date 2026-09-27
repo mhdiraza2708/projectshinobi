@@ -441,6 +441,24 @@ def defeat():
     return mix(gong(98.0, d, 331), at(tone(220, 110, 1.4) * env(int(1.4 * SR), 0.2, 1.0) * 0.2, 0.3, d))
 
 
+def teleport():
+    """Summoning: a rising shimmer of detuned partials over a swelling
+    whoosh, ending in a soft low boom."""
+    d = 2.2
+    n = int(d * SR)
+    t = t_axis(d)
+    rise = np.zeros(n)
+    for k, base in enumerate((392.0, 523.3, 659.3, 784.0, 1046.5)):
+        f = base * np.geomspace(0.7, 1.25, n)
+        rise += np.sin(2 * np.pi * np.cumsum(f) / SR + k) * (0.6 ** k)
+    swell = np.clip(t / 1.3, 0, 1) ** 2 * np.exp(-np.clip(t - 1.35, 0, None) * 5.0)
+    shimmer = rise * swell * (0.7 + 0.3 * np.sin(2 * np.pi * 11.0 * t)) * 0.25
+    whoosh = svf_sweep(noise(d, 361), 300.0, 3200.0, 900.0, q=2.0) * swell * 0.9
+    boom = at(tone(90, 40, 0.9) * env(int(0.9 * SR), 0.004, 0.8) * 0.9, 1.3, d)
+    sparkle = at(hp(crackle(0.8, 90, 362), 5000) * env(int(0.8 * SR), 0.01, 0.6) * 0.8, 1.3, d)
+    return mix(shimmer, whoosh, boom, sparkle)
+
+
 def enemy_down():
     d = 0.6
     n = int(d * SR)
@@ -515,7 +533,7 @@ SOUNDS = {
     "jump": jump, "chakra_jump": chakra_jump, "land": land, "charge_loop": charge_loop,
     "ui_move": ui_move, "ui_select": ui_select, "ui_back": ui_back, "ui_open": ui_open,
     "ui_close": ui_close, "wave_start": wave_start, "victory": victory, "defeat": defeat,
-    "enemy_down": enemy_down, "weak_hit": weak_hit, "smoke": smoke,
+    "enemy_down": enemy_down, "weak_hit": weak_hit, "smoke": smoke, "teleport": teleport,
     "rain_loop": rain_loop, "wind_loop": wind_loop, "thunder": thunder,
 }
 # Loops must not be faded or DC-shifted at the seam.

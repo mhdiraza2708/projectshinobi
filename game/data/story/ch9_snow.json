@@ -5,6 +5,7 @@
 	"title": "Kagerou's Reason",
 	"location": "The frozen shrine road",
 	"time": "dusk",
+	"island": "frozen_road",
 	"weather": "snow",
 	"summary": "Kagerou finds you alone and tells you why.",
 	"player_at": [0, 5],

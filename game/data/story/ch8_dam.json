@@ -5,6 +5,7 @@
 	"title": "The Old Dam",
 	"location": "The Old Dam, Ashen Valley",
 	"time": "night",
+	"island": "old_dam",
 	"weather": "storm",
 	"summary": "Hold the line while Hisame breaks Iwao's barrier, then face him.",
 	"player_at": [0, 6],

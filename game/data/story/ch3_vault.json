@@ -4,6 +4,7 @@
 	"title": "The Empty Vault",
 	"location": "Emberwood Academy yard",
 	"time": "dusk",
+	"island": "emberwood",
 	"summary": "The scroll is stolen, and its clones attack the academy.",
 	"player_at": [0, 4],
 	"beats": [

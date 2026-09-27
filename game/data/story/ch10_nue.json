@@ -5,6 +5,7 @@
 	"title": "Nue",
 	"location": "Shrine of the Five Winds",
 	"time": "night",
+	"island": "five_winds",
 	"weather": "storm",
 	"summary": "The last seal breaks. Seal the spirit, and bring Kagerou back.",
 	"player_at": [0, 6],

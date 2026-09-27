@@ -4,6 +4,7 @@
 	"title": "The Ashen Pass",
 	"location": "Abandoned shrine, Ashen Pass",
 	"time": "night",
+	"island": "ashen_pass",
 	"summary": "An ambush at the old shrine.",
 	"player_at": [0, 6],
 	"beats": [

@@ -1,12 +1,14 @@
 extends Node3D
 ## The game scene. It starts in the mode Game.start_mode names: the title
-## screen, free training with dummies, or the Trial of the Five Natures.
+## screen, free training with dummies, the Trial of the Five Natures, or a
+## story chapter (which swaps the training ground for that chapter's island).
 ##
 ## Automated screenshots (used for review/CI artifacts):
 ##   godot --path game --rendering-driver opengl3 -- --screenshot=out.png [--demo=NAME] [--device=gamepad]
 ## NAME is one of: overview (default), weave, cast, kunai, menu, customize,
 ## customize_colours, customize_gear, title, trial, results, story,
-## story_boss, story_menu, chapter_card, night, chapter:<id>, and the close-up character
+## story_boss, story_menu, chapter_card, night, chapter:<id>, island:<id> (from
+## the air), teleport, teleport_night, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
 const KILL_PLANE_Y := -20.0
@@ -33,6 +35,11 @@ var dialogue: DialogueBox
 var chapter_card: ChapterCard
 ## Point lights added to the lanterns for dusk and night.
 var lantern_lights: Array[OmniLight3D] = []
+## The story island in use (null on the training ground).
+var island: Island
+## Skip the teleport effects (chapters started with skip_card, i.e. tests).
+var _quick := false
+var _flash: ColorRect
 ## "none", "rain", "storm", "snow" or "leaves".
 var weather := "none"
 var weather_particles: CPUParticles3D
@@ -132,9 +139,13 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 	mode = Game.Mode.STORY
 	_leave_title()
 	Music.play(&"calm")
+	_quick = skip_card
 	if not chapter["dummies"]:
 		for dummy in find_children("*", "TrainingDummy", true, false):
 			dummy.free()
+	use_island(chapter["island"])
+	var at: Vector2 = chapter["player_at"]
+	player.global_position = Vector3(at.x, 0.1, at.y)
 	set_time_of_day(chapter["time"])
 	set_weather(chapter["weather"])
 	dialogue = DialogueBox.new()
@@ -149,11 +160,84 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 	story_director.chapter_finished.connect(_on_chapter_finished)
 	player.input_enabled = false
 	if not skip_card:
+		# You arrive by summoning: hidden until the seal flares.
+		player.visible = false
 		chapter_card.show_chapter(chapter["number"], chapter["title"],
 			"%s  ·  %s" % [chapter["location"], chapter["time"]])
 		await chapter_card.finished
+		if not is_inside_tree():
+			return
+		await _teleport_in()
 	if is_inside_tree():
 		story_director.start(chapter)
+
+
+## Replaces the training ground with a story island.
+func use_island(island_id: String) -> void:
+	for path in ["Ground", "Scenery"]:
+		var old := get_node_or_null(path)
+		if old:
+			remove_child(old)
+			old.queue_free()
+	if island:
+		remove_child(island)
+		island.queue_free()
+	for light in lantern_lights:
+		if is_instance_valid(light):
+			light.queue_free()
+	lantern_lights.clear()
+	island = Island.new()
+	add_child(island)
+	island.build(island_id)
+
+
+func _teleport_fx() -> TeleportFx:
+	var fx := TeleportFx.new()
+	var nature := int(Profile.get_value(&"affinity"))
+	fx.color = Element.color(nature).lightened(0.2)
+	add_child(fx)
+	fx.global_position = player.global_position
+	return fx
+
+
+## White flash, the seal flares, and you're standing on the island.
+func _teleport_in() -> void:
+	var fx := _teleport_fx()
+	flash_screen(1.0, 0.0, 0.9)
+	player.visible = true
+	fx.arrive()
+	await get_tree().create_timer(0.7).timeout
+
+
+## The seal builds under you, a white flash, and you're gone.
+func _teleport_out() -> void:
+	var fx := _teleport_fx()
+	fx.depart()
+	await fx.peaked
+	flash_screen(0.0, 1.0, 0.25)
+	await get_tree().create_timer(0.3).timeout
+	player.visible = false
+	fx.queue_free()
+	flash_screen(1.0, 0.0, 1.0)
+
+
+## Fades a full-screen white flash from `from` to `to` opacity.
+func flash_screen(from: float, to: float, seconds: float) -> void:
+	if _flash == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 13
+		add_child(layer)
+		_flash = ColorRect.new()
+		_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(_flash)
+	_flash.color = Color(1, 1, 1, from)
+	var tw := _flash.create_tween()
+	tw.tween_property(_flash, "color:a", to, seconds)
+
+
+func flash_alpha() -> float:
+	return _flash.color.a if _flash else 0.0
 
 
 func _on_story_fight_lost() -> void:
@@ -165,9 +249,13 @@ func _on_story_fight_lost() -> void:
 
 func _on_chapter_finished(chapter: Dictionary) -> void:
 	var next := story.next_chapter(chapter["id"])
-	await get_tree().create_timer(1.0).timeout
+	await get_tree().create_timer(1.0 if _quick else 0.8).timeout
 	if not is_inside_tree():
 		return
+	if not _quick:
+		await _teleport_out()
+		if not is_inside_tree():
+			return
 	var body := "Next:  %s %s" % [Story.numeral(next["number"]), next["title"]] if not next.is_empty() \
 		else "The end. Thank you for playing."
 	results.show_panel("完", true, "第%s章" % Story.numeral(chapter["number"]), "CHAPTER COMPLETE",
@@ -203,7 +291,9 @@ func set_time_of_day(time: String) -> void:
 	sky.sky_top_color = t["top"]
 	sky.sky_horizon_color = t["horizon"]
 	sky.ground_horizon_color = t["horizon"]
-	sky.ground_bottom_color = Color(t["horizon"]).darkened(0.8)
+	# Over the sea the horizon continues down; on the training ground the
+	# ground below the horizon is dark earth.
+	sky.ground_bottom_color = Color(t["horizon"]) if island else Color(t["horizon"]).darkened(0.8)
 	env.ambient_light_color = t["ambient"]
 	env.fog_light_color = t["horizon"]
 	var sun := $Sun as DirectionalLight3D
@@ -211,15 +301,27 @@ func set_time_of_day(time: String) -> void:
 	sun.light_energy = t["energy"]
 	sun.rotation_degrees = Vector3(-float(t["elevation"]), float(t["yaw"]), 0.0)
 	if t["lanterns"] and lantern_lights.is_empty():
-		for node in $Scenery.get_children():
+		for node in lanterns():
+			var light := OmniLight3D.new()
+			light.light_color = Color(1.0, 0.7, 0.38)
+			light.light_energy = 2.2
+			light.omni_range = 7.0
+			light.position = Vector3(0, 1.3, 0)
+			node.add_child(light)
+			lantern_lights.append(light)
+
+
+## The lantern props: the island's, or the training ground's.
+func lanterns() -> Array[Node3D]:
+	if island:
+		return island.lanterns
+	var out: Array[Node3D] = []
+	var scenery := get_node_or_null("Scenery")
+	if scenery:
+		for node in scenery.get_children():
 			if node.name.begins_with("Lantern"):
-				var light := OmniLight3D.new()
-				light.light_color = Color(1.0, 0.7, 0.38)
-				light.light_energy = 2.2
-				light.omni_range = 7.0
-				light.position = Vector3(0, 1.3, 0)
-				node.add_child(light)
-				lantern_lights.append(light)
+				out.append(node)
+	return out
 
 
 ## Rain, storm (rain with lightning), snow or falling leaves around the player.
@@ -505,6 +607,29 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		"chapter_card":
 			start_story("ch3_vault")
 			await _frames(12)
+		_ when demo.begins_with("island:"):
+			# An island from the air: --demo=island:old_dam
+			hud.visible = false
+			player.visible = false
+			use_island(demo.trim_prefix("island:"))
+			set_time_of_day("day")
+			var cam := Camera3D.new()
+			add_child(cam)
+			cam.far = 3000.0
+			cam.position = Vector3(62, 58, 78)
+			cam.look_at(Vector3(0, 0, -6))
+			cam.current = true
+			await _frames(30)
+		"teleport", "teleport_night":
+			# The summoning seal at full strength, mid-departure.
+			start_story("ch4_pass" if demo == "teleport_night" else "ch7_wood", true)
+			await _frames(20)
+			dialogue.visible = false
+			var fx := _teleport_fx()
+			fx.strength = 1.0
+			fx._sparks.emitting = true
+			player.camera_rig.begin_showcase(-0.6)
+			await _frames(50)
 		_ when demo.begins_with("chapter:"):
 			# Any chapter's opening scene: --demo=chapter:ch8_dam
 			start_story(demo.trim_prefix("chapter:"), true)

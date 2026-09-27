@@ -4,6 +4,7 @@
 	"title": "The Graduation Trial",
 	"location": "Emberwood Academy yard",
 	"time": "dawn",
+	"island": "emberwood",
 	"summary": "Sensei Hisame puts you through the graduation trial.",
 	"dummies": true,
 	"player_at": [0, 4],

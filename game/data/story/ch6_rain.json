@@ -5,6 +5,7 @@
 	"title": "Rain Lessons",
 	"location": "Emberwood Academy yard",
 	"time": "day",
+	"island": "emberwood",
 	"weather": "rain",
 	"summary": "Hisame teaches you to break a weave. A hunter arrives.",
 	"player_at": [0, 4],

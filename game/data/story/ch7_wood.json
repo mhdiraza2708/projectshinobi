@@ -5,6 +5,7 @@
 	"title": "The Autumn Wood",
 	"location": "Autumn Wood, north of Emberwood",
 	"time": "dusk",
+	"island": "autumn_wood",
 	"weather": "leaves",
 	"summary": "Cut through Kagerou's clones with Asahi at your side.",
 	"player_at": [0, 5],
