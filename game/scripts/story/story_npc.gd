@@ -65,5 +65,5 @@ func vanish() -> void:
 func _puff() -> void:
 	var parent := get_parent()
 	if parent:
-		Vfx.burst(parent, global_position + Vector3.UP, Color(0.9, 0.9, 0.92), 1.4, 0.45)
+		Vfx.smoke_puff(parent, global_position + Vector3.UP, 1.0)
 	Sfx.play_at(&"smoke", global_position + Vector3.UP, -3.0)

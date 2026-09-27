@@ -8,7 +8,7 @@ SHOTS ?= screenshots
 # Any Python with numpy and scipy (pip install -r art/audio/requirements.txt).
 PYTHON ?= python3
 
-.PHONY: run editor import test assets animations sfx music voices fonts screenshots
+.PHONY: run editor import test assets animations sfx music voices vfx fonts screenshots
 
 run:
 	$(GODOT) --path game
@@ -47,6 +47,11 @@ music:
 # its en-us-libritts-high voice (see art/audio/make_voices.py for links).
 voices:
 	$(PYTHON) art/audio/make_voices.py --piper $(PIPER) --model $(VOICE_MODEL)
+	$(MAKE) import
+
+# Regenerate the particle/effect textures in game/assets/vfx/ (numpy + Pillow).
+vfx:
+	$(PYTHON) art/vfx/make_textures.py
 	$(MAKE) import
 
 # Re-subset the Japanese UI fonts after adding kanji (needs fonttools).

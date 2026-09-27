@@ -24,23 +24,13 @@ func _ready() -> void:
 	shape.position.y = HEIGHT * 0.5
 	add_child(shape)
 
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	var mi := MeshInstance3D.new()
-	mi.mesh = mesh
-	mi.position.y = HEIGHT * 0.5
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Element.color(element).darkened(0.25)
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
-	mat.roughness = 0.9
 	if element == Element.WATER:
-		mat.albedo_color.a = 0.65
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		mat.emission_enabled = true
-		mat.emission = Element.color(element)
-		mat.emission_energy_multiplier = 0.6
-	mi.material_override = mat
-	add_child(mi)
+		_build_water(size)
+	else:
+		_build_stone(size)
+	# It bursts up out of the ground.
+	Vfx.dust(get_parent(), global_position, half_width * 0.8)
+	Vfx.debris(get_parent(), global_position + Vector3.UP * 0.2, Element.color(element).darkened(0.3), 12, 6.0)
 
 	Sfx.play_at(&"wall_rise", global_position)
 	# Rise from below ground, hold, then sink and free.
@@ -53,3 +43,56 @@ func _ready() -> void:
 	tw.tween_property(self, "position:y", rest_y - HEIGHT - 0.2, 0.4) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tw.tween_callback(queue_free)
+
+
+## A row of rough stone slabs, uneven at the top.
+func _build_stone(size: Vector3) -> void:
+	var count := maxi(2, ceili(size.x / 0.9))
+	var slab_w := size.x / count
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(global_position)
+	var base := Element.color(element).lerp(Color(0.46, 0.43, 0.4), 0.65)
+	for i in count:
+		var h := HEIGHT * rng.randf_range(0.82, 1.08)
+		var box := BoxMesh.new()
+		box.size = Vector3(slab_w * rng.randf_range(0.95, 1.12), h, size.z * rng.randf_range(0.85, 1.1))
+		var mi := MeshInstance3D.new()
+		mi.mesh = box
+		mi.position = Vector3(-size.x * 0.5 + slab_w * (i + 0.5), h * 0.5, rng.randf_range(-0.06, 0.06))
+		mi.rotation = Vector3(rng.randf_range(-0.06, 0.06), rng.randf_range(-0.12, 0.12), rng.randf_range(-0.07, 0.07))
+		var mat := Toon.flat(base.lightened(rng.randf_range(-0.08, 0.12)), 1.0)
+		mat.next_pass = Toon.outline(0.02)
+		mi.material_override = mat
+		add_child(mi)
+
+
+## A standing curtain of water pouring down, with spray and mist.
+func _build_water(size: Vector3) -> void:
+	var box := BoxMesh.new()
+	box.size = size
+	var mi := MeshInstance3D.new()
+	mi.mesh = box
+	mi.position.y = HEIGHT * 0.5
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://assets/shaders/water.gdshader")
+	mat.set_shader_parameter(&"deep", Color(0.25, 0.55, 0.85))
+	mat.set_shader_parameter(&"shallow", Color(0.85, 0.95, 1.0))
+	mat.set_shader_parameter(&"falling", 1.0)
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+	var spray := Vfx.particles({"texture": &"glow", "amount": 40, "lifetime": 0.8, "size": [0.08, 0.18],
+		"speed": [1.0, 3.0], "direction": Vector3.UP, "spread": 50.0, "gravity": Vector3(0, -9, 0),
+		"colors": Vfx.gradient([Color(0.9, 0.97, 1.0), Color(0.5, 0.8, 1.0, 0.0)])})
+	spray.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	spray.emission_box_extents = Vector3(size.x * 0.5, 0.05, size.z * 0.5)
+	spray.position.y = HEIGHT
+	add_child(spray)
+	var mist := Vfx.particles({"texture": &"smoke", "atlas": true, "additive": false, "amount": 10,
+		"lifetime": 1.2, "size": [0.6, 1.0], "speed": [0.3, 0.8], "direction": Vector3.UP, "spread": 60.0,
+		"colors": Vfx.gradient([Color(0.85, 0.93, 1.0, 0.0), Color(0.85, 0.93, 1.0, 0.4), Color(0.85, 0.93, 1.0, 0.0)], [0, 0.3, 1.0])})
+	mist.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	mist.emission_box_extents = Vector3(size.x * 0.5, 0.05, size.z * 0.6)
+	mist.position.y = 0.2
+	add_child(mist)
+

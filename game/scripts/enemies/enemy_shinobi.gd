@@ -147,10 +147,7 @@ func _ready() -> void:
 	model.voice_id = voice_id
 	add_child(model)
 	if aura_color.a > 0.0:
-		var aura := Vfx.sphere(0.9 * size, Vfx.glow_material(aura_color, 1.6, aura_color.a))
-		aura.position.y = 0.95 * size
-		aura.scale = Vector3(0.8, 1.15, 0.8)
-		add_child(aura)
+		add_child(Vfx.boss_aura(aura_color, size))
 
 	caster = JutsuCaster.new()
 	caster.name = "Caster"
@@ -179,7 +176,7 @@ func _ready() -> void:
 	_kunai_cd = randf_range(1.0, 2.0)
 	_jutsu_cd = randf_range(1.5, 3.0)
 	_strafe_sign = 1.0 if randf() < 0.5 else -1.0
-	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(0.85, 0.85, 0.9), 1.4, 0.5)
+	Vfx.smoke_puff(get_parent(), global_position + Vector3.UP, 1.0 * size)
 	Sfx.play_at(&"smoke", global_position)
 
 
@@ -282,10 +279,20 @@ func set_element(nature: int) -> void:
 	caster.affinity = nature
 	jutsu_list = jutsu_for(nature, _r["max_cost"])
 	var c := Element.color(nature)
-	_ring.material_override = Vfx.glow_material(c, 1.2, 0.45)
+	_ring.material_override = _ring_material(c)
 	_name_label.text = display_name()
 	_name_label.modulate = c.lightened(0.35)
-	Vfx.burst(get_parent(), global_position + Vector3.UP, c, 1.3, 0.35)
+	# Changing nature: a flare of the new colour.
+	Vfx.flash(get_parent(), global_position + Vector3.UP, c.lightened(0.3), 2.4 * size, 0.25, &"glow")
+	Vfx.shockwave(get_parent(), global_position, c, 2.6 * size, 0.5)
+	Vfx.sparks(get_parent(), global_position + Vector3.UP, c.lightened(0.2), 16, 7.0)
+
+
+## A soft glow in the nature's colour on the ground under the fighter.
+static func _ring_material(c: Color) -> StandardMaterial3D:
+	var m := Vfx.surface_material(Vfx.tex(&"glow"), true)
+	m.albedo_color = Color(c, 0.75)
+	return m
 
 
 func is_defeated() -> bool:
@@ -298,7 +305,7 @@ func leave() -> void:
 	state = State.DEFEATED
 	remove_from_group(&"lockable")
 	remove_from_group(team)
-	Vfx.burst(get_parent(), global_position + Vector3.UP, Color(0.9, 0.9, 0.92), 1.4, 0.45)
+	Vfx.smoke_puff(get_parent(), global_position + Vector3.UP, 1.0 * size)
 	Sfx.play_at(&"smoke", global_position + Vector3.UP, -3.0)
 	queue_free()
 
@@ -521,10 +528,14 @@ func _melee_hit() -> void:
 	var forward := -global_basis.z
 	velocity += forward * 3.0
 	var center := global_position + forward * MELEE_REACH + Vector3.UP * 1.1
+	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1),
+		Element.color(element), 1.9 * size, randf_range(-0.7, 0.7))
 	var landed := false
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, 0.9, [get_rid()]):
 		if Combat.apply_hit(victim, _r["melee"], Element.NONE, self) > 0.0:
 			landed = true
+			var at := (victim as Node3D).global_position + Vector3.UP * 1.1 - forward * 0.4 if victim is Node3D else center
+			Vfx.hit_spark(get_parent(), at, Element.color(element), 1.0, forward)
 	if landed:
 		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
 
@@ -617,7 +628,7 @@ func _check_phases() -> void:
 			var away := global_position - target.global_position
 			away.y = 0.0
 			var hop := away.normalized().rotated(Vector3.UP, randf_range(-0.8, 0.8)) * 3.5
-			Vfx.burst(get_parent(), global_position + Vector3.UP, Color(0.9, 0.9, 0.92), 1.6, 0.4)
+			Vfx.smoke_puff(get_parent(), global_position + Vector3.UP, 1.1 * size)
 			global_position += hop
 			Sfx.play_at(&"smoke", global_position)
 		phase_reached.emit(phase)
@@ -643,8 +654,9 @@ func _on_died() -> void:
 	_name_label.visible = false
 	_bar.visible = false
 	var puff := global_position + Vector3.UP
-	Vfx.burst(get_parent(), puff, Color(0.9, 0.9, 0.92), 2.0, 0.6)
-	Vfx.burst(get_parent(), puff + Vector3.UP * 0.3, Element.color(element), 1.2, 0.35)
+	Vfx.smoke_puff(get_parent(), puff, 1.3 * size)
+	Vfx.flash(get_parent(), puff, Element.color(element).lightened(0.4), 2.2 * size, 0.2)
+	Vfx.sparks(get_parent(), puff, Element.color(element), 14, 6.0)
 	Sfx.play_at(&"smoke", puff)
 	Sfx.play_at(&"enemy_down", puff, -2.0)
 	defeated.emit(self)
@@ -659,13 +671,13 @@ func _on_died() -> void:
 func _build_overhead() -> void:
 	var c := Element.color(element)
 	_ring = MeshInstance3D.new()
-	var disc := CylinderMesh.new()
-	disc.top_radius = 0.6
-	disc.bottom_radius = 0.6
-	disc.height = 0.02
+	var disc := QuadMesh.new()
+	disc.size = Vector2(1.8, 1.8) * size
+	disc.orientation = PlaneMesh.FACE_Y
 	_ring.mesh = disc
-	_ring.material_override = Vfx.glow_material(c, 1.2, 0.45)
-	_ring.position.y = 0.02
+	_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ring.material_override = _ring_material(c)
+	_ring.position.y = 0.03
 	add_child(_ring)
 
 	_name_label = _label3d(display_name(), 30, c.lightened(0.35))

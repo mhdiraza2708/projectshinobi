@@ -11,6 +11,8 @@ const CIRCLE_SHADER := preload("res://assets/shaders/summon_circle.gdshader")
 const PILLAR_SHADER := preload("res://assets/shaders/light_pillar.gdshader")
 
 var color := Color(0.55, 0.8, 1.0)
+## Brightest it gets (lower for effects that happen in daylight crowds).
+var peak := 1.0
 var strength := 0.0:
 	set(value):
 		strength = value
@@ -90,7 +92,7 @@ func _material(shader: Shader) -> ShaderMaterial:
 
 ## Appears at full strength and fades away, then frees itself.
 func arrive(seconds := 1.4) -> void:
-	strength = 1.0
+	strength = peak
 	_sparks.emitting = true
 	Sfx.play_at(&"teleport", global_position + Vector3.UP, -2.0)
 	var tw := create_tween()

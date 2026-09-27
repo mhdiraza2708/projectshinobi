@@ -16,5 +16,5 @@
 Full font licence texts are in `game/assets/fonts/OFL-*.txt`. The subsets
 are rebuilt by `art/fonts/subset_fonts.py`. Everything else
 in this repository (code, shaders, jutsu data, generated environment models,
-synthesised sound effects, the music's compositions and test fixtures) is
-original to this project.
+synthesised sound effects, the music's compositions, the procedurally
+generated effect textures and test fixtures) is original to this project.

@@ -23,6 +23,7 @@ var homing_rate := 2.2
 var on_hit: Callable
 
 var _travelled := 0.0
+var _visual: Node3D
 var _exclude: Array[RID] = []
 var _shape_params: PhysicsShapeQueryParameters3D
 
@@ -46,13 +47,13 @@ func _ready() -> void:
 
 	color = Element.color(element)
 	if style == &"kunai":
-		add_child(Vfx.kunai())
-		add_child(Vfx.trail(Color(1, 1, 1, 0.9), 0.05))
-		_orient()
+		_visual = Node3D.new()
+		_visual.add_child(Vfx.kunai())
+		_visual.add_child(Vfx.trail(Color(1, 1, 1, 0.55), 0.06, 0.12, true))
 	else:
-		add_child(Vfx.sphere(radius, Vfx.glow_material(color, 3.0)))
-		add_child(Vfx.light(color, radius * 10.0 + 2.0))
-		add_child(Vfx.trail(color, radius * 0.6))
+		_visual = Vfx.projectile_visual(element, radius)
+	add_child(_visual)
+	_orient()
 
 
 func _physics_process(delta: float) -> void:
@@ -60,8 +61,7 @@ func _physics_process(delta: float) -> void:
 		var aim := target.global_position + Vector3.UP * 1.0 - global_position
 		if aim.length() > 0.5:
 			direction = direction.slerp(aim.normalized(), clampf(homing_rate * delta, 0.0, 1.0)).normalized()
-	if style == &"kunai":
-		_orient()
+	_orient()
 
 	var distance := speed * delta
 	var steps := maxi(1, ceili(distance / maxf(radius, 0.05)))
@@ -76,6 +76,7 @@ func _physics_process(delta: float) -> void:
 			_impact(hits[0]["collider"])
 			return
 		if _travelled >= max_range:
+			Vfx.linger(_visual, get_parent())
 			queue_free()
 			return
 
@@ -91,10 +92,12 @@ func _impact(collider: Node) -> void:
 		on_hit.call(victim)
 	Sfx.play_at(&"kunai_hit" if style == &"kunai" else &"impact", global_position,
 		0.0 if victim else -6.0)
+	# Trails and embers finish where they are instead of vanishing.
+	Vfx.linger(_visual, get_parent())
 	if style == &"kunai":
 		_stick(collider as Node3D)
 	else:
-		Vfx.burst(get_parent(), global_position, color, radius * 3.0 + 0.6, 0.3)
+		Vfx.impact(get_parent(), global_position, element, clampf(radius / 0.3, 0.7, 2.2))
 	queue_free()
 
 
@@ -110,5 +113,5 @@ func _stick(into: Node3D) -> void:
 	var holder: Node = into if into and into.is_inside_tree() else get_parent()
 	holder.add_child(stuck)
 	stuck.global_transform = Transform3D(global_basis, global_position - direction * 0.08)
-	Vfx.burst(get_parent(), global_position, Color(1.0, 0.95, 0.8), 0.35, 0.15)
+	Vfx.kunai_hit(get_parent(), global_position, direction)
 	stuck.get_tree().create_timer(STUCK_TIME).timeout.connect(stuck.queue_free)

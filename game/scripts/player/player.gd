@@ -73,6 +73,8 @@ var _state_time := 0.0
 var _weave_started_frame := -1
 var _air_jumps_left := 0
 var _dash_dir := Vector3.FORWARD
+var _charge_fx: Node3D
+var _dash_trail: VfxTrail
 var _dash_cooldown_left := 0.0
 var _sprinting := false
 var _strike_cooldown := 0.0
@@ -268,10 +270,17 @@ func _enter(new_state: State) -> void:
 		State.CHARGING:
 			stats.is_charging = false
 			Sfx.stop_loop(&"charge")
+			_stop_charge_fx()
 		State.GUARDING: stats.guard_multiplier = 1.0
-		State.DASHING: stats.is_invulnerable = false
+		State.DASHING:
+			stats.is_invulnerable = false
+			if is_instance_valid(_dash_trail):
+				_dash_trail.emitting = false
+				_dash_trail.reparent(get_parent())
+			_dash_trail = null
 	if new_state == State.CHARGING:
 		Sfx.start_loop(&"charge", &"charge_loop", -3.0)
+		_start_charge_fx()
 	state = new_state
 	_state_time = 0.0
 	state_changed.emit(state)
@@ -338,7 +347,27 @@ func _jump() -> void:
 		_air_jumps_left -= 1
 		velocity.y = jump_velocity * 0.9
 		Sfx.play(&"chakra_jump")
-		Vfx.burst(get_parent(), global_position, Element.color(Element.NONE), 1.0, 0.3)
+		var chakra := Element.color(Element.NONE)
+		Vfx.shockwave(get_parent(), global_position, chakra, 1.6, 0.35)
+		Vfx.flash(get_parent(), global_position, chakra.lightened(0.4), 1.2, 0.15, &"glow")
+
+
+func _start_charge_fx() -> void:
+	_stop_charge_fx()
+	_charge_fx = Vfx.charge_aura(Element.color(int(Profile.get_value(&"affinity"))).lerp(Element.color(Element.NONE), 0.5))
+	add_child(_charge_fx)
+
+
+func _stop_charge_fx() -> void:
+	if not is_instance_valid(_charge_fx):
+		return
+	var fx := _charge_fx
+	_charge_fx = null
+	for p in fx.find_children("*", "CPUParticles3D", true, false):
+		(p as CPUParticles3D).emitting = false
+	var tw := fx.create_tween()
+	tw.tween_property(fx, "scale", Vector3(0.6, 0.2, 0.6), 0.25).set_ease(Tween.EASE_IN)
+	tw.tween_callback(fx.queue_free)
 
 
 func _start_dash() -> void:
@@ -351,6 +380,14 @@ func _start_dash() -> void:
 	_dash_cooldown_left = dash_cooldown
 	Sfx.play(&"dash")
 	_enter(State.DASHING)
+	# Dust where you pushed off, and a streak where you went.
+	Vfx.dust(get_parent(), global_position, 0.7)
+	_dash_trail = Vfx.trail(Color(0.85, 0.92, 1.0, 0.35), 1.1, 0.18, true)
+	var chest := Node3D.new()
+	chest.position.y = 1.0
+	add_child(chest)
+	chest.add_child(_dash_trail)
+	get_tree().create_timer(dash_time + 0.4, false).timeout.connect(chest.queue_free)
 
 
 func _strike() -> void:
@@ -366,12 +403,18 @@ func _strike() -> void:
 	var forward := -global_basis.z
 	velocity += forward * 3.0
 	var center := global_position + forward * strike_reach + Vector3.UP * 1.1
+	# The blade's arc: each blow of the combo cuts at a different angle.
+	var tilt: float = [0.7, -0.7, 1.35][_strike_combo]
+	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1), Color(0.3, 0.55, 1.0), 2.2, tilt)
 	var damage := strike_damage * (1.0 + 0.25 * _strike_combo) * (1.0 + stats.modifier(&"attack_power"))
 	var landed := false
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, 0.9, [get_rid()]):
 		if Combat.apply_hit(victim, damage, Element.NONE, self) > 0.0:
 			landed = true
 			notify_hit(victim, &"strike")
+			# On the struck body's near side, where the blow lands.
+			var at := (victim as Node3D).global_position + Vector3.UP * 1.1 - forward * 0.4 if victim is Node3D else center
+			Vfx.hit_spark(get_parent(), at, Color(1.0, 0.62, 0.15), 1.0, forward)
 	if landed:
 		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
 		camera_rig.add_shake(0.25)

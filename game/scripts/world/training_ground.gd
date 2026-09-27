@@ -620,6 +620,50 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.look_at(Vector3(0, 0, -6))
 			cam.current = true
 			await _frames(30)
+		_ when demo.begins_with("vfx:"):
+			# A jutsu mid-flight or mid-blast: --demo=vfx:ember_volley:12
+			# (the number is physics frames after casting).
+			var parts := demo.split(":")
+			var jutsu := JutsuRegistry.get_jutsu(StringName(parts[1]))
+			var wait := int(parts[2]) if parts.size() > 2 else 10
+			player.toggle_lock()
+			await _frames(30)
+			_side_camera()
+			player.stats.chakra = player.stats.max_chakra
+			player.caster.cast(jutsu, player.lock_target)
+			for f in wait:
+				await get_tree().physics_frame
+		"vfx_strike", "vfx_strike_back", "vfx_charge", "vfx_dash":
+			player.toggle_lock()
+			await _frames(30)
+			if demo != "vfx_strike_back":
+				_side_camera()
+			match demo:
+				"vfx_strike", "vfx_strike_back":
+					player.global_position = player.lock_target.global_position + Vector3(0, 0, 1.6)
+					await _frames(2)
+					player._strike()
+					for f in 3:
+						await get_tree().physics_frame
+				"vfx_charge":
+					Input.action_press(&"charge_chakra")
+					for f in 50:
+						await get_tree().physics_frame
+				"vfx_dash":
+					player._start_dash()
+					for f in 8:
+						await get_tree().physics_frame
+		"vfx_puff":
+			var e := EnemyShinobi.new()
+			e.element = Element.FIRE
+			e.position = player.global_position + Vector3(0, 0, -5)
+			add_child(e)
+			player.toggle_lock()
+			for f in 60:
+				await get_tree().physics_frame
+			e.take_hit(9999.0, Element.WATER, player)
+			for f in 8:
+				await get_tree().physics_frame
 		"teleport", "teleport_night":
 			# The summoning seal at full strength, mid-departure.
 			start_story("ch4_pass" if demo == "teleport_night" else "ch7_wood", true)
@@ -669,6 +713,21 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		push_error("Could not save screenshot to %s (error %d)" % [path, err])
 	Input.action_release(&"weave")
 	get_tree().quit(0 if err == OK else 1)
+
+
+## A camera off to the side, framing the player and what they're locked on
+## to (effect screenshots).
+func _side_camera() -> void:
+	var a := player.global_position
+	var b: Vector3 = player.lock_target.global_position if is_instance_valid(player.lock_target) else a + Vector3(0, 0, -8)
+	var mid := (a + b) * 0.5 + Vector3.UP * 1.0
+	var side := (b - a).cross(Vector3.UP).normalized()
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.fov = 50
+	cam.position = mid + side * a.distance_to(b) * 0.95 + Vector3.UP * 1.2
+	cam.look_at(mid)
+	cam.current = true
 
 
 func _frames(n: int) -> void:

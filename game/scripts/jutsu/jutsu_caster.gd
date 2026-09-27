@@ -86,10 +86,14 @@ func cast(jutsu: JutsuDefinition, target: Node3D = null) -> bool:
 			_aura(jutsu)
 		JutsuDefinition.Form.HEAL:
 			stats.heal(jutsu.power)
-			Vfx.burst(_world_parent(), _body().global_position + Vector3.UP, Color(0.5, 1.0, 0.6), 1.8, 0.6)
+			Vfx.heal(_world_parent(), _body().global_position)
 	var sound := cast_sound(jutsu)
 	if sound != &"":
 		Sfx.play_at(sound, global_position)
+	# A burst of chakra at the hands as the technique leaves them.
+	if jutsu.visual != &"kunai" and jutsu.form in [JutsuDefinition.Form.PROJECTILE, JutsuDefinition.Form.AREA]:
+		var hands := global_position + aim_direction(target) * 0.5
+		Vfx.flash(_world_parent(), hands, Element.color(jutsu.element).lightened(0.4), 1.3, 0.16, &"glow")
 	cast_succeeded.emit(jutsu)
 	return true
 
@@ -158,7 +162,7 @@ func _blast(jutsu: JutsuDefinition, power: float) -> void:
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, jutsu.radius, exclude):
 		if Combat.apply_hit(victim, power, jutsu.element, _body()) > 0.0 and _body().has_method(&"notify_hit"):
 			_body().notify_hit(victim, &"jutsu")
-	Vfx.burst(_world_parent(), center, Element.color(jutsu.element), jutsu.radius, 0.45)
+	Vfx.area_blast(_world_parent(), center, jutsu.element, jutsu.radius)
 	Sfx.play_at(&"explosion", center)
 
 
@@ -175,12 +179,10 @@ func _raise_wall(jutsu: JutsuDefinition) -> void:
 
 
 func _aura(jutsu: JutsuDefinition) -> void:
-	var aura := Vfx.sphere(1.1, Vfx.glow_material(Element.color(jutsu.element), 1.5, 0.18))
-	aura.position = Vector3.UP * 0.95
-	aura.scale = Vector3(0.8, 1.1, 0.8)
-	_body().add_child(aura)
-	var mat := aura.material_override as StandardMaterial3D
-	var tw := aura.create_tween()
-	tw.tween_interval(maxf(0.0, jutsu.duration - 0.5))
-	tw.tween_property(mat, "albedo_color:a", 0.0, 0.5)
-	tw.tween_callback(aura.queue_free)
+	# One aura at a time: a new buff replaces the old glow.
+	var old := _body().get_node_or_null(^"Aura")
+	if old:
+		old.name = "AuraOld"
+		old.queue_free()
+	_body().add_child(Vfx.aura(jutsu.element, jutsu.duration))
+	Vfx.shockwave(_world_parent(), _body().global_position, Element.color(jutsu.element), 1.8, 0.5)
