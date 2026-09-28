@@ -137,11 +137,14 @@ jobs:
       - name: Install Blender (bpy)
         run: pip install -r art/blender/requirements.txt
 
+      - name: Bake every texture (smoke test at reduced size)
+        run: python art/blender/textures.py --size-scale 0.125 --out /tmp/textures
+
       - name: Build every asset
         run: python art/blender/build_assets.py --out /tmp/assets
 
       - name: Every committed model is reproducible by the script
         run: |
-          for f in game/assets/models/*.glb; do
+          for f in game/assets/models/*.gltf; do
             test -f "/tmp/assets/$(basename "$f")" || { echo "::error::$f has no generator"; exit 1; }
           done

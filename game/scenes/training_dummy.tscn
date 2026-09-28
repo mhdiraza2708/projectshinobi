@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/world/training_dummy.gd" id="1_dummy"]
-[ext_resource type="PackedScene" path="res://assets/models/training_dummy.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://assets/models/training_dummy.gltf" id="2_model"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_dummy"]
 radius = 0.45

@@ -63,7 +63,7 @@ const PRESETS := {
 		"seed": 23, "clearing": 22.0, "coast": 62.0, "hills": 16.0, "open_dir": 100.0, "open_low": 0.35,
 		"grass": Color("5b5550"), "grass2": Color("4a4541"), "dirt": Color("6e6259"), "rock": Color("3d3a39"),
 		"sand": Color("7a7169"), "deep": Color("1b2a33"), "shallow": Color("33474f"), "tufts": Color("77705a"),
-		"far": Color("4a4a55"),
+		"far": Color("4a4a55"), "textures": {"grass": "dirt"},
 		"paths": [[[[0, -20], [0, -34], [4, -46]], 3.0]],
 		"props": [
 			{"scene": "gate_broken", "at": [0, -24]},
@@ -126,7 +126,7 @@ const PRESETS := {
 		"seed": 53, "clearing": 22.0, "coast": 64.0, "hills": 12.0, "open_dir": 180.0, "open_low": 0.3,
 		"grass": Color("e4e9ef"), "grass2": Color("cfd8e2"), "dirt": Color("b8b3ac"), "rock": Color("5c6068"),
 		"sand": Color("cfd3d6"), "deep": Color("1d3c52"), "shallow": Color("5b8ea3"), "tufts": null,
-		"far": Color("8a9bb0"),
+		"far": Color("8a9bb0"), "textures": {"grass": "snow", "sand": "snow"},
 		"paths": [[[[0, 50], [0, 30], [0, -30], [-6, -50]], 4.0]],
 		"props": [
 			{"scene": "lantern", "at": [-3.5, -20]}, {"scene": "lantern", "at": [3.5, -20]},
@@ -290,11 +290,11 @@ func _build_terrain() -> void:
 	verts.resize(n * n)
 	normals.resize(n * n)
 	colors.resize(n * n)
-	var grass: Color = preset["grass"]
-	var grass2: Color = preset["grass2"]
-	var dirt: Color = preset["dirt"]
-	var rock: Color = preset["rock"]
-	var sand: Color = preset["sand"]
+	# Splat weights for the terrain shader: r grass, g dirt, b rock, a sand.
+	const GRASS := Color(1, 0, 0, 0)
+	const DIRT := Color(0, 1, 0, 0)
+	const ROCK := Color(0, 0, 1, 0)
+	const SAND := Color(0, 0, 0, 1)
 	var clearing: float = preset["clearing"]
 	for j in n:
 		for i in n:
@@ -310,14 +310,11 @@ func _build_terrain() -> void:
 			verts[k] = Vector3(x, h, z)
 			normals[k] = nrm
 			var r := sqrt(x * x + z * z)
-			var c := grass.lerp(grass2, clampf(0.5 + 0.9 * _noise.get_noise_2d(x * 3.0, z * 3.0), 0.0, 1.0))
-			c = c.lerp(dirt, 1.0 - smoothstep(clearing - 11.0, clearing - 5.0, r + 2.0 * _detail.get_noise_2d(x * 0.5, z * 0.5)))
+			var c := GRASS.lerp(DIRT, 1.0 - smoothstep(clearing - 11.0, clearing - 5.0, r + 2.0 * _detail.get_noise_2d(x * 0.5, z * 0.5)))
 			if not _paths.is_empty() and r > clearing - 8.0:
-				c = c.lerp(dirt, 1.0 - smoothstep(-0.5, 0.8, _path_distance(Vector2(x, z))))
-			c = c.lerp(sand, smoothstep(water_level + 1.1, water_level + 0.3, h))
-			c = c.lerp(sand.darkened(0.45), smoothstep(water_level - 0.3, water_level - 2.5, h))
-			c = c.lerp(rock, smoothstep(0.28, 0.5, 1.0 - nrm.y))
-			c = c.darkened(0.06 * _detail.get_noise_2d(x * 4.0, z * 4.0))
+				c = c.lerp(DIRT, 1.0 - smoothstep(-0.5, 0.8, _path_distance(Vector2(x, z))))
+			c = c.lerp(SAND, smoothstep(water_level + 1.1, water_level + 0.3, h))
+			c = c.lerp(ROCK, smoothstep(0.28, 0.5, 1.0 - nrm.y))
 			colors[k] = c
 	var indices := PackedInt32Array()
 	indices.resize((n - 1) * (n - 1) * 6)
@@ -340,10 +337,11 @@ func _build_terrain() -> void:
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 0.95
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	var palette := {}
+	for layer in ["grass", "grass2", "dirt", "rock", "sand"]:
+		palette[layer] = preset[layer]
+	var mat := TerrainMaterial.make(preset.get("textures", {}), palette)
+	mat.set_shader_parameter(&"water_level", water_level)
 	mesh.surface_set_material(0, mat)
 	var mi := MeshInstance3D.new()
 	mi.name = "Terrain"
@@ -438,7 +436,7 @@ func _build_wall() -> void:
 func _place_prop(prop: Dictionary) -> Vector2:
 	var scene_name: String = prop["scene"]
 	var at := Vector2(prop["at"][0], prop["at"][1])
-	var node: Node3D = (load(MODELS + scene_name + ".glb") as PackedScene).instantiate()
+	var node: Node3D = (load(MODELS + scene_name + ".gltf") as PackedScene).instantiate()
 	node.name = scene_name.capitalize().replace(" ", "")
 	var s := float(prop.get("scale", 1.0))
 	node.scale = Vector3.ONE * s
@@ -537,7 +535,7 @@ func _scatter(spec: Dictionary, avoid: Array[Vector2]) -> void:
 func _model_meshes(scene_name: String) -> Array:
 	if _mesh_cache.has(scene_name):
 		return _mesh_cache[scene_name]
-	var root: Node3D = (load(MODELS + scene_name + ".glb") as PackedScene).instantiate()
+	var root: Node3D = (load(MODELS + scene_name + ".gltf") as PackedScene).instantiate()
 	var out := []
 	for node in root.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D

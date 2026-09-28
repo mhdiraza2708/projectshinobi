@@ -37,7 +37,7 @@ func test_every_island_builds_with_a_flat_clearing() -> void:
 			assert_near(island.height_at(p.x, p.y), 0.0, 0.001, "%s is flat at %s" % [id, p])
 		assert_true(island.height_at(0, 200) < island.water_level, "%s is surrounded by sea" % id)
 		for prop: Dictionary in island.preset.get("props", []):
-			assert_true(ResourceLoader.exists(Island.MODELS + prop["scene"] + ".glb"), "%s: %s model" % [id, prop["scene"]])
+			assert_true(ResourceLoader.exists(Island.MODELS + prop["scene"] + ".gltf"), "%s: %s model" % [id, prop["scene"]])
 		assert_true(island.find_children("Scatter_*", "MultiMeshInstance3D", true, false).size() > 0, "%s has trees" % id)
 		island.free()
 

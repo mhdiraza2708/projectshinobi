@@ -3,10 +3,10 @@
 [ext_resource type="Script" path="res://scripts/world/training_ground.gd" id="main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="player"]
 [ext_resource type="PackedScene" path="res://scenes/training_dummy.tscn" id="dummy"]
-[ext_resource type="PackedScene" path="res://assets/models/gate.glb" id="gate"]
-[ext_resource type="PackedScene" path="res://assets/models/lantern.glb" id="lantern"]
-[ext_resource type="PackedScene" path="res://assets/models/pine.glb" id="pine"]
-[ext_resource type="PackedScene" path="res://assets/models/rock.glb" id="rock"]
+[ext_resource type="PackedScene" path="res://assets/models/gate.gltf" id="gate"]
+[ext_resource type="PackedScene" path="res://assets/models/lantern.gltf" id="lantern"]
+[ext_resource type="PackedScene" path="res://assets/models/pine.gltf" id="pine"]
+[ext_resource type="PackedScene" path="res://assets/models/rock.gltf" id="rock"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
 sky_top_color = Color(0.2, 0.38, 0.72, 1)
@@ -43,18 +43,6 @@ roughness = 0.95
 material = SubResource("GrassMaterial")
 size = Vector2(160, 160)
 
-[sub_resource type="StandardMaterial3D" id="DirtMaterial"]
-albedo_color = Color(0.55, 0.43, 0.3, 1)
-diffuse_mode = 3
-roughness = 1.0
-
-[sub_resource type="CylinderMesh" id="ArenaMesh"]
-material = SubResource("DirtMaterial")
-top_radius = 15.0
-bottom_radius = 15.0
-height = 0.04
-radial_segments = 64
-
 [node name="TrainingGround" type="Node3D"]
 script = ExtResource("main")
 
@@ -76,10 +64,6 @@ shape = SubResource("GroundShape")
 
 [node name="GroundMesh" type="MeshInstance3D" parent="Ground"]
 mesh = SubResource("GroundMesh")
-
-[node name="Arena" type="MeshInstance3D" parent="Ground"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0, 0)
-mesh = SubResource("ArenaMesh")
 
 [node name="Scenery" type="Node3D" parent="."]
 

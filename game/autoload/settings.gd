@@ -26,6 +26,8 @@ const DEFAULTS := {
 	&"vibration": true,
 	&"screen_shake": 1.0,
 	&"ui_scale": 1.0,
+	# Hardware ray-traced ambient occlusion (only where the GPU supports it).
+	&"ray_tracing": true,
 	# Linear 0-1 volumes for the Master, SFX, UI, Music and Voice audio buses.
 	&"master_volume": 1.0,
 	&"sfx_volume": 1.0,

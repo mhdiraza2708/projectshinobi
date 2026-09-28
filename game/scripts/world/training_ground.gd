@@ -51,6 +51,10 @@ var _customize_from_title := false
 
 
 func _ready() -> void:
+	# Textured grass with a worn dirt ring where you fight.
+	$Ground/GroundMesh.material_override = TerrainMaterial.make({}, {
+		"grass": Color("5f8f3e"), "grass2": Color("50803a"), "dirt": Color("8c6d4b")}, 15.0)
+	add_child(RayTracing.new(self, $WorldEnvironment))
 	hud = Hud.new()
 	add_child(hud)
 	hud.bind(player)
@@ -618,6 +622,20 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.far = 3000.0
 			cam.position = Vector3(62, 58, 78)
 			cam.look_at(Vector3(0, 0, -6))
+			cam.current = true
+			await _frames(30)
+		_ when demo.begins_with("shore:"):
+			# An island seen across the water from just offshore: --demo=shore:emberwood
+			hud.visible = false
+			player.visible = false
+			use_island(demo.trim_prefix("shore:"))
+			set_time_of_day("dusk")
+			var cam := Camera3D.new()
+			add_child(cam)
+			cam.far = 3000.0
+			var from := Vector3(0, island.water_level + 2.5, float(island.preset["coast"]) + 22.0)
+			cam.position = from
+			cam.look_at(Vector3(0, island.water_level + 6.0, 0))
 			cam.current = true
 			await _frames(30)
 		_ when demo.begins_with("vfx:"):

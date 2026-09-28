@@ -423,6 +423,13 @@ func _build_accessibility() -> Control:
 	list.add_child(_section("Display"))
 	list.add_child(_option_row("Screen shake", _slider(&"screen_shake", 0.0, 1.0, 0.1, "%.0f%%", 100.0)))
 	list.add_child(_option_row("UI scale", _slider(&"ui_scale", 0.75, 1.5, 0.05, "%.2f×")))
+	var rt := _toggle(&"ray_tracing")
+	if not RayTracing.available():
+		# Shown off without saving it off: the same save may move to a PC that has one.
+		rt.disabled = true
+		rt.set_pressed_no_signal(false)
+		rt.text = "Needs a ray tracing GPU"
+	list.add_child(_option_row("Ray-traced shadows (RTAO)", rt))
 
 	list.add_child(_section("Audio"))
 	list.add_child(_option_row("Master volume", _slider(&"master_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
