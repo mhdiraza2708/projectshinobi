@@ -4,10 +4,11 @@ PROJECT SHINOBI - how to play
 EASIEST: download the one "ProjectShinobi-Windows" zip from GitHub Actions,
 extract it, and run ProjectShinobi.exe. Everything is already together.
 
-If you got separate downloads instead, extract all of them into the same
-place (for example all into Downloads). The game looks for
-characters_1/2/3.pck and audio_1.pck (music and voices) beside the exe and
-in the folders next to it.
+ProjectShinobi.exe needs ProjectShinobi.pck (the game itself) in the SAME
+folder. If you got separate downloads, put those two side by side first.
+Extract the rest into the same place (for example all into Downloads): the
+game looks for characters_1/2/3.pck and audio_1.pck (music and voices)
+beside the exe and in the folders next to it.
 There's nothing to install. Windows may warn because the exe isn't
 code-signed: click "More info" then "Run anyway".
 
@@ -79,5 +80,12 @@ CUSTOMIZE
 
 SOUND
   Pause > Accessibility > Audio has Master, Effects and Menu volume.
+
+RAY TRACING
+  On graphics cards with hardware ray tracing (NVIDIA RTX, AMD RX 6000 or
+  newer, Intel Arc) the sea mirrors the islands, and characters and props
+  get ray-traced contact shadows. It's on by default; turn it off in
+  Pause > Accessibility > Display if the frame rate drops. On other cards
+  the option is greyed out and nothing changes.
 
 Settings and your character save to %APPDATA%\Godot\app_userdata\Project Shinobi\

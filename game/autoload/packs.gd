@@ -22,10 +22,13 @@ func _init() -> void:
 	if OS.has_feature("editor"):
 		return
 	var exe_dir := OS.get_executable_path().get_base_dir()
+	# The game itself (ProjectShinobi.pck beside ProjectShinobi.exe), which
+	# the engine has already loaded.
+	var main_pack := OS.get_executable_path().get_file().get_basename() + ".pck"
 	var by_name := {}
 	# Beside the exe (any .pck), then nearby (only this game's packs).
 	for f in DirAccess.get_files_at(exe_dir):
-		if f.get_extension() == "pck":
+		if f.get_extension() == "pck" and f != main_pack:
 			by_name[f] = exe_dir.path_join(f)
 	var root := exe_dir.get_base_dir().get_base_dir()
 	if root == "" or root == exe_dir:

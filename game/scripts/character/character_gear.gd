@@ -10,6 +10,9 @@ extends RefCounted
 
 const REFERENCE_HEIGHT := 1.6
 const PLATE_SHADER := preload("res://assets/shaders/hitai_plate.gdshader")
+## Modelled in art/blender/build_assets.py (hilt up; pouch front facing +Z).
+const NINJATO := preload("res://assets/models/ninjato.gltf")
+const POUCH := preload("res://assets/models/pouch.gltf")
 
 var _skel: Skeleton3D
 var _frame := Basis.IDENTITY          # canonical -> skeleton
@@ -193,31 +196,20 @@ func rebuild(settings: Dictionary) -> void:
 
 	var torso := _merged([&"UpperChest", &"Chest", &"Spine"])
 	if settings.get("back", "none") == "ninjato" and torso.size != Vector3.ZERO:
-		var sword := Node3D.new()
+		var sword: Node3D = NINJATO.instantiate()
+		Toon.apply(sword, 0.004)
 		# Diagonal across the back, hilt over the right shoulder.
-		sword.transform = Transform3D(Basis(Vector3.BACK, deg_to_rad(-32.0)),
+		sword.transform = Transform3D(Basis(Vector3.BACK, deg_to_rad(-32.0)).scaled(Vector3.ONE * 0.86 * k),
 			Vector3(torso.get_center().x, torso.get_center().y + 0.04 * k, torso.end.z + 0.04 * k))
-		var sheath := _box(Vector3(0.045, 0.58, 0.024) * k, Color("1c1718"))
-		sword.add_child(sheath)
-		var cord := _box(Vector3(0.05, 0.03, 0.03) * k, Color("b8321f"))
-		cord.position = Vector3(0, 0.18 * k, 0)
-		sword.add_child(cord)
-		var guard := _box(Vector3(0.075, 0.012, 0.05) * k, Color("3b3f46"), true)
-		guard.position = Vector3(0, 0.3 * k, 0)
-		sword.add_child(guard)
-		var hilt := CylinderMesh.new()
-		hilt.top_radius = 0.016 * k
-		hilt.bottom_radius = 0.016 * k
-		hilt.height = 0.2 * k
-		var hilt_node := _mesh(hilt, Color("2a2324"))
-		hilt_node.position = Vector3(0, 0.41 * k, 0)
-		sword.add_child(hilt_node)
 		_attach(_first_bone([&"UpperChest", &"Chest", &"Spine"]), sword)
 
 	var thigh := region(&"RightUpperLeg")
 	if settings.get("pouch", false) and thigh.size != Vector3.ZERO:
-		var pouch := _box(Vector3(0.035, 0.07, 0.075) * k, Color("4a3322"))
-		pouch.position = Vector3(thigh.end.x + 0.02 * k, thigh.get_center().y + thigh.size.y * 0.12, thigh.get_center().z)
+		var pouch: Node3D = POUCH.instantiate()
+		Toon.apply(pouch, 0.004)
+		# Front (flap and stud) facing out from the thigh.
+		pouch.transform = Transform3D(Basis(Vector3.UP, PI * 0.5).scaled(Vector3.ONE * 0.65 * k),
+			Vector3(thigh.end.x + 0.02 * k, thigh.get_center().y + thigh.size.y * 0.12, thigh.get_center().z))
 		_attach(&"RightUpperLeg", pouch)
 
 
