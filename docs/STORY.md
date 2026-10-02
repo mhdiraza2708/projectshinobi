@@ -36,7 +36,7 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
 	"title": "Sensei",
 	"kanji": "雨",
 	"element": "water",
-	"voice": {"speaker": 312, "speed": 1.08, "pitch": -0.5},
+	"voice": {"speaker": "af_heart", "speed": 0.95},
 	"style": {
 		"tints": {"body": "#b3c4dc", "outfit": "#1f3552", "hair": "#d9e0ea"},
 		"headband": "cloth", "headband_color": "#2f5fb3",
@@ -48,9 +48,10 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
 ```
 
 - `kanji` is the character's seal in the dialogue box.
-- `voice` is how their lines are recorded: `speaker` (0-903, a LibriTTS
-  reader in the Piper voice model), `speed` (1 = normal, higher is slower),
-  `pitch` (semitones) and optional `effect` (`spirit`: doubled and hollow).
+- `voice` is how their lines are recorded: `speaker` (a Kokoro voice such
+  as `af_heart`, `af_bella`, `bf_emma`, `am_michael`, `am_fenrir`, or a blend
+  like `"am_michael*0.5+am_onyx*0.5"`), `speed` (1 = normal, higher is
+  faster) and optional `effect` (`spirit`: doubled and hollow).
 - `style` uses the same keys as the Customize screen (see
   `game/autoload/profile.gd`). Colour slots are hair, eyes, skin, outfit,
   lower, shoes, accessory and body. Models without recognisable material
@@ -188,9 +189,12 @@ that fight, not the chapter.
 
 ## Voices
 
-Every line a story character says is recorded. Run `make voices` after
-adding or editing dialogue (see `art/audio/make_voices.py` for where to get
-Piper and the voice model). A line whose text changed plays silently until
+Every line a story character says is recorded with the Kokoro neural
+voice model. Run `make voices KOKORO=path/to/folder` after adding or editing
+dialogue (see `art/audio/make_voices.py` for where to get the model files).
+Names espeak would misread (Hisame, Kagerou, Tsumugi...) are spelled out
+phonetically in `NAMES` at the top of that script: add new ones there.
+A line whose text changed plays silently until
 you do, and `make test` lists what's unrecorded. The player is never voiced,
 and `{name}` is left out of spoken lines. Lines with `{nature}` are recorded
 once per nature.
@@ -217,5 +221,8 @@ plays chapter 1 start to finish.
   roster.
 - Conversations have no animation beyond a gesture, a facial expression
   and a mouth that opens with the voice (no real lip shapes).
-- The voices are text-to-speech: clear, but read rather than acted.
+- The voices are text-to-speech. Kokoro reads naturally and clearly (in a
+  speech-recognition check its lines came back with about 6% of words wrong,
+  against 12% for the old Piper voices), but it is still reading, not
+  acting: shouts don't really shout and there is no crying or laughing.
 - Choices and branches aren't supported. Chapters are linear.

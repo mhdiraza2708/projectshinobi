@@ -49,7 +49,12 @@ func test_every_story_line_is_recorded() -> void:
 func test_every_speaking_character_has_a_voice() -> void:
 	var story := Story.load_all()
 	for pair: Array in _spoken(story):
-		assert_true(story.characters[pair[0]]["voice"].has("speaker"), "%s has a voice" % pair[0])
+		var voice: Dictionary = story.characters[pair[0]]["voice"]
+		assert_true(voice.has("speaker"), "%s has a voice" % pair[0])
+		# Kokoro voice names ("af_heart"), optionally blended ("a*0.5+b*0.5").
+		var ok := RegEx.create_from_string("^[a-z]{2}_[a-z]+(\\*[0-9.]+)?(\\+[a-z]{2}_[a-z]+(\\*[0-9.]+)?)*$")
+		assert_true(voice.get("speaker") is String and ok.search(voice["speaker"]) != null,
+			"%s: speaker names a Kokoro voice" % pair[0])
 
 
 func test_player_and_unknown_lines_stay_silent() -> void:

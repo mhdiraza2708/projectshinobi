@@ -43,10 +43,10 @@ music:
 	$(PYTHON) art/audio/make_music.py
 	$(MAKE) import
 
-# Re-record the story's voice lines after editing dialogue. Needs Piper and
-# its en-us-libritts-high voice (see art/audio/make_voices.py for links).
+# Re-record the story's voice lines after editing dialogue. Needs kokoro-onnx
+# and its model files in $(KOKORO) (see art/audio/make_voices.py for links).
 voices:
-	$(PYTHON) art/audio/make_voices.py --piper $(PIPER) --model $(VOICE_MODEL)
+	$(PYTHON) art/audio/make_voices.py --kokoro $(KOKORO)
 	$(MAKE) import
 
 # Regenerate the particle/effect textures in game/assets/vfx/ (numpy + Pillow).

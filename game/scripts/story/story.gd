@@ -64,8 +64,9 @@ const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
 const CHAPTER_REQUIRED: PackedStringArray = ["id", "number", "title", "location", "time", "beats"]
 const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part", "island"]
 const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "voice", "style"]
-## A character's recorded voice (see art/audio/make_voices.py).
-const VOICE_KEYS: PackedStringArray = ["speaker", "speed", "pitch", "effect"]
+## A character's recorded voice (see art/audio/make_voices.py): a Kokoro
+## voice (or blend), a speed, and an optional effect.
+const VOICE_KEYS: PackedStringArray = ["speaker", "speed", "effect"]
 const VOICE_EFFECTS: PackedStringArray = ["", "spirit"]
 const NUMERALS: PackedStringArray = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 ## The player speaks as "player".

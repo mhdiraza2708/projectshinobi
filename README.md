@@ -151,11 +151,13 @@ with IK (including the hand-seal pose) on any humanoid rig.
   taiko, strings and choir. That sounds like good MIDI, not a recorded
   orchestra. Replace any `game/assets/audio/music/*.ogg` with a real
   recording of the same name.
-- **Voices are text-to-speech.** Every story character is voiced
-  (`art/audio/make_voices.py`, Piper with a LibriTTS voice per character,
-  pitched and paced per character and mood). It's clear, audiobook-style
-  reading, not acting: no shouting, crying or real emotional range. Your
-  own character is silent on purpose (you choose the name and look).
+- **Voices are text-to-speech.** Every story character is voiced with the
+  Kokoro neural model (`art/audio/make_voices.py`: a cast voice per
+  character, names spelled out phonetically, paced by mood, nothing
+  pitch-shifted). It sounds like a person reading, much less robotic than
+  the earlier Piper voices, but it's still reading, not acting: no real
+  shouting, crying or laughing. Your own character is silent on purpose
+  (you choose the name and look).
 - **Conversations have no animation** beyond a gesture and a facial
   expression.
 - **Enemies are simple.** The AI is a hand-written state machine (range
@@ -189,7 +191,7 @@ make assets       # regenerate models with Blender, then re-import
 make animations   # set up Mixamo clips you added for retargeting
 make sfx          # regenerate the sound effects (needs numpy + scipy)
 make music        # re-render the music (needs mido, fluidsynth, fluid-soundfont-gm, vorbis-tools)
-make voices PIPER=path/to/piper VOICE_MODEL=path/to/en-us-libritts-high.onnx  # re-record story lines
+make voices KOKORO=path/to/kokoro-model-folder  # re-record story lines
 make fonts        # re-subset the Japanese UI fonts after adding kanji (needs fonttools)
 make screenshots  # render demo screenshots (needs Xvfb without a display)
 ```

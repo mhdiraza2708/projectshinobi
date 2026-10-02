@@ -10,7 +10,7 @@
 | **Yuji Syuku** font (subset to the kanji the UI uses) | The Yuji Project Authors | SIL OFL 1.1 | `game/assets/fonts/YujiSyuku-Subset.ttf` |
 | **Zen Kaku Gothic New** font (subset to Latin and UI kanji) | The Zen Kaku Gothic Project Authors | SIL OFL 1.1 | `game/assets/fonts/ZenKakuGothicNew-*-Subset.ttf` |
 | **FluidR3 GM SoundFont** (instrument samples the music is rendered with; the soundfont itself isn't bundled) | Frank Wen and contributors | MIT | used by `art/audio/make_music.py` |
-| **Voice lines** (synthesised with the Piper TTS engine and its `en-us-libritts-high` voice model) | Voice model trained on **LibriTTS** by Heiga Zen, Viet Dang, Rob Clark, Yu Zhang, Ron J. Weiss, Ye Jia, Zhifeng Chen and Yonghui Wu ([openslr.org/60](http://www.openslr.org/60/)); [Piper](https://github.com/rhasspy/piper) by Michael Hansen | LibriTTS: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); Piper: MIT. The recordings were post-processed (pitch, level, and an effect for the Nue) | `game/assets/audio/voice/`, made by `art/audio/make_voices.py` |
+| **Voice lines** (synthesised with the **Kokoro-82M** text-to-speech model and its voices, run through [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx), with espeak-ng for pronunciation) | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) by hexgrad; kokoro-onnx by thewh1teagle; [espeak-ng](https://github.com/espeak-ng/espeak-ng) (used as a tool, not shipped) | Kokoro-82M: Apache 2.0; kokoro-onnx: MIT. The recordings were post-processed (level, and an effect for the Nue) | `game/assets/audio/voice/`, made by `art/audio/make_voices.py` |
 | **Godot Engine** | Godot contributors | MIT | not bundled |
 
 Full font licence texts are in `game/assets/fonts/OFL-*.txt`. The subsets
