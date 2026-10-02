@@ -51,17 +51,46 @@ controls can be remapped.
   **strikes**, **kunai** (soft-aimed, they stick where they land), **guard**, and **charge chakra**.
 - **Lock on** to targets. The camera frames the fight, and jutsu home in on
   the target.
-- **Weave seals** (12 seals, 3 banks × 4 directions) and cast any of **16
-  original jutsu** in 5 forms: projectile, area, wall, buff and heal. Walls
-  really block projectiles, and a big hit interrupts your weave.
-- **Quick-cast slots** (1–4 / D-pad) auto-weave a jutsu for you. You can
-  assign any jutsu from the Jutsu Scroll in the pause menu.
+- **Weave seals** (12 seals, 3 banks × 4 directions) and cast any of **18
+  original jutsu** in 6 forms: projectile, area, wall, buff, heal and
+  summon. Walls really block projectiles, and a big hit interrupts your weave.
+- **Shade Clones** (a summon): two chakra doubles step out of your shadow,
+  wearing your own look, and fight at your side for 14 seconds. They are
+  fragile, cost a lot of chakra, and casting again replaces them.
+- **Eight quick-cast slots** (1–8, or the D-pad with Back flipping between
+  slots 1–4 and 5–8) cast a jutsu for you. Each slot is either **Weave**
+  (the seals are formed for you) or **Instant** (no seals at all, for 35%
+  more chakra).
+- **Jutsu loadouts:** up to eight named presets of those slots, edited in
+  Pause → Jutsu Scroll (or while creating your character), saved with your
+  character and swapped in battle with Z / X. Three starters are included:
+  Balanced, Assault and Guardian.
 - Three **training dummies** (Neutral, Earth, Wind) show **WEAK!/RESIST**
   damage numbers, so you learn the element cycle by playing.
 - **Ink-and-scroll UI:** washi-paper panels, brush-stroke health/chakra
   bars, talisman seals with zodiac kanji, a burning-fuse timing window, a
   shuriken lock-on marker, and drawn keyboard/mouse/Xbox/PlayStation/Nintendo
   button icons that switch the moment you change device.
+- **Save slots:** three. The title screen has Continue (the slot you played
+  last, at the first chapter you haven't cleared), New Game, Load Game (with
+  cards showing name, clan, chapters cleared and play time, and Delete) and
+  asks before overwriting anything. Each slot holds its own shinobi, jutsu
+  loadouts, story progress and records, and saves as you play. A save from
+  an older version becomes slot 1.
+- **Character creation** (New Game): pick a **clan**, an **eye art**, your
+  name and nature, your look and gear, and your jutsu loadout, then begin
+  chapter one. All of it can be changed later from Pause → Customize.
+- **Clans** (original to this game): Hearth (fire), Gale (wind), Stormvein
+  (lightning), Stonewright (earth), Tidebound (water) and the clanless
+  Wayfarer. A clan fixes your chakra nature (a Wayfarer chooses) and brings
+  perks such as extra health, faster chakra recovery, a shorter dash
+  cooldown or more damage in its nature.
+- **Eye arts** (original, not anyone's dojutsu): **Hawk Eye** (longer
+  lock-on, homing jutsu, shows who is weak to you), **Mirror Eye** (a dash
+  through a hit slows time and refunds chakra), **Seal Eye** (rivals weave
+  slower, your own seals fly faster) and **Still Eye** (a guard raised at the
+  last instant blocks a blow completely). Each clan can awaken only some of
+  them, and your eyes change colour with the one you pick.
 - **Character customization** (Pause → Customize): pick from your
   VRoid roster, tint hair/eyes/skin/outfit, add ninja gear fitted to the
   character's measured head and body (headband or hachigane, mask, scarf,

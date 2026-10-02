@@ -1,10 +1,9 @@
 extends Node
-## The player's character: which model, colours, gear, body and identity.
-## Persisted to user://profile.cfg. Autoloaded as `Profile`.
+## The player's character: which model, colours, gear, body and identity,
+## plus their clan, eye art and jutsu loadouts. Saved in the active save slot
+## (see SaveSlots). Autoloaded as `Profile`.
 
 signal changed(key: StringName)
-
-const SAVE_PATH := "user://profile.cfg"
 
 ## Colour slots a model can expose (see CharacterStyler). A tint of
 ## Color.WHITE means "original colours".
@@ -36,17 +35,39 @@ const DEFAULTS := {
 	# Manual fit tweaks for gear on unusual head shapes.
 	&"gear_scale": 1.0,
 	&"gear_lift": 0.0,
+	# Set once character creation is finished (a slot starts uncreated).
+	&"created": false,
+	# Ids from res://data/clans.json and eye_arts.json ("" = none).
+	&"clan": "",
+	&"eye_art": "",
+	# Named jutsu presets (see Loadouts) and which one is equipped. Empty =
+	# the starter presets.
+	&"loadouts": [],
+	&"loadout": 0,
 }
 
 ## When false nothing touches disk (tests).
 var persist := true
-## Overridable so tests can round-trip without touching the real save.
-var save_path := SAVE_PATH
+## Overridable so tests can round-trip without touching a real save; empty
+## means the active save slot's file (and no file at all with no slot).
+var save_path := ""
 var _values: Dictionary = {}
 
 
 func _ready() -> void:
+	SaveSlots.boot()
 	load_from_disk()
+
+
+## Where this is saved right now ("" = nowhere).
+func path() -> String:
+	return save_path if save_path != "" else SaveSlots.profile_path()
+
+
+## Loads the active slot's character (after switching slots).
+func reload() -> void:
+	load_from_disk()
+	changed.emit(&"")
 
 
 func get_value(key: StringName) -> Variant:
@@ -88,7 +109,7 @@ func load_from_disk() -> void:
 	if not persist:
 		return
 	var cfg := ConfigFile.new()
-	if cfg.load(save_path) != OK:
+	if path() == "" or cfg.load(path()) != OK:
 		return
 	for key: StringName in DEFAULTS:
 		var saved: Variant = cfg.get_value("profile", key, DEFAULTS[key])
@@ -97,12 +118,13 @@ func load_from_disk() -> void:
 
 
 func save_to_disk() -> void:
-	if not persist:
+	if not persist or path() == "":
 		return
 	var cfg := ConfigFile.new()
 	for key: StringName in _values:
 		cfg.set_value("profile", key, _values[key])
-	cfg.save(save_path)
+	DirAccess.make_dir_recursive_absolute(path().get_base_dir())
+	cfg.save(path())
 
 
 ## A random ninja-style name, for players on a controller who'd rather not type.

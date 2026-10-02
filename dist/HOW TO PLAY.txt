@@ -18,11 +18,21 @@ characters_2.pck, characters_3.pck and audio_1.pck into the same folder as
 ProjectShinobi.exe and restart.
 
 The game opens on the title screen:
-  Story                     - Two parts, ten chapters.
+  Continue                  - pick up your last save at the next chapter.
+  New Game                  - choose a save slot (there are three), then make
+                              your shinobi: clan, eye art, name, look, gear
+                              and jutsu loadout. Then the story begins.
+  Load Game                 - your saves as cards: name, clan, chapters
+                              cleared, play time. Each can be deleted (it
+                              asks first).
+  Chapters                  - replay any chapter you have unlocked.
   Trial of the Five Natures - five waves of enemy shinobi, one nature each.
   Training Ground           - dummies that don't hit back, for practice.
   Customize                 - face, hair and outfit from 9 VRoid characters,
-                              colours, ninja gear, name and chakra nature.
+                              colours, ninja gear, name, clan, eye art and
+                              jutsu loadouts.
+The game saves as you play. Settings (controls, audio) are shared by all
+saves.
 
 Keyboard + mouse and controller both work, and you can switch mid-game.
 Controller buttons are named Xbox-style below. PlayStation and Nintendo
@@ -40,6 +50,8 @@ IN THE FIELD                 KEYBOARD + MOUSE        CONTROLLER
   Lock on                    Tab / middle mouse      R3
   WEAVE SEALS (hold)         Right mouse             LT
   Quick-cast jutsu 1-4       1 2 3 4                 D-pad
+  Quick-cast jutsu 5-8       5 6 7 8                 D-pad, after Back flips the page
+  Jutsu loadout prev / next  Z / X                   (rebind in Pause)
   Pause / settings           Esc                     Start
 
 Kunai aim at whatever is near the middle of the screen, so there's no need

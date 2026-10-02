@@ -2,7 +2,8 @@ class_name PauseMenu
 extends CanvasLayer
 ## Pause menu, styled as a hanging scroll: rebinding for both devices,
 ## accessibility options, and the jutsu scroll (every technique, its seals
-## for your device, quick-cast slot assignment). Fully navigable with a
+## for your device, and the loadout editor: presets and the eight quick-cast
+## slots). Fully navigable with a
 ## controller: D-pad/stick to move, A to select, B to back out, LB/RB to
 ## switch tabs.
 
@@ -19,6 +20,7 @@ var _tab_buttons: Array[Button] = []
 var _tab_hint: HBoxContainer
 var _controls_list: VBoxContainer
 var _jutsu_list: VBoxContainer
+var _jutsu_panel: LoadoutPanel
 var _notice: Label
 var _resume: Button
 ## {action, device, button} while waiting for a new input.
@@ -39,7 +41,6 @@ func bind(p: Player) -> void:
 	InputDevice.device_changed.connect(func(_d: Binding.Device) -> void:
 		_refresh_jutsu()
 		_tab_hint.visible = InputDevice.current == Binding.Device.GAMEPAD)
-	player.quick_slots_changed.connect(_refresh_jutsu)
 
 
 func is_open() -> bool:
@@ -483,64 +484,28 @@ func _slider(key: StringName, lo: float, hi: float, step: float, fmt: String, di
 
 func _build_jutsu() -> Control:
 	_jutsu_list = VBoxContainer.new()
-	_jutsu_list.add_theme_constant_override(&"separation", 12)
-	_refresh_jutsu()
+	_jutsu_list.add_theme_constant_override(&"separation", 10)
+	_jutsu_list.add_child(_hint_label())
+	_jutsu_panel = LoadoutPanel.new(true)
+	_jutsu_list.add_child(_jutsu_panel)
 	return _jutsu_list
 
 
+func _hint_label() -> Label:
+	var l := UiKit.label("", 18, UiKit.INK_SOFT, &"bold")
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size.x = 900
+	l.set_meta(&"is_hint", true)
+	return l
+
+
+## Seals are shown for the device in use; the quick-cast keys follow the
+## bindings.
 func _refresh_jutsu() -> void:
 	if _jutsu_list == null or player == null:
 		return
-	for c in _jutsu_list.get_children():
-		c.queue_free()
-	_jutsu_list.add_child(UiKit.label(
-		"Seals are shown for the device you're using. Press 1–4 on a jutsu to put it on a quick-cast slot.",
-		18, UiKit.INK_SOFT, &"bold"))
-	for j in JutsuRegistry.all():
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override(&"separation", 14)
-		var stamp_color := UiKit.CRIMSON if j.element == Element.NONE else Element.color(j.element).darkened(0.35)
-		var stamp := Hanko.make(Element.kanji(j.element), 54.0, stamp_color)
-		stamp.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		row.add_child(stamp)
-		var info := VBoxContainer.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		info.add_theme_constant_override(&"separation", 2)
-		var title := HBoxContainer.new()
-		title.add_theme_constant_override(&"separation", 12)
-		title.add_child(UiKit.label(j.display_name, 24, UiKit.INK, &"display"))
-		var tag := UiKit.label(UiKit.jutsu_tag(j), 17, UiKit.INK_SOFT, &"bold")
-		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		title.add_child(tag)
-		info.add_child(title)
-		var seals := HBoxContainer.new()
-		seals.add_theme_constant_override(&"separation", 6)
-		for i in j.seals.size():
-			if i > 0:
-				seals.add_child(UiKit.label("›", 22, UiKit.INK_SOFT, &"bold"))
-			var s: int = j.seals[i]
-			seals.add_child(UiKit.label(Seal.kanji(s), 24, UiKit.CRIMSON, &"brush"))
-			seals.add_child(UiKit.label(Seal.display_name(s), 17, UiKit.INK, &"bold"))
-			seals.add_child(UiKit.seal_glyphs(s, 24.0))
-		info.add_child(seals)
-		if j.description != "":
-			info.add_child(UiKit.label(j.description, 17, UiKit.INK_SOFT, &"body"))
-		row.add_child(info)
-		for slot in 4:
-			var b := Button.new()
-			b.text = str(slot + 1)
-			b.custom_minimum_size = Vector2(48, 44)
-			b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			b.tooltip_text = "Put on quick-cast slot %d" % (slot + 1)
-			if player.quick_slots[slot] == j.id:
-				var on := StyleBoxFlat.new()
-				on.bg_color = Color(UiKit.CRIMSON, 0.2)
-				on.border_color = UiKit.CRIMSON
-				on.set_border_width_all(2)
-				b.add_theme_stylebox_override(&"normal", on)
-			b.pressed.connect(func() -> void:
-				player.assign_quick_slot(slot, j.id)
-				_notice.text = "%s is now on quick-cast slot %d." % [j.display_name, slot + 1])
-			row.add_child(b)
-		_jutsu_list.add_child(row)
-		_jutsu_list.add_child(_rule())
+	(_jutsu_list.get_child(0) as Label).text = \
+		"Quick-cast with %s – %s. On a controller the D-pad casts the four slots of the current page and %s flips the page. %s / %s switch loadout. Seals are shown for the device you're using." % [
+			InputDevice.glyph(&"quick_cast_1"), InputDevice.glyph(&"quick_cast_8"), InputDevice.glyph(&"quick_page"),
+			InputDevice.glyph(&"preset_prev"), InputDevice.glyph(&"preset_next")]
+	_jutsu_panel.refresh()

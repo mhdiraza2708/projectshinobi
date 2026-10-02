@@ -218,6 +218,13 @@ func current_look() -> Dictionary:
 	var look := {}
 	for key: StringName in Profile.DEFAULTS:
 		look[key] = Profile.get_value(key) if use_profile else style.get(String(key), Profile.DEFAULTS[key])
+	if use_profile:
+		# An eye art colours the eyes.
+		var art := Perks.active_eye_art()
+		if not art.is_empty():
+			var tints: Dictionary = (look[&"tints"] as Dictionary).duplicate()
+			tints["eyes"] = Color(str(art["color"]))
+			look[&"tints"] = tints
 	return look
 
 

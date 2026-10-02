@@ -7,6 +7,9 @@ signal chakra_changed(current: float, maximum: float)
 ## `multiplier` is the elemental multiplier that was applied (1.0 = neutral).
 signal damaged(amount: float, element: int, multiplier: float)
 signal healed(amount: float)
+## A hit that would have landed was avoided by invulnerability (a dash's
+## first moments).
+signal dodged(amount: float, element: int)
 signal died
 signal modifier_changed(stat: StringName, magnitude: float, time_left: float)
 
@@ -72,6 +75,8 @@ func spend_chakra(amount: float) -> bool:
 
 ## Applies a hit and returns the damage actually dealt.
 func take_damage(amount: float, element: int = Element.NONE) -> float:
+	if is_invulnerable and amount > 0.0 and not is_dead():
+		dodged.emit(amount, element)
 	if is_dead() or is_invulnerable or amount <= 0.0:
 		return 0.0
 	var mult := Element.multiplier(element, affinity)

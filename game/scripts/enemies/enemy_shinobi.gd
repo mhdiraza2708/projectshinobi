@@ -72,6 +72,12 @@ var team := &"enemies"
 var hunt := true
 ## Practice clone: only weaves (slowly, weakly) so it can be interrupted.
 var drill := false
+## A Shade Clone: wears the look of `clone_of` (the player's, via the
+## Profile), vanishes after `lifetime` seconds, and keeps close to its owner
+## between fights. `damage_scale` is how much of a rank's damage it deals.
+var clone_of: Node3D
+var lifetime := 0.0
+var damage_scale := 1.0
 ## Body scale for oversized bosses.
 var size := 1.0
 ## A glowing aura in this colour (alpha 0 = none), for possessed bosses.
@@ -99,11 +105,14 @@ var _weave_index := 0
 var _seal_timer := 0.0
 var _kunai: JutsuDefinition
 var _name_label: Label3D
+var _hint_label: Label3D
+var _hint_timer := 0.0
 var _seal_label: Label3D
 var _bar: Sprite3D
 var _bar_image: Image
 var _ring: MeshInstance3D
 var _next_phase := 0
+var _life_left := 0.0
 
 
 func _ready() -> void:
@@ -114,8 +123,13 @@ func _ready() -> void:
 		_r["jutsu_cd"] = Vector2(1.2, 2.0)
 		_r["dodge"] = 0.0
 		_r["guard"] = 0.0
+	_life_left = lifetime
+	_r["power"] = float(_r["power"]) * damage_scale
+	_r["melee"] = float(_r["melee"]) * damage_scale
 	if not is_ally():
 		add_to_group(&"lockable")
+		# Seal Eye: rivals' hands are slower to read.
+		_r["seal_time"] = float(_r["seal_time"]) * (1.0 + Perks.value(&"enemy_seal_slow"))
 	add_to_group(team)
 	collision_layer = Combat.LAYER_TARGETS
 	collision_mask = Combat.BODY_MASK | Combat.LAYER_PLAYER
@@ -140,10 +154,11 @@ func _ready() -> void:
 
 	model = CharacterModel.new()
 	model.name = "Model"
-	model.use_profile = false
-	model.model_path = model_path if model_path != "" else pick_model()
-	model.style = (style_override if not style_override.is_empty() else style_for(element, rank)).duplicate()
-	model.style["height"] = float(model.style.get("height", 1.0)) * size
+	model.use_profile = clone_of != null
+	if clone_of == null:
+		model.model_path = model_path if model_path != "" else pick_model()
+		model.style = (style_override if not style_override.is_empty() else style_for(element, rank)).duplicate()
+		model.style["height"] = float(model.style.get("height", 1.0)) * size
 	model.voice_id = voice_id
 	add_child(model)
 	if aura_color.a > 0.0:
@@ -259,10 +274,60 @@ func pick_target() -> Node3D:
 		if d < best_d:
 			best_d = d
 			best = n
+	if best == null and clone_of != null:
+		# Nobody fights back: a clone takes on whatever else can be hit
+		# (practice dummies).
+		for node in get_tree().get_nodes_in_group(&"lockable"):
+			var n := node as Node3D
+			if n == null or n == self or n is EnemyShinobi:
+				continue
+			var d := global_position.distance_to(n.global_position)
+			if d < best_d and d < 30.0:
+				best_d = d
+				best = n
 	return best
 
 
+## Stays near its owner with the others of its kind, facing where they face.
+func _follow_owner(delta: float) -> void:
+	if not is_instance_valid(clone_of):
+		_decelerate(delta)
+		return
+	var seat := clone_of.global_position + Vector3(sin(float(get_instance_id() % 628) / 100.0), 0.0,
+		cos(float(get_instance_id() % 628) / 100.0)) * 2.6
+	var to := seat - global_position
+	to.y = 0.0
+	if to.length() > 1.2:
+		var run: float = _r["run"] * clampf(to.length() / 4.0, 0.4, 1.4)
+		_move(to.normalized() * run, delta)
+		rotation.y = lerp_angle(rotation.y, atan2(-to.x, -to.z), 1.0 - exp(-8.0 * delta))
+	else:
+		_decelerate(delta)
+
+
+## Hawk Eye shows an arrow over rivals: gold up = your nature beats theirs,
+## grey down = it doesn't.
+func _update_hint() -> void:
+	if _hint_label == null:
+		return
+	var show := not is_ally() and state != State.DEFEATED and Perks.has(&"reads_natures")
+	_hint_label.visible = show
+	if not show:
+		return
+	var mult := Element.multiplier(int(Profile.get_value(&"affinity")), element)
+	_hint_label.text = "▲" if mult > 1.0 else ("▼" if mult < 1.0 else "")
+	_hint_label.modulate = Color("e3a23a") if mult > 1.0 else Color(0.7, 0.72, 0.78)
+
+
+## What floats over the head: clones only get a shade mark, so a pair
+## standing together doesn't print their owner's name over each other.
+func label_text() -> String:
+	return "影" if clone_of != null else display_name()
+
+
 func display_name() -> String:
+	if clone_of != null:
+		return "影 %s" % Profile.get_value(&"name")
 	if title_override != "":
 		return "%s %s" % [Element.kanji(element), title_override]
 	return "%s %s %s" % [Element.kanji(element), Element.display_name(element), _r["title"]]
@@ -280,7 +345,7 @@ func set_element(nature: int) -> void:
 	jutsu_list = jutsu_for(nature, _r["max_cost"])
 	var c := Element.color(nature)
 	_ring.material_override = _ring_material(c)
-	_name_label.text = display_name()
+	_name_label.text = label_text()
 	_name_label.modulate = c.lightened(0.35)
 	# Changing nature: a flare of the new colour.
 	Vfx.flash(get_parent(), global_position + Vector3.UP, c.lightened(0.3), 2.4 * size, 0.25, &"glow")
@@ -320,6 +385,17 @@ func dismiss() -> void:
 # --- Loop ----------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
+	if lifetime > 0.0 and state != State.DEFEATED:
+		_life_left -= delta
+		if _life_left <= 0.0:
+			leave()
+			return
+		# A clone about to fade flickers.
+		model.visible = _life_left > 1.5 or int(_life_left * 8.0) % 2 == 0
+	_hint_timer -= delta
+	if _hint_timer <= 0.0:
+		_hint_timer = 0.5
+		_update_hint()
 	_state_time += delta
 	_kunai_cd -= delta
 	_jutsu_cd -= delta
@@ -381,7 +457,10 @@ func _fight(delta: float) -> void:
 	if not _target_ok() and hunt:
 		target = pick_target()
 	if not _target_ok():
-		_decelerate(delta)
+		if clone_of != null:
+			_follow_owner(delta)
+		else:
+			_decelerate(delta)
 		return
 	var to := target.global_position - global_position
 	to.y = 0.0
@@ -680,9 +759,15 @@ func _build_overhead() -> void:
 	_ring.position.y = 0.03
 	add_child(_ring)
 
-	_name_label = _label3d(display_name(), 30, c.lightened(0.35))
+	_name_label = _label3d(label_text(), 30, c.lightened(0.35))
 	_name_label.position.y = 2.35 * size
 	add_child(_name_label)
+
+	# Hawk Eye: who is weak to you, at a glance.
+	_hint_label = _label3d("", 36, Color("e3a23a"))
+	_hint_label.position.y = 2.65 * size
+	_hint_label.visible = false
+	add_child(_hint_label)
 
 	_bar_image = Image.create(BAR_SIZE.x, BAR_SIZE.y, false, Image.FORMAT_RGBA8)
 	_bar = Sprite3D.new()

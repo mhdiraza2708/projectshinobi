@@ -1,0 +1,40 @@
+{
+	"clans": [
+		{
+			"id": "hearth", "name": "Hearth Clan", "kanji": "炉", "element": "fire", "color": "#d9452e",
+			"blurb": "Keepers of the academy's old forge-fires. Their chakra runs hot, and what they hit, burns.",
+			"perks": {"damage_fire": 0.15, "max_health": 0.05},
+			"eye_arts": ["hawk_eye", "mirror_eye"]
+		},
+		{
+			"id": "gale", "name": "Gale Clan", "kanji": "嵐", "element": "wind", "color": "#4fb39a",
+			"blurb": "Runners of the open ridges. Light on their feet and impossible to pin down.",
+			"perks": {"move_speed": 0.10, "dash_cooldown": -0.25, "damage_wind": 0.08},
+			"eye_arts": ["mirror_eye", "seal_eye"]
+		},
+		{
+			"id": "stormvein", "name": "Stormvein Clan", "kanji": "雷", "element": "lightning", "color": "#e0b93a",
+			"blurb": "Born where sky meets hill. Their hands are quick and their chakra crackles.",
+			"perks": {"cast_speed": 0.20, "damage_lightning": 0.12},
+			"eye_arts": ["seal_eye", "hawk_eye"]
+		},
+		{
+			"id": "stonewright", "name": "Stonewright Clan", "kanji": "岩", "element": "earth", "color": "#a8844f",
+			"blurb": "Builders of dams and walls. Slow to anger, slower to fall.",
+			"perks": {"max_health": 0.25, "guard": 0.25, "damage_earth": 0.08},
+			"eye_arts": ["still_eye", "hawk_eye"]
+		},
+		{
+			"id": "tidebound", "name": "Tidebound Clan", "kanji": "潮", "element": "water", "color": "#3b82c4",
+			"blurb": "Keepers of the old locks and wells. A calm chakra that never seems to run dry.",
+			"perks": {"chakra_regen": 0.40, "heal": 0.25, "damage_water": 0.08},
+			"eye_arts": ["still_eye", "seal_eye"]
+		},
+		{
+			"id": "wayfarer", "name": "Wayfarer", "kanji": "旅", "element": "none", "color": "#c9a45c",
+			"blurb": "No clan name and no clan limits. Choose your own nature and any eye art, and share your chakra a little thinner: one more Shade Clone.",
+			"perks": {"cost": -0.08, "clones": 1},
+			"eye_arts": ["hawk_eye", "mirror_eye", "seal_eye", "still_eye"]
+		}
+	]
+}

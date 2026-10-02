@@ -6,7 +6,9 @@
     "rank": "E",
     "element": "none",
     "form": "projectile",
-    "seals": ["rat"],
+    "seals": [
+      "rat"
+    ],
     "chakra_cost": 6,
     "cooldown": 0.6,
     "power": 8,
@@ -21,7 +23,9 @@
     "rank": "D",
     "element": "none",
     "form": "buff",
-    "seals": ["ram"],
+    "seals": [
+      "ram"
+    ],
     "chakra_cost": 12,
     "cooldown": 15,
     "power": 0.5,
@@ -35,7 +39,11 @@
     "rank": "C",
     "element": "none",
     "form": "heal",
-    "seals": ["ram", "hare", "rat"],
+    "seals": [
+      "ram",
+      "hare",
+      "rat"
+    ],
     "chakra_cost": 25,
     "cooldown": 10,
     "power": 30
@@ -47,11 +55,36 @@
     "rank": "S",
     "element": "none",
     "form": "area",
-    "seals": ["rat", "tiger", "dragon", "snake", "boar"],
+    "seals": [
+      "rat",
+      "tiger",
+      "dragon",
+      "snake",
+      "boar"
+    ],
     "chakra_cost": 45,
     "cooldown": 20,
     "power": 45,
     "range": 0,
     "radius": 5
+  },
+  {
+    "id": "shade_clones",
+    "name": "Shade Clones",
+    "description": "Chakra doubles step out of your shadow in your own likeness and fight at your side until they fade or are struck down. Casting again replaces them.",
+    "rank": "B",
+    "element": "none",
+    "form": "summon",
+    "seals": [
+      "horse",
+      "monkey",
+      "hare"
+    ],
+    "chakra_cost": 36,
+    "cooldown": 18,
+    "power": 0.6,
+    "duration": 14,
+    "count": 2,
+    "health": 32
   }
 ]

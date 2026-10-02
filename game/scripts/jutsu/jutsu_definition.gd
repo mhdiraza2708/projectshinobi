@@ -3,18 +3,18 @@ extends Resource
 ## One technique, loaded from res://data/jutsu/*.json.
 ##
 ## Adding a jutsu whose *form* already exists is a data-only change. A new
-## kind of behaviour (clones, summons, sealing, genjutsu...) means adding a
-## Form here and a matching effect in JutsuCaster.
+## kind of behaviour (sealing, genjutsu...) means adding a Form here and a
+## matching effect in JutsuCaster.
 
-enum Form { PROJECTILE, AREA, WALL, BUFF, HEAL }
+enum Form { PROJECTILE, AREA, WALL, BUFF, HEAL, SUMMON }
 
-const FORM_NAMES: PackedStringArray = ["projectile", "area", "wall", "buff", "heal"]
+const FORM_NAMES: PackedStringArray = ["projectile", "area", "wall", "buff", "heal", "summon"]
 const RANKS: PackedStringArray = ["E", "D", "C", "B", "A", "S"]
 const BUFF_STATS: PackedStringArray = ["move_speed", "damage_reduction", "attack_power"]
 
 const REQUIRED_KEYS: PackedStringArray = ["id", "name", "rank", "element", "form", "seals", "chakra_cost"]
 const OPTIONAL_KEYS: PackedStringArray = [
-	"description", "cooldown", "power", "speed", "range", "radius", "duration", "buff_stat", "count",
+	"description", "cooldown", "power", "speed", "range", "radius", "duration", "buff_stat", "count", "health",
 ]
 
 @export var id: StringName
@@ -37,8 +37,10 @@ const OPTIONAL_KEYS: PackedStringArray = [
 ## Buff/wall lifetime in seconds.
 @export var duration := 0.0
 @export var buff_stat := ""
-## Number of projectiles fired in a fan.
+## Number of projectiles fired in a fan (or clones summoned).
 @export var count := 1
+## Summons: how much damage a clone can take before it dissolves.
+@export var health := 0.0
 ## Projectile look: &"orb" for chakra techniques, &"kunai" for thrown tools.
 ## Not read from JSON (tools are defined in code).
 @export var visual := &"orb"
@@ -104,6 +106,7 @@ static func from_dict(data: Dictionary, errors: Array[String]) -> JutsuDefinitio
 	j.radius = _num(data, "radius", 0.5, err)
 	j.duration = _num(data, "duration", 0.0, err)
 	j.count = int(_num(data, "count", 1.0, err))
+	j.health = _num(data, "health", 0.0, err)
 	j.buff_stat = str(data.get("buff_stat", ""))
 
 	match j.form:
@@ -128,6 +131,12 @@ static func from_dict(data: Dictionary, errors: Array[String]) -> JutsuDefinitio
 		Form.HEAL:
 			if j.power <= 0.0:
 				err.call("heal needs power > 0")
+		Form.SUMMON:
+			# power = how much of its caster's damage a clone deals (0-1.5).
+			if j.power <= 0.0 or j.power > 1.5 or j.duration <= 0.0 or j.health <= 0.0:
+				err.call("summon needs power (0-1.5), duration and health > 0")
+			if j.count < 1 or j.count > 6:
+				err.call("summon count must be 1-6")
 
 	return j if errors.size() == start_errors else null
 

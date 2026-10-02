@@ -65,7 +65,11 @@ var team := &"player"
 var state := State.FREE
 var weaver := SealWeaver.new()
 var lock_target: Node3D
-var quick_slots: Array[StringName] = [&"chakra_bolt", &"ember_volley", &"stone_bulwark", &"mending_palm"]
+## The equipped loadout's jutsu and cast styles, one entry per quick-cast slot
+## (see Loadouts); `quick_page` is which half of them a gamepad's D-pad works.
+var quick_slots: Array[StringName] = []
+var quick_styles: Array[String] = []
+var quick_page := 0
 ## Disable to freeze player control (cutscenes, menus, tests).
 var input_enabled := true
 ## While input is off, a cutscene can walk you (horizontal velocity) and pose
@@ -87,6 +91,9 @@ var _auto_jutsu: JutsuDefinition
 var _auto_queue: Array[int] = []
 var _auto_timer := 0.0
 var _kunai: JutsuDefinition
+# What the exported numbers were before clan and eye art perks.
+var _base: Dictionary = {}
+var _focus_active := false
 
 @onready var stats: Stats = $Stats
 @onready var caster: JutsuCaster = $Caster
@@ -107,7 +114,18 @@ func _ready() -> void:
 	animator = model.animator
 	model.model_loaded.connect(func() -> void: animator = model.animator)
 	caster.affinity = Profile.get_value(&"affinity")
-	Profile.changed.connect(func(_k: StringName) -> void: caster.affinity = Profile.get_value(&"affinity"))
+	caster.use_perks = true
+	_base = {"run": run_speed, "sprint": sprint_speed, "dash_cooldown": dash_cooldown, "lock": lock_range,
+		"guard": guard_damage_multiplier, "health": stats.max_health, "chakra_regen": stats.chakra_regen}
+	_apply_perks()
+	_load_loadout()
+	Profile.changed.connect(func(key: StringName) -> void:
+		caster.affinity = Profile.get_value(&"affinity")
+		if key in [&"clan", &"eye_art", &""]:
+			_apply_perks()
+		if key in [&"loadouts", &"loadout", &""]:
+			_load_loadout())
+	stats.dodged.connect(_on_dodged)
 
 	_kunai = JutsuDefinition.new()
 	_kunai.id = &"kunai"
@@ -135,6 +153,8 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Sfx.stop_loop(&"charge")
+	if _focus_active:
+		Engine.time_scale = 1.0
 
 
 func _sync_settings() -> void:
@@ -188,9 +208,21 @@ func _state_free(delta: float) -> void:
 		return
 	for i in quick_slots.size():
 		if Input.is_action_just_pressed(StringName("quick_cast_%d" % (i + 1))):
-			start_quick_cast(i)
+			var slot := i
+			# A gamepad's D-pad works the current page's four slots.
+			if i < Loadouts.PAGE and InputDevice.current == Binding.Device.GAMEPAD:
+				slot += quick_page * Loadouts.PAGE
+			start_quick_cast(slot)
 			if state != State.FREE:
 				return
+	if Input.is_action_just_pressed(&"quick_page"):
+		quick_page = 1 - quick_page
+		feedback.emit("Quick-cast slots %d–%d" % [quick_page * Loadouts.PAGE + 1, (quick_page + 1) * Loadouts.PAGE], &"info")
+		quick_slots_changed.emit()
+	if Input.is_action_just_pressed(&"preset_next"):
+		cycle_loadout(1)
+	elif Input.is_action_just_pressed(&"preset_prev"):
+		cycle_loadout(-1)
 	if Input.is_action_just_pressed(&"lock_on"):
 		toggle_lock()
 	if Input.is_action_just_pressed(&"evade") and _dash_cooldown_left <= 0.0:
@@ -237,7 +269,7 @@ func _state_auto_weaving(delta: float) -> void:
 		return
 	if not _auto_queue.is_empty():
 		weaver.add_seal(_auto_queue.pop_front())
-		_auto_timer = float(Settings.get_value(&"auto_weave_seal_time"))
+		_auto_timer = _seal_time()
 		return
 	weaver.finish()
 	_enter(State.FREE)
@@ -254,6 +286,9 @@ func _state_charging(delta: float) -> void:
 
 func _state_guarding(delta: float) -> void:
 	stats.guard_multiplier = guard_damage_multiplier
+	# Still Eye: a guard raised just before a blow takes none of it.
+	if Perks.has(&"perfect_guard") and _state_time < Perks.PERFECT_GUARD_WINDOW:
+		stats.guard_multiplier = 0.0
 	if Input.is_action_just_pressed(&"evade") and _dash_cooldown_left <= 0.0:
 		_start_dash()
 		return
@@ -321,9 +356,17 @@ func start_quick_cast(slot: int) -> void:
 	if jutsu == null:
 		feedback.emit("Quick-cast slot %d is empty" % (slot + 1), &"fail")
 		return
-	var reason := caster.block_reason(jutsu)
+	var instant := quick_styles[slot] == Loadouts.INSTANT
+	var reason := caster.block_reason(jutsu, instant)
 	if reason != &"":
 		_on_cast_failed(jutsu, reason)
+		return
+	if instant:
+		# No seals: a flick of the hands and it's done.
+		_face_now(_aim_flat())
+		if animator:
+			animator.seal_flick()
+		caster.cast(jutsu, aim_target(), true)
 		return
 	_auto_jutsu = jutsu
 	_auto_queue = jutsu.seals.duplicate()
@@ -336,7 +379,26 @@ func start_quick_cast(slot: int) -> void:
 func assign_quick_slot(slot: int, jutsu_id: StringName) -> void:
 	if slot < 0 or slot >= quick_slots.size():
 		return
-	quick_slots[slot] = jutsu_id
+	# Saved in the equipped loadout; the Profile's change reloads the slots.
+	Loadouts.assign(slot, jutsu_id)
+
+
+## Equips the next (1) or previous (-1) jutsu loadout.
+func cycle_loadout(step: int) -> void:
+	if Loadouts.all().size() < 2:
+		feedback.emit("Only one loadout (make more in the pause menu)", &"info")
+		return
+	Loadouts.equip(Loadouts.cycle(step))
+	feedback.emit("Loadout: %s" % Loadouts.active()["name"], &"info")
+
+
+func _load_loadout() -> void:
+	var preset := Loadouts.active()
+	quick_slots.clear()
+	quick_styles.clear()
+	for i in Loadouts.SLOTS:
+		quick_slots.append(Loadouts.jutsu_in(preset, i))
+		quick_styles.append(Loadouts.style_in(preset, i))
 	quick_slots_changed.emit()
 
 
@@ -590,6 +652,61 @@ func _update_animator() -> void:
 	animator.speed_ratio = Vector2(velocity.x, velocity.z).length() / run_speed
 
 
+# --- Clan and eye art perks ----------------------------------------------------
+
+## Re-reads the player's clan and eye art into the numbers they change.
+func _apply_perks() -> void:
+	var move := 1.0 + Perks.value(&"move_speed")
+	run_speed = _base["run"] * move
+	sprint_speed = _base["sprint"] * move
+	dash_cooldown = _base["dash_cooldown"] * maxf(0.2, 1.0 + Perks.value(&"dash_cooldown"))
+	lock_range = _base["lock"] * (1.0 + Perks.value(&"lock_range"))
+	guard_damage_multiplier = _base["guard"] * maxf(0.05, 1.0 - Perks.value(&"guard"))
+	var ratio := stats.health / stats.max_health if stats.max_health > 0.0 else 1.0
+	stats.max_health = _base["health"] * (1.0 + Perks.value(&"max_health"))
+	stats.health = clampf(ratio * stats.max_health, 0.0, stats.max_health)
+	stats.chakra_regen = _base["chakra_regen"] * (1.0 + Perks.value(&"chakra_regen"))
+	stats.health_changed.emit(stats.health, stats.max_health)
+
+
+## Seconds per seal when a quick-cast weaves for you.
+func _seal_time() -> float:
+	return maxf(0.05, float(Settings.get_value(&"auto_weave_seal_time")) * (1.0 - Perks.value(&"cast_speed")))
+
+
+func _eye_color() -> Color:
+	var art := Perks.active_eye_art()
+	return Color(str(art["color"])) if not art.is_empty() else Color.WHITE
+
+
+## Mirror Eye: slipping through a blow slows the world for a heartbeat.
+func _on_dodged(_amount: float, _element: int) -> void:
+	if state != State.DASHING or _focus_active or not Perks.has(&"dodge_focus"):
+		return
+	_focus_active = true
+	Engine.time_scale = Perks.FOCUS_TIME_SCALE
+	stats.chakra = minf(stats.max_chakra, stats.chakra + Perks.FOCUS_CHAKRA)
+	stats.chakra_changed.emit(stats.chakra, stats.max_chakra)
+	feedback.emit("Mirror Eye", &"cast")
+	Vfx.flash(get_parent(), global_position + Vector3.UP * 1.6, _eye_color().lightened(0.3), 2.4, 0.3, &"glow")
+	Sfx.play(&"chakra_jump", -2.0)
+	# Real time, not slowed time.
+	await get_tree().create_timer(Perks.FOCUS_SECONDS, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_focus_active = false
+
+
+## Still Eye: a perfectly timed guard.
+func _perfect_guard() -> void:
+	Sfx.play(&"guard", 3.0)
+	feedback.emit("Still Eye: blocked", &"cast")
+	stats.chakra = minf(stats.max_chakra, stats.chakra + Perks.FOCUS_CHAKRA * 0.8)
+	stats.chakra_changed.emit(stats.chakra, stats.max_chakra)
+	Vfx.hit_spark(get_parent(), global_position + Vector3.UP * 1.2 - global_basis.z * 0.5,
+		_eye_color(), 0.9, -global_basis.z)
+	camera_rig.add_shake(0.15)
+
+
 # --- Reactions ---------------------------------------------------------------
 
 func _on_seal_added(seal: int, _sequence: Array[int]) -> void:
@@ -622,6 +739,9 @@ func _on_cast_failed(jutsu: JutsuDefinition, reason: StringName) -> void:
 
 
 func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
+	if amount <= 0.0 and state == State.GUARDING:
+		_perfect_guard()
+		return
 	Sfx.play(&"guard" if state == State.GUARDING else &"hit_player")
 	camera_rig.add_shake(clampf(amount / 30.0, 0.1, 0.6))
 	InputDevice.rumble(0.4, 0.5, 0.15)

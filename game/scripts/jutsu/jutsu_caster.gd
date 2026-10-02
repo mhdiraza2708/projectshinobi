@@ -22,8 +22,12 @@ const AFFINITY_DISCOUNT := 0.2
 var affinity := Element.NONE
 ## Multiplies the power of everything this caster makes (enemy tuning).
 var power_scale := 1.0
+## The player's clan and eye art shape what they cast (cost, damage, healing,
+## homing); everyone else's don't.
+var use_perks := false
 
 var _cooldowns: Dictionary = {}
+var _clones: Array[EnemyShinobi] = []
 
 
 func _process(delta: float) -> void:
@@ -38,17 +42,21 @@ func cooldown_left(id: StringName) -> float:
 
 
 ## Chakra this caster pays for `jutsu`, after the affinity discount.
-func cost_of(jutsu: JutsuDefinition) -> float:
+func cost_of(jutsu: JutsuDefinition, instant := false) -> float:
+	var cost := jutsu.chakra_cost
 	if affinity != Element.NONE and jutsu.element == affinity:
-		return jutsu.chakra_cost * (1.0 - AFFINITY_DISCOUNT)
-	return jutsu.chakra_cost
+		cost *= 1.0 - AFFINITY_DISCOUNT
+	if use_perks:
+		cost *= maxf(0.2, 1.0 + Perks.value(&"cost"))
+	# Skipping the seals costs extra chakra.
+	return cost * (1.0 + Loadouts.INSTANT_SURCHARGE) if instant else cost
 
 
 ## &"" if `jutsu` can be cast right now, otherwise the reason it can't.
-func block_reason(jutsu: JutsuDefinition) -> StringName:
+func block_reason(jutsu: JutsuDefinition, instant := false) -> StringName:
 	if cooldown_left(jutsu.id) > 0.0:
 		return &"cooldown"
-	if stats.chakra < cost_of(jutsu):
+	if stats.chakra < cost_of(jutsu, instant):
 		return &"chakra"
 	return &""
 
@@ -64,16 +72,20 @@ func cast_sequence(sequence: Array, target: Node3D = null) -> JutsuDefinition:
 	return jutsu if cast(jutsu, target) else null
 
 
-func cast(jutsu: JutsuDefinition, target: Node3D = null) -> bool:
-	var reason := block_reason(jutsu)
+## `instant`: no seals were woven (a quick-cast slot set to Instant), which
+## costs a surcharge.
+func cast(jutsu: JutsuDefinition, target: Node3D = null, instant := false) -> bool:
+	var reason := block_reason(jutsu, instant)
 	if reason != &"":
 		cast_failed.emit(jutsu, reason)
 		return false
-	stats.spend_chakra(cost_of(jutsu))
+	stats.spend_chakra(cost_of(jutsu, instant))
 	if jutsu.cooldown > 0.0:
 		_cooldowns[jutsu.id] = jutsu.cooldown
 
 	var power := jutsu.power * power_scale * (1.0 + stats.modifier(&"attack_power"))
+	if use_perks:
+		power *= Perks.damage_multiplier(jutsu.element)
 	match jutsu.form:
 		JutsuDefinition.Form.PROJECTILE:
 			_spawn_projectiles(jutsu, power, target)
@@ -85,8 +97,10 @@ func cast(jutsu: JutsuDefinition, target: Node3D = null) -> bool:
 			stats.add_modifier(StringName(jutsu.buff_stat), jutsu.power, jutsu.duration)
 			_aura(jutsu)
 		JutsuDefinition.Form.HEAL:
-			stats.heal(jutsu.power)
+			stats.heal(jutsu.power * ((1.0 + Perks.value(&"heal")) if use_perks else 1.0))
 			Vfx.heal(_world_parent(), _body().global_position)
+		JutsuDefinition.Form.SUMMON:
+			_summon(jutsu)
 	var sound := cast_sound(jutsu)
 	if sound != &"":
 		Sfx.play_at(sound, global_position)
@@ -107,6 +121,7 @@ static func cast_sound(jutsu: JutsuDefinition) -> StringName:
 		JutsuDefinition.Form.BUFF: return &"buff"
 		JutsuDefinition.Form.HEAL: return &"heal"
 		JutsuDefinition.Form.WALL: return &""
+		JutsuDefinition.Form.SUMMON: return &"smoke"
 	return StringName("cast_" + Element.NAMES[jutsu.element])
 
 
@@ -146,7 +161,7 @@ func _spawn_projectiles(jutsu: JutsuDefinition, power: float, target: Node3D) ->
 		p.direction = aim.rotated(Vector3.UP, offset).normalized()
 		p.caster = _body()
 		p.style = jutsu.visual
-		p.homing_rate = jutsu.homing
+		p.homing_rate = jutsu.homing * ((1.0 + Perks.value(&"homing")) if use_perks else 1.0)
 		# Only the centre shot of a fan homes, so the spread stays readable.
 		p.target = target if offset == 0.0 else null
 		_world_parent().add_child(p)
@@ -176,6 +191,44 @@ func _raise_wall(jutsu: JutsuDefinition) -> void:
 	wall.duration = jutsu.duration
 	wall.transform = Transform3D(Basis.looking_at(forward, Vector3.UP), pos)
 	_world_parent().add_child(wall)
+
+
+## Clones standing right now (the caster's earlier ones vanish when it casts
+## again, so there are never more than a cast's worth).
+func clones() -> Array[EnemyShinobi]:
+	var alive: Array[EnemyShinobi] = []
+	for c in _clones:
+		if is_instance_valid(c) and not c.is_defeated():
+			alive.append(c)
+	_clones = alive
+	return _clones
+
+
+## Doubles of the caster step out around them and fight on their side.
+func _summon(jutsu: JutsuDefinition) -> void:
+	for old in clones():
+		old.leave()
+	_clones.clear()
+	var owner_body := _body()
+	var count := jutsu.count + (int(Perks.value(&"clones")) if use_perks else 0)
+	var time := jutsu.duration * ((1.0 + Perks.value(&"clone_time")) if use_perks else 1.0)
+	var nature := affinity if affinity != Element.NONE else Element.FIRE
+	for i in count:
+		var c := EnemyShinobi.new()
+		c.rank = &"chunin"
+		c.team = &"player"
+		c.element = nature
+		c.clone_of = owner_body
+		c.lifetime = time
+		c.health_override = jutsu.health
+		c.damage_scale = jutsu.power
+		var angle := owner_body.rotation.y + TAU * (i + 0.5) / count
+		var pos := owner_body.global_position + Vector3(sin(angle), 0.0, cos(angle)) * 2.4
+		pos.y = Combat.ground_height(get_world_3d(), pos, owner_body.global_position.y)
+		c.position = pos
+		_world_parent().add_child(c)
+		_clones.append(c)
+	Vfx.shockwave(_world_parent(), owner_body.global_position, Color(0.55, 0.62, 0.85), 2.6, 0.5)
 
 
 func _aura(jutsu: JutsuDefinition) -> void:

@@ -33,6 +33,7 @@ var _instruction: HBoxContainer
 var _talismans: HBoxContainer
 var _hints: VBoxContainer
 var _slot_rows: Array[Dictionary] = []
+var _loadout_label: Label
 var _reticle: ShurikenReticle
 ## Faint marker on the soft-aim target (what a throw would hit without lock-on).
 var _soft_reticle: ShurikenReticle
@@ -59,6 +60,7 @@ func bind(p: Player) -> void:
 		if kind != &"cast":
 			show_banner(text, kind))
 	player.quick_slots_changed.connect(_refresh_slots)
+	player.quick_slots_changed.connect(_refresh_loadout_name)
 	Profile.changed.connect(func(_k: StringName) -> void: _refresh_name())
 	_refresh_name()
 	InputDevice.device_changed.connect(func(_d: Binding.Device) -> void: _refresh_weave(true))
@@ -67,6 +69,7 @@ func bind(p: Player) -> void:
 	_on_health(player.stats.health, player.stats.max_health)
 	_on_chakra(player.stats.chakra, player.stats.max_chakra)
 	_refresh_slots()
+	_refresh_loadout_name()
 	_refresh_weave(true)
 
 
@@ -223,24 +226,40 @@ void fragment() {
 	sv.add_theme_constant_override(&"separation", 6)
 	slots.add_child(sv)
 	var sh := HBoxContainer.new()
+	sh.add_theme_constant_override(&"separation", 8)
 	sh.add_child(UiKit.label("術", 28, UiKit.CRIMSON, &"brush"))
 	sh.add_child(UiKit.label("QUICK CAST", 20, UiKit.INK, &"display"))
+	var sp := Control.new()
+	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sh.add_child(sp)
+	_loadout_label = UiKit.label("", 17, UiKit.CRIMSON_DARK, &"bold")
+	sh.add_child(_loadout_label)
 	sv.add_child(sh)
-	for i in 4:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override(&"separation", 10)
-		row.custom_minimum_size = Vector2(330, 38)
-		var glyph := InputGlyph.for_action(StringName("quick_cast_%d" % (i + 1)), 32.0)
-		var stamp := Hanko.make("無", 34.0)
-		var name_label := UiKit.label("", 20, UiKit.INK, &"bold")
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var status := UiKit.label("", 17, UiKit.CRIMSON, &"bold")
-		row.add_child(glyph)
-		row.add_child(stamp)
-		row.add_child(name_label)
-		row.add_child(status)
-		sv.add_child(row)
-		_slot_rows.append({"row": row, "stamp": stamp, "name": name_label, "status": status})
+	# Slots 1-4 on the left, 5-8 on the right: the two pages of a gamepad.
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override(&"separation", 18)
+	sv.add_child(columns)
+	for page in 2:
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override(&"separation", 4)
+		columns.add_child(column)
+		for k in Loadouts.PAGE:
+			var i := page * Loadouts.PAGE + k
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override(&"separation", 8)
+			row.custom_minimum_size = Vector2(262, 36)
+			var glyph := InputGlyph.for_action(StringName("quick_cast_%d" % (i + 1)), 30.0)
+			var stamp := Hanko.make("無", 32.0)
+			var name_label := UiKit.label("", 18, UiKit.INK, &"bold")
+			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			name_label.clip_text = true
+			var status := UiKit.label("", 15, UiKit.CRIMSON, &"bold")
+			row.add_child(glyph)
+			row.add_child(stamp)
+			row.add_child(name_label)
+			row.add_child(status)
+			column.add_child(row)
+			_slot_rows.append({"row": row, "stamp": stamp, "name": name_label, "status": status, "glyph": glyph})
 
 	# --- Control legend, bottom-left -------------------------------------------
 	var legend_bg := PanelContainer.new()
@@ -479,24 +498,33 @@ func _refresh_weave(force := false) -> void:
 		_hints.add_child(UiKit.label("No jutsu uses this sequence", 19, UiKit.CRIMSON, &"bold"))
 
 
+func _refresh_loadout_name() -> void:
+	_loadout_label.text = str(Loadouts.active()["name"])
+
+
 func _refresh_slots() -> void:
+	var on_pad := InputDevice.current == Binding.Device.GAMEPAD
 	for i in _slot_rows.size():
 		var r: Dictionary = _slot_rows[i]
 		var id: StringName = player.quick_slots[i] if i < player.quick_slots.size() else &""
 		var j := JutsuRegistry.get_jutsu(id)
+		var instant: bool = i < player.quick_styles.size() and player.quick_styles[i] == Loadouts.INSTANT
+		# On a pad the D-pad works one page at a time: dim the other.
+		var off_page := on_pad and i / Loadouts.PAGE != player.quick_page
 		if j == null:
 			r["name"].text = "—"
 			r["status"].text = ""
+			(r["row"] as Control).modulate = Color(1, 1, 1, 0.35 if off_page else 0.6)
 			continue
-		r["name"].text = j.display_name
+		r["name"].text = ("» " if instant else "") + j.display_name
 		(r["stamp"] as Hanko).text = Element.kanji(j.element)
 		(r["stamp"] as Hanko).color = _element_stamp(j.element)
 		var cd := player.caster.cooldown_left(j.id)
 		var status := "%.1fs" % cd if cd > 0.0 else ""
-		if cd <= 0.0 and player.stats.chakra < player.caster.cost_of(j):
+		if cd <= 0.0 and player.stats.chakra < player.caster.cost_of(j, instant):
 			status = "low chakra"
 		r["status"].text = status
-		(r["row"] as Control).modulate = Color(1, 1, 1, 0.5) if status != "" else Color.WHITE
+		(r["row"] as Control).modulate = Color(1, 1, 1, 0.5 if status != "" or off_page else 1.0)
 
 
 static func _element_stamp(element: int) -> Color:

@@ -8,7 +8,9 @@ extends Node3D
 ## NAME is one of: overview (default), weave, cast, kunai, menu, customize,
 ## customize_colours, customize_gear, title, trial, results, story,
 ## story_boss, story_menu, chapter_card, night, chapter:<id>, island:<id> (from
-## the air), scene:<id>:<beat>:<seconds> (a cutscene partway through, best
+## the air), title_saves, slots_load, slots_new, confirm_overwrite (the title with
+## fake saves), creation, creation_eyes, creation_identity, creation_jutsu,
+## menu_jutsu, scene:<id>:<beat>:<seconds> (a cutscene partway through, best
 ## with --fixed-fps 60), teleport, teleport_night, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
@@ -81,6 +83,10 @@ func _ready() -> void:
 		_customize_from_title = true
 		customize_menu.open())
 	title_screen.chapter_chosen.connect(start_story)
+	title_screen.continue_chosen.connect(_continue_slot)
+	title_screen.new_game_chosen.connect(_new_game)
+	customize_menu.begun.connect(_on_creation_begun)
+	customize_menu.cancelled.connect(_on_creation_cancelled)
 	results = TrialResults.new()
 	add_child(results)
 	results.retry_chosen.connect(_on_results_primary)
@@ -97,10 +103,59 @@ func _ready() -> void:
 		_: start_training()
 
 
+# --- Saves and character creation ------------------------------------------------
+
+## Resumes a save: its character, then the first chapter it hasn't cleared. A
+## character that was never finished goes back to creation.
+func _continue_slot(slot: int) -> void:
+	SaveSlots.activate(slot)
+	if not bool(Profile.get_value(&"created")):
+		_start_creation()
+		return
+	if story == null:
+		story = Story.load_all()
+	var next := story.resume_chapter()
+	if next.is_empty():
+		# Everything is cleared: pick a chapter to replay.
+		show_title()
+		title_screen.show_chapters()
+		return
+	start_story(next["id"])
+
+
+## A fresh game in `slot` (the title already confirmed any overwrite).
+func _new_game(slot: int) -> void:
+	SaveSlots.create(slot)
+	# A name to start from; the Identity tab changes it.
+	Profile.set_value(&"name", Profile.random_name())
+	_start_creation()
+
+
+func _start_creation() -> void:
+	title_screen.close()
+	customize_menu.open_creation()
+
+
+func _on_creation_begun() -> void:
+	Profile.set_value(&"created", true)
+	Game.save_records()
+	if story == null:
+		story = Story.load_all()
+	start_story(story.chapters[0]["id"])
+
+
+## Backing out of creation abandons the new game: the slot is cleared again.
+func _on_creation_cancelled() -> void:
+	SaveSlots.erase(SaveSlots.active)
+	show_title()
+
+
 # --- Modes ---------------------------------------------------------------------
 
 func show_title() -> void:
 	mode = Game.Mode.TITLE
+	Game.tracking = false
+	Game.save_records()
 	hud.visible = false
 	player.input_enabled = false
 	player.camera_rig.begin_showcase(-1.1)
@@ -437,6 +492,7 @@ func _exit_tree() -> void:
 
 func _leave_title() -> void:
 	title_screen.close()
+	Game.tracking = true
 	hud.visible = true
 	player.input_enabled = true
 	if player.camera_rig.in_showcase():
@@ -527,6 +583,31 @@ static func _user_args() -> Dictionary:
 	return out
 
 
+## Fake saves for screenshots, in a folder of their own (slot 2 left empty).
+func _demo_slots() -> void:
+	SaveSlots.root = "user://demo_saves"
+	if story == null:
+		story = Story.load_all()
+	var saves := [[1, "Kaze of the Ash Valley", "gale", Element.WIND, 4, 5400.0],
+		[3, "Rin of the Stone Bridge", "stonewright", Element.EARTH, 9, 31200.0]]
+	for save: Array in saves:
+		DirAccess.make_dir_recursive_absolute(SaveSlots.slot_dir(save[0]))
+		var profile := ConfigFile.new()
+		profile.set_value("profile", "name", save[1])
+		profile.set_value("profile", "clan", save[2])
+		profile.set_value("profile", "affinity", save[3])
+		profile.set_value("profile", "created", true)
+		profile.save(SaveSlots.profile_path(save[0]))
+		var records := ConfigFile.new()
+		for i in int(save[4]):
+			records.set_value("story", story.chapters[i]["id"], true)
+		records.set_value("meta", "playtime", save[5])
+		records.save(SaveSlots.records_path(save[0]))
+	SaveSlots.active = 1
+	Profile.set_value(&"created", true)
+	Profile.set_value(&"name", "Kaze of the Ash Valley")
+
+
 func _screenshot(path: String, demo: String, device: String) -> void:
 	# Screenshots must not read or write the player's saved profile.
 	Profile.persist = false
@@ -611,6 +692,30 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			show_title()
 			title_screen.show_chapters()
 			await _frames(20)
+		"title_saves", "slots_load", "slots_new", "confirm_overwrite":
+			_demo_slots()
+			show_title()
+			match demo:
+				"slots_load": title_screen.show_slots(false)
+				"slots_new": title_screen.show_slots(true)
+				"confirm_overwrite":
+					title_screen.show_slots(true)
+					await _frames(2)
+					title_screen._slot_pressed(1, true)
+			await _frames(30)
+		"creation", "creation_eyes", "creation_identity", "creation_jutsu":
+			SaveSlots.root = "user://demo_saves"
+			Profile.set_value(&"clan", "gale")
+			Profile.set_value(&"affinity", Element.WIND)
+			Profile.set_value(&"eye_art", "seal_eye" if demo != "creation_jutsu" else "")
+			customize_menu.open_creation()
+			customize_menu._select_tab({"creation": CustomizeMenu.T_CLAN, "creation_eyes": CustomizeMenu.T_EYES,
+				"creation_identity": CustomizeMenu.T_IDENTITY, "creation_jutsu": CustomizeMenu.T_JUTSU}[demo])
+			await _frames(40)
+		"menu_jutsu":
+			pause_menu.open()
+			pause_menu._select_tab(2)
+			await _frames(10)
 		"chapter_card":
 			start_story("ch3_vault")
 			await _frames(12)

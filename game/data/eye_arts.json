@@ -1,0 +1,24 @@
+{
+	"eye_arts": [
+		{
+			"id": "hawk_eye", "name": "Hawk Eye", "kanji": "鷹", "color": "#e3a23a",
+			"blurb": "You see targets from far off, and your techniques curve to meet them. Natures show who is weak to you.",
+			"perks": {"lock_range": 0.6, "homing": 0.5, "reads_natures": 1}
+		},
+		{
+			"id": "mirror_eye", "name": "Mirror Eye", "kanji": "鏡", "color": "#8fb8e8",
+			"blurb": "A dash that slips through a blow slows the world for a heartbeat and steadies your chakra.",
+			"perks": {"dodge_focus": 1}
+		},
+		{
+			"id": "seal_eye", "name": "Seal Eye", "kanji": "印", "color": "#9a6fe0",
+			"blurb": "You read hands as they move. Rivals' seals come slower, and your own fly faster.",
+			"perks": {"enemy_seal_slow": 0.4, "cast_speed": 0.25}
+		},
+		{
+			"id": "still_eye", "name": "Still Eye", "kanji": "静", "color": "#4fbf9a",
+			"blurb": "A guard raised at the very last instant turns a blow aside completely, and pays you back in chakra.",
+			"perks": {"perfect_guard": 1}
+		}
+	]
+}

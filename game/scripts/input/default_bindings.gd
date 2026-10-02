@@ -68,6 +68,23 @@ static func table() -> Dictionary:
 			Binding.key(KEY_3), Binding.joy_button(JOY_BUTTON_DPAD_DOWN)]),
 		&"quick_cast_4": _a("Quick Cast 4", "Jutsu", [
 			Binding.key(KEY_4), Binding.joy_button(JOY_BUTTON_DPAD_LEFT)]),
+		# Slots 5-8: direct keys on a keyboard. On a gamepad the D-pad works the
+		# slots of the current page (Back flips the page); pads with back
+		# paddles can also reach 5-8 directly.
+		&"quick_cast_5": _a("Quick Cast 5", "Jutsu", [
+			Binding.key(KEY_5), Binding.joy_button(JOY_BUTTON_PADDLE1)]),
+		&"quick_cast_6": _a("Quick Cast 6", "Jutsu", [
+			Binding.key(KEY_6), Binding.joy_button(JOY_BUTTON_PADDLE2)]),
+		&"quick_cast_7": _a("Quick Cast 7", "Jutsu", [
+			Binding.key(KEY_7), Binding.joy_button(JOY_BUTTON_PADDLE3)]),
+		&"quick_cast_8": _a("Quick Cast 8", "Jutsu", [
+			Binding.key(KEY_8), Binding.joy_button(JOY_BUTTON_PADDLE4)]),
+		&"quick_page": _a("Quick-Cast Page (gamepad)", "Jutsu", [
+			Binding.key(KEY_G), Binding.joy_button(JOY_BUTTON_BACK)]),
+		&"preset_prev": _a("Previous Jutsu Loadout", "Jutsu", [
+			Binding.key(KEY_Z), Binding.joy_button(JOY_BUTTON_TOUCHPAD)]),
+		&"preset_next": _a("Next Jutsu Loadout", "Jutsu", [
+			Binding.key(KEY_X), Binding.joy_button(JOY_BUTTON_MISC1)]),
 
 		# --- Seal weaving (only live while Weave is held/toggled) ------------
 		# The four seal directions mirror the gamepad face-button diamond

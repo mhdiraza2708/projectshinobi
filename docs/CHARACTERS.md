@@ -111,15 +111,18 @@ enemies can use them later.
 
 Pause (Esc / Start) → **Customize** opens a screen with
 your character standing on the right. Rotate it with the right stick or by
-dragging with the mouse. Every change applies live and is saved to
-`user://profile.cfg`.
+dragging with the mouse. Every change applies live and is saved to your
+current save slot (`user://saves/slot_N/profile.cfg`).
 
 | Tab | What you can change |
 |---|---|
 | 姿 **Look** | Which character (roster), height (90–110%), default facial expression |
 | 色 **Colours** | A tint per material slot the model has: hair (brows follow), eyes, skin, outfit, lower, shoes, accessories |
 | 装 **Gear** | Headband (cloth or metal-plated hachigane), face mask, scarf, ninjato on the back, kunai pouch, each with colours where it makes sense. Gear size and headband height sliders help with unusual heads. |
-| 名 **Identity** | Name (or **Random** for a generated ninja name, handy on a controller) and chakra nature |
+| 名 **Identity** | Name (or **Random** for a generated ninja name, handy on a controller) and chakra nature (fixed by your clan unless you are a Wayfarer) |
+| 族 **Clan** | Your clan: its nature and its perks (see `data/clans.json`) |
+| 眼 **Eyes** | Your eye art, from the ones your clan allows (see `data/eye_arts.json`); your eyes take its colour |
+| 術 **Jutsu** | Loadout presets and the eight quick-cast slots |
 
 **The limits, honestly:**
 - Face, hair shape and body shape come from VRoid Studio. To change those,

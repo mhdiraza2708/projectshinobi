@@ -101,6 +101,14 @@ func next_chapter(id: String) -> Dictionary:
 	return {}
 
 
+## Where a save picks up: the first chapter not cleared yet ({} once all are).
+func resume_chapter() -> Dictionary:
+	for c in chapters:
+		if not Game.chapter_done(c["id"]):
+			return c
+	return {}
+
+
 ## First chapter, or the previous one is cleared.
 func is_unlocked(id: String) -> bool:
 	for i in chapters.size():

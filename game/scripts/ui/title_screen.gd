@@ -1,12 +1,19 @@
 class_name TitleScreen
 extends CanvasLayer
-## The first screen: a hanging scroll with the game's modes, while your
-## character stands beside it. Fully usable with a controller.
+## The first screen: a hanging scroll with the game's modes and your saves,
+## while your character stands beside it. Fully usable with a controller.
+##
+## Continue resumes the slot you played last; New Game and Load Game list the
+## three save slots (a new game over an old save, and deleting one, ask first).
 
 signal trial_chosen
 signal training_chosen
 signal customize_chosen
 signal chapter_chosen(chapter_id: String)
+## Resume a saved game: Continue, or a slot picked under Load Game.
+signal continue_chosen(slot: int)
+## A fresh game in this slot (anything saved there is confirmed gone).
+signal new_game_chosen(slot: int)
 
 ## The story, for the chapter list (loaded on first use if not given).
 var story: Story
@@ -15,7 +22,8 @@ var _root: Control
 var _warning: Label
 var _menu: VBoxContainer
 var _first: Button
-var _on_chapters := false
+## &"main", &"chapters", &"slots" or &"confirm".
+var _page := &"main"
 
 
 func _init() -> void:
@@ -45,28 +53,208 @@ func open() -> void:
 
 
 func showing_chapters() -> bool:
-	return _on_chapters
+	return _page == &"chapters"
+
+
+func showing_slots() -> bool:
+	return _page == &"slots"
 
 
 func show_main() -> void:
-	_on_chapters = false
+	_page = &"main"
 	_clear_menu()
 	if story == null:
 		story = Story.load_all()
-	var cleared := story.chapters.filter(func(c: Dictionary) -> bool: return Game.chapter_done(c["id"])).size()
-	_first = _entry("物", "Story", "Two parts, %d chapters, %d cleared." % [story.chapters.size(), cleared], show_chapters)
+	var slot := SaveSlots.active
+	if slot > 0:
+		_first = _entry("続", "Continue", _slot_summary(slot), continue_chosen.emit.bind(slot))
+	_entry("新", "New Game", "" if slot > 0 else "Choose your clan, eye art, look and jutsu, then begin the story.",
+		show_slots.bind(true))
+	if _first == null or slot == 0:
+		_first = _menu.get_child(0) as Button
+	if SaveSlots.any():
+		_entry("録", "Load Game", "", show_slots.bind(false))
+	if slot > 0 and bool(Profile.get_value(&"created")):
+		_entry("物", "Chapters", "", show_chapters)
 	var best := Game.best_time(TrialDirector.TRIAL_ID)
-	_entry("試", "Trial of the Five Natures", "Five waves of shinobi clones. %s" % (
-		"Best time %s." % Game.format_time(best) if best > 0.0 else "Beat each nature with the one that overcomes it."), trial_chosen.emit)
-	_entry("修", "Training Ground", "Practise seals and jutsu on dummies. Nothing hits back.", training_chosen.emit)
-	_entry("装", "Customize", "Look, colours, gear, name and chakra nature.", customize_chosen.emit)
+	_entry("試", "Trial of the Five Natures", "Best time %s" % Game.format_time(best) if best > 0.0 else "", trial_chosen.emit)
+	_entry("修", "Training Ground", "", training_chosen.emit)
+	if slot > 0:
+		_entry("装", "Customize", "", customize_chosen.emit)
 	if OS.get_name() != "Web":
 		_entry("退", "Quit", "", func() -> void: get_tree().quit())
 	_first.grab_focus.call_deferred()
 
 
+## One line about a save, for Continue and the slot cards.
+func _slot_summary(slot: int) -> String:
+	var m := SaveSlots.meta(slot)
+	if not m["exists"]:
+		return ""
+	if not m["created"]:
+		return "Slot %d · character not finished" % slot
+	return "%s  ·  %s  ·  %d of %d chapters  ·  %s" % [m["name"], _clan_name(m["clan"]), m["cleared"],
+		story.chapters.size(), SaveSlots.format_playtime(m["playtime"])]
+
+
+static func _clan_name(clan_id: String) -> String:
+	var clan := Perks.clan(clan_id)
+	return clan["name"] if not clan.is_empty() else "No clan"
+
+
+## The three saves as cards. `for_new`: pick where a new game goes (an
+## occupied slot asks before it is overwritten); otherwise pick one to load
+## (or delete).
+func show_slots(for_new: bool) -> void:
+	_page = &"slots"
+	_clear_menu()
+	if story == null:
+		story = Story.load_all()
+	_menu.add_child(UiKit.label("Choose where the new game goes" if for_new else "Choose a save to load",
+		22, UiKit.CRIMSON_DARK, &"bold"))
+	var cards: Array[Button] = []
+	for slot in range(1, SaveSlots.COUNT + 1):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override(&"separation", 8)
+		var card := _slot_card(slot, for_new)
+		cards.append(card)
+		row.add_child(card)
+		if not for_new and SaveSlots.exists(slot):
+			var del := Button.new()
+			del.text = "Delete"
+			del.custom_minimum_size = Vector2(88, 0)
+			del.pressed.connect(func() -> void: _ask_delete.call_deferred(slot, for_new))
+			row.add_child(del)
+		_menu.add_child(row)
+	# A new game starts on the first empty slot; Load on the slot in play (or
+	# else the first save).
+	var pick := 0
+	for slot in range(1, SaveSlots.COUNT + 1):
+		if for_new and not SaveSlots.exists(slot):
+			pick = slot
+			break
+		if not for_new and SaveSlots.exists(slot) and (pick == 0 or slot == SaveSlots.active):
+			pick = slot
+	_entry("戻", "Back", "", show_main)
+	cards[maxi(pick, 1) - 1].grab_focus.call_deferred()
+
+
+func _slot_card(slot: int, for_new: bool) -> Button:
+	var m := SaveSlots.meta(slot)
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, 122)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var kanji := "空"
+	var color := UiKit.INK_SOFT
+	var heading := "Slot %d  ·  Empty" % slot
+	var line1 := "A new shinobi begins here." if for_new else "Nothing saved."
+	var line2 := ""
+	var line3 := ""
+	if m["exists"]:
+		var clan := Perks.clan(m["clan"])
+		kanji = clan["kanji"] if not clan.is_empty() else "忍"
+		color = Color(clan["color"]) if not clan.is_empty() else UiKit.CRIMSON
+		heading = m["name"]
+		if m["created"]:
+			line1 = "Slot %d  ·  %s  ·  %s" % [slot, _clan_name(m["clan"]), Element.display_name(m["nature"])]
+			line2 = "%d of %d chapters  ·  %s" % [m["cleared"], story.chapters.size(), SaveSlots.format_playtime(m["playtime"])]
+		else:
+			line1 = "Slot %d  ·  character not finished" % slot
+		line3 = _date(m["modified"])
+	b.disabled = not for_new and not m["exists"]
+	if slot == SaveSlots.active and m["exists"]:
+		line3 += "  ·  last played" if line3 != "" else "last played"
+	# Deferred: the pages rebuild the menu, freeing the card that was pressed.
+	b.pressed.connect(func() -> void: _slot_pressed.call_deferred(slot, for_new))
+	var row := HBoxContainer.new()
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 16
+	row.offset_right = -16
+	row.offset_top = 8
+	row.offset_bottom = -8
+	row.add_theme_constant_override(&"separation", 16)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(row)
+	var stamp := Hanko.make(kanji, 72.0, color.darkened(0.2))
+	stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(stamp)
+	var text := VBoxContainer.new()
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	text.add_theme_constant_override(&"separation", 2)
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	var head := UiKit.label(heading, 24, UiKit.INK, &"bold")
+	head.clip_text = true
+	text.add_child(head)
+	for line: String in [line1, line2, line3]:
+		if line != "":
+			var l := UiKit.label(line, 16, UiKit.INK_SOFT, &"body")
+			l.clip_text = true
+			text.add_child(l)
+	var focus_box := StyleBoxFlat.new()
+	focus_box.bg_color = Color(UiKit.CRIMSON, 0.1)
+	focus_box.border_color = UiKit.CRIMSON
+	focus_box.set_border_width_all(3)
+	b.add_theme_stylebox_override(&"focus", focus_box)
+	var dim_box := StyleBoxFlat.new()
+	dim_box.bg_color = Color(UiKit.INK, 0.05)
+	b.add_theme_stylebox_override(&"disabled", dim_box)
+	return b
+
+
+static func _date(unix: int) -> String:
+	if unix <= 0:
+		return ""
+	var bias := int(Time.get_time_zone_from_system().get("bias", 0))
+	return Time.get_datetime_string_from_unix_time(unix + bias * 60, true).left(16)
+
+
+func _slot_pressed(slot: int, for_new: bool) -> void:
+	if not for_new:
+		continue_chosen.emit(slot)
+	elif SaveSlots.exists(slot):
+		_confirm("Overwrite slot %d?" % slot,
+			"%s will be gone for good, and a new shinobi begins here." % SaveSlots.meta(slot)["name"],
+			"Overwrite", new_game_chosen.emit.bind(slot), show_slots.bind(true))
+	else:
+		new_game_chosen.emit(slot)
+
+
+func _ask_delete(slot: int, for_new: bool) -> void:
+	_confirm("Delete slot %d?" % slot,
+		"%s and all their progress will be gone for good." % SaveSlots.meta(slot).get("name", "This save"),
+		"Delete", _delete_slot.bind(slot, for_new), show_slots.bind(for_new))
+
+
+func _delete_slot(slot: int, for_new: bool) -> void:
+	SaveSlots.erase(slot)
+	if SaveSlots.any():
+		show_slots(for_new)
+	else:
+		show_main()
+
+
+## A yes/no page. Focus starts on the safe answer.
+func _confirm(heading: String, body: String, yes_label: String, on_yes: Callable, on_no: Callable) -> void:
+	_page = &"confirm"
+	_clear_menu()
+	_menu.add_child(UiKit.label(heading, 34, UiKit.CRIMSON, &"display"))
+	var l := UiKit.label(body, 20, UiKit.INK, &"body")
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size.x = 560
+	_menu.add_child(l)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 14
+	_menu.add_child(spacer)
+	var no := _entry("戻", "No, go back", "", on_no)
+	_entry("消", yes_label, "", on_yes)
+	no.grab_focus.call_deferred()
+
+
 func show_chapters() -> void:
-	_on_chapters = true
+	_page = &"chapters"
 	_clear_menu()
 	# Ten chapters don't fit the scroll: list them in a scrolling column that
 	# follows controller focus.
@@ -106,13 +294,14 @@ func show_chapters() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if visible and _on_chapters and event.is_action_pressed(&"ui_cancel"):
+	if visible and _page != &"main" and event.is_action_pressed(&"ui_cancel"):
 		Sfx.ui(&"ui_back")
 		show_main()
 		get_viewport().set_input_as_handled()
 
 
 func _clear_menu() -> void:
+	_first = null
 	for child in _menu.get_children():
 		_menu.remove_child(child)
 		child.queue_free()
@@ -150,9 +339,9 @@ func _build() -> void:
 	column.add_theme_constant_override(&"separation", -6)
 	column.anchor_bottom = 1.0
 	column.offset_left = 90
-	column.offset_top = 60
+	column.offset_top = 36
 	column.offset_right = 90 + 700
-	column.offset_bottom = -60
+	column.offset_bottom = -36
 	_root.add_child(column)
 	column.add_child(_roller())
 	var paper := PaperPanel.new()
@@ -208,8 +397,8 @@ func _entry(kanji: String, title: String, blurb: String, on_press: Callable) -> 
 	var b := Button.new()
 	b.text = "%s   %s" % [kanji, title]
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_size_override(&"font_size", 30)
-	b.custom_minimum_size.y = 54
+	b.add_theme_font_size_override(&"font_size", 28)
+	b.custom_minimum_size.y = 46
 	# Deferred: pages rebuild the menu, freeing the button that was pressed.
 	b.pressed.connect(func() -> void: on_press.call_deferred())
 	parent.add_child(b)

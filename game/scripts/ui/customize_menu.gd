@@ -1,15 +1,35 @@
 class_name CustomizeMenu
 extends CanvasLayer
-## Character customization: roster, colours, ninja gear, body and identity.
+## Character customization: roster, colours, ninja gear, body and identity,
+## plus the clan, eye art and jutsu loadouts that shape how you fight.
 ## Changes apply live to the character (standing on the right, orbit with the
 ## right stick or a mouse drag) and are saved to the Profile immediately.
 ## Fully navigable with a controller: D-pad/stick to move, A to pick, LB/RB
 ## to switch tabs, B or Start to finish.
+##
+## `open_creation()` runs it as the start of a new game: the tabs come in the
+## order you'd choose them (clan first), and Begin / Back replace Done.
 
 signal opened
 signal closed
+## Creation only: the character is chosen, start the story.
+signal begun
+## Creation only: backed out; the new game should be abandoned.
+signal cancelled
 
-const TABS := [["姿", "Look"], ["色", "Colours"], ["装", "Gear"], ["名", "Identity"]]
+const TABS := [["姿", "Look"], ["色", "Colours"], ["装", "Gear"], ["名", "Identity"],
+	["族", "Clan"], ["眼", "Eyes"], ["術", "Jutsu"]]
+const T_LOOK := 0
+const T_COLOURS := 1
+const T_GEAR := 2
+const T_IDENTITY := 3
+const T_CLAN := 4
+const T_EYES := 5
+const T_JUTSU := 6
+## The order the tabs sit in during creation (what you decide first, first).
+const CREATION_ORDER := [T_CLAN, T_EYES, T_IDENTITY, T_LOOK, T_COLOURS, T_GEAR, T_JUTSU]
+## What "Reset look" leaves alone: who you are, not how you look.
+const KEPT_ON_RESET: Array[StringName] = [&"created", &"clan", &"eye_art", &"loadouts", &"loadout", &"affinity", &"name"]
 ## Multiplied onto the model's own colours, so each reads as a tint.
 const PALETTE := [
 	["Original", Color.WHITE], ["Ink", Color("2a2730")], ["Charcoal", Color("55545c")],
@@ -29,7 +49,15 @@ var _root: Control
 var _panel: PaperPanel
 var _tabs: TabContainer
 var _tab_buttons: Array[Button] = []
+var _tab_row: HFlowContainer
 var _dragging := false
+var creating := false
+var _title: Label
+var _subtitle: Label
+var _done: Button
+var _reset: Button
+var _begin: Button
+var _back: Button
 
 
 func _init() -> void:
@@ -50,15 +78,49 @@ func is_open() -> bool:
 
 
 func open() -> void:
+	_open(false)
+
+
+## The first screen of a new game: choose clan, eye art, name, look and jutsu.
+func open_creation() -> void:
+	_open(true)
+
+
+func _open(for_creation: bool) -> void:
+	creating = for_creation
 	Sfx.ui(&"ui_open")
+	_apply_mode()
 	_rebuild_tabs()
 	_root.visible = true
 	player.input_enabled = false
 	player.camera_rig.begin_showcase()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	_select_tab(0)
-	_tab_buttons[0].grab_focus()
+	var first: int = CREATION_ORDER[0] if creating else T_LOOK
+	_select_tab(first)
+	_tab_buttons[first].grab_focus()
 	opened.emit()
+
+
+## Tab order, title and footer for the current mode.
+func _apply_mode() -> void:
+	var order: Array = CREATION_ORDER if creating else range(TABS.size())
+	for pos in order.size():
+		_tab_row.move_child(_tab_buttons[order[pos]], pos)
+	_subtitle.text = "旅立ち" if creating else "身支度"
+	_title.text = "NEW SHINOBI" if creating else "CUSTOMIZE"
+	_done.visible = not creating
+	_reset.visible = true
+	_begin.visible = creating
+	_back.visible = creating
+	_update_footer()
+
+
+func _update_footer() -> void:
+	if _begin == null:
+		return
+	var chosen: bool = Profile.get_value(&"clan") != ""
+	_begin.disabled = not chosen
+	_begin.tooltip_text = "" if chosen else "Choose a clan first (Clan tab)"
 
 
 func close() -> void:
@@ -74,7 +136,7 @@ func close() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not is_open():
+	if not is_open() or creating:
 		return
 	if event.is_action_pressed(&"pause") or event.is_action_pressed(&"ui_cancel"):
 		close()
@@ -91,8 +153,10 @@ func _input(event: InputEvent) -> void:
 		elif event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
 			step = 1
 		if step != 0:
-			_select_tab(wrapi(_tabs.current_tab + step, 0, _tabs.get_tab_count()))
-			_tab_buttons[_tabs.current_tab].grab_focus()
+			var order: Array = CREATION_ORDER if creating else range(TABS.size())
+			var next: int = order[wrapi(order.find(_tabs.current_tab) + step, 0, order.size())]
+			_select_tab(next)
+			_tab_buttons[next].grab_focus()
 			get_viewport().set_input_as_handled()
 	# Drag anywhere off the panel to spin the character.
 	if event is InputEventMouseButton and event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
@@ -120,7 +184,7 @@ func _build() -> void:
 	_panel.offset_left = 40
 	_panel.offset_top = 40
 	_panel.offset_bottom = -40
-	_panel.offset_right = 40 + 760
+	_panel.offset_right = 40 + 860
 	_root.add_child(_panel)
 
 	var vbox := VBoxContainer.new()
@@ -132,20 +196,24 @@ func _build() -> void:
 	header.add_child(Hanko.make("装", 70.0))
 	var titles := VBoxContainer.new()
 	titles.add_theme_constant_override(&"separation", -8)
-	titles.add_child(UiKit.label("身支度", 22, UiKit.INK_SOFT, &"brush"))
-	titles.add_child(UiKit.label("CUSTOMIZE", 44, UiKit.CRIMSON, &"display"))
+	_subtitle = UiKit.label("身支度", 22, UiKit.INK_SOFT, &"brush")
+	titles.add_child(_subtitle)
+	_title = UiKit.label("CUSTOMIZE", 44, UiKit.CRIMSON, &"display")
+	titles.add_child(_title)
 	header.add_child(titles)
 	vbox.add_child(header)
 
-	var tab_row := HBoxContainer.new()
-	tab_row.add_theme_constant_override(&"separation", 4)
-	vbox.add_child(tab_row)
+	# A flow, so a long tab list wraps instead of running off the paper.
+	_tab_row = HFlowContainer.new()
+	_tab_row.add_theme_constant_override(&"h_separation", 2)
+	_tab_row.add_theme_constant_override(&"v_separation", 0)
+	vbox.add_child(_tab_row)
 	for i in TABS.size():
 		var b := Button.new()
 		b.text = "%s %s" % [TABS[i][0], TABS[i][1]]
-		b.add_theme_font_size_override(&"font_size", 22)
+		b.add_theme_font_size_override(&"font_size", 21)
 		b.pressed.connect(_select_tab.bind(i))
-		tab_row.add_child(b)
+		_tab_row.add_child(b)
 		_tab_buttons.append(b)
 	vbox.add_child(_rule())
 
@@ -159,10 +227,22 @@ func _build() -> void:
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override(&"separation", 12)
 	vbox.add_child(footer)
-	footer.add_child(_button("Done", close))
-	footer.add_child(_button("Reset all", func() -> void:
-		Profile.reset()
-		_rebuild_tabs()))
+	_begin = _button("Begin", func() -> void:
+		close()
+		begun.emit())
+	_begin.add_theme_font_size_override(&"font_size", 28)
+	_begin.add_theme_color_override(&"font_color", UiKit.CRIMSON)
+	footer.add_child(_begin)
+	_back = _button("Back", func() -> void:
+		close()
+		cancelled.emit())
+	_back.tooltip_text = "Abandon this new game"
+	footer.add_child(_back)
+	_done = _button("Done", close)
+	footer.add_child(_done)
+	_reset = _button("Reset look", _reset_look)
+	_reset.tooltip_text = "Back to the default look. Your clan, eye art, name and jutsu stay."
+	footer.add_child(_reset)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(spacer)
@@ -179,10 +259,24 @@ func _rebuild_tabs() -> void:
 	_tabs.add_child(_scroll("Colours", _build_colours()))
 	_tabs.add_child(_scroll("Gear", _build_gear()))
 	_tabs.add_child(_scroll("Identity", _build_identity()))
+	_tabs.add_child(_scroll("Clan", _build_clan()))
+	_tabs.add_child(_scroll("Eyes", _build_eyes()))
+	_tabs.add_child(_scroll("Jutsu", _build_jutsu()))
 	_select_tab(clampi(current, 0, TABS.size() - 1))
+	_update_footer()
 	if is_open():
 		# The control that had focus was rebuilt; keep controller users anchored.
 		_refocus.call_deferred()
+
+
+func _reset_look() -> void:
+	var kept := {}
+	for key in KEPT_ON_RESET:
+		kept[key] = Profile.get_value(key)
+	Profile.reset()
+	for key in kept:
+		Profile.set_value(key, kept[key])
+	_rebuild_tabs()
 
 
 func _refocus() -> void:
@@ -319,6 +413,7 @@ func _build_identity() -> Control:
 	list.add_child(row)
 
 	list.add_child(_section("Chakra nature"))
+	var fixed := Perks.clan_element(Profile.get_value(&"clan"))
 	var natures := HBoxContainer.new()
 	natures.add_theme_constant_override(&"separation", 8)
 	for e in [Element.FIRE, Element.WIND, Element.LIGHTNING, Element.EARTH, Element.WATER]:
@@ -337,17 +432,128 @@ func _build_identity() -> Control:
 		b.add_child(box)
 		if int(Profile.get_value(&"affinity")) == e:
 			b.add_theme_stylebox_override(&"normal", _selected_box())
+		# A clan fixes your nature; only Wayfarers (and old saves) choose.
+		b.disabled = fixed != Element.NONE and e != fixed
 		b.pressed.connect(func() -> void:
 			Profile.set_value(&"affinity", e)
 			_rebuild_tabs())
 		natures.add_child(b)
 	list.add_child(natures)
-	list.add_child(_hint("Jutsu of your nature cost %d%% less chakra. Fire > Wind > Lightning > Earth > Water > Fire." \
+	list.add_child(_hint(("Your clan fixes your nature. Wayfarers choose their own. " if fixed != Element.NONE else "")
+		+ "Jutsu of your nature cost %d%% less chakra. Fire > Wind > Lightning > Earth > Water > Fire." \
 		% roundi(JutsuCaster.AFFINITY_DISCOUNT * 100.0)))
 	return list
 
 
+func _build_clan() -> Control:
+	var list := _list()
+	list.add_child(_section("Clan"))
+	var current: String = Profile.get_value(&"clan")
+	for clan in Perks.clans():
+		var element := Perks.clan_element(clan["id"])
+		var tag := "%s nature" % Element.display_name(element) if element != Element.NONE else "Any nature"
+		list.add_child(_card(clan["kanji"], Color(clan["color"]), clan["name"], tag, clan["blurb"],
+			Perks.describe(clan["perks"]), clan["id"] == current, _pick_clan.bind(clan["id"])))
+	list.add_child(_hint("Your clan sets your chakra nature and which eye arts you may take. Every clan here is original to this game. You can change it later from Customize."))
+	return list
+
+
+func _pick_clan(id: String) -> void:
+	Profile.set_value(&"clan", id)
+	var element := Perks.clan_element(id)
+	if element != Element.NONE:
+		Profile.set_value(&"affinity", element)
+	# An eye art the new clan can't take is dropped.
+	if Perks.active_eye_art().is_empty():
+		Profile.set_value(&"eye_art", "")
+	_rebuild_tabs()
+
+
+func _build_eyes() -> Control:
+	var list := _list()
+	list.add_child(_section("Eye art"))
+	var clan_id: String = Profile.get_value(&"clan")
+	if clan_id == "":
+		list.add_child(_hint("Choose a clan first: each clan can awaken only some eye arts."))
+		return list
+	var current: String = Profile.get_value(&"eye_art")
+	list.add_child(_card("無", UiKit.INK_SOFT, "No eye art", "Plain eyes", "Nothing awakened: you rely on your clan and your hands.",
+		PackedStringArray(), current == "", _pick_eye.bind("")))
+	for art in Perks.arts_for(clan_id):
+		list.add_child(_card(art["kanji"], Color(art["color"]), art["name"], "Eye art", art["blurb"],
+			Perks.describe(art["perks"]), art["id"] == current, _pick_eye.bind(art["id"])))
+	list.add_child(_hint("Your eyes change colour with your eye art. Eye arts are original to this game: they sharpen how you aim, dodge, guard or read seals."))
+	return list
+
+
+func _pick_eye(id: String) -> void:
+	Profile.set_value(&"eye_art", id)
+	_rebuild_tabs()
+
+
+func _build_jutsu() -> Control:
+	var list := _list()
+	list.add_child(_hint("Loadouts fill your eight quick-cast slots (%s – %s). Make as many as %d and swap between them in battle with %s / %s."
+		% [InputDevice.glyph(&"quick_cast_1"), InputDevice.glyph(&"quick_cast_8"), Loadouts.MAX_PRESETS,
+		InputDevice.glyph(&"preset_prev"), InputDevice.glyph(&"preset_next")]))
+	list.add_child(LoadoutPanel.new(false))
+	return list
+
+
 # --- Widgets -------------------------------------------------------------------
+
+## A tall selectable card: stamp, name, tag, blurb and what it grants.
+func _card(kanji: String, color: Color, title: String, tag: String, blurb: String, perks: PackedStringArray,
+		is_selected: bool, on_pick: Callable) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, 138)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.pressed.connect(on_pick)
+	var focus := StyleBoxFlat.new()
+	focus.bg_color = Color(UiKit.CRIMSON, 0.1)
+	focus.border_color = UiKit.CRIMSON
+	focus.set_border_width_all(3)
+	b.add_theme_stylebox_override(&"focus", focus)
+	if is_selected:
+		b.add_theme_stylebox_override(&"normal", _selected_box())
+	var row := HBoxContainer.new()
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 16
+	row.offset_right = -16
+	row.offset_top = 8
+	row.offset_bottom = -8
+	row.add_theme_constant_override(&"separation", 16)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(row)
+	var stamp := Hanko.make(kanji, 68.0, color.darkened(0.25))
+	stamp.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(stamp)
+	var text := VBoxContainer.new()
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	text.add_theme_constant_override(&"separation", 2)
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(text)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override(&"separation", 12)
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(UiKit.label(title, 24, UiKit.INK, &"display"))
+	var tag_label := UiKit.label(tag, 16, UiKit.INK_SOFT, &"bold")
+	tag_label.size_flags_vertical = Control.SIZE_SHRINK_END
+	head.add_child(tag_label)
+	text.add_child(head)
+	var blurb_label := UiKit.label(blurb, 16, UiKit.INK_SOFT, &"body")
+	blurb_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.add_child(blurb_label)
+	if not perks.is_empty():
+		var perk_label := UiKit.label("  ·  ".join(perks), 16, UiKit.CRIMSON_DARK, &"bold")
+		perk_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.add_child(perk_label)
+	for child in text.find_children("*", "Control", true, false):
+		(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return b
+
 
 func _list() -> VBoxContainer:
 	var list := VBoxContainer.new()
@@ -385,7 +591,7 @@ func _section(title: String) -> HBoxContainer:
 func _hint(text: String) -> Label:
 	var l := UiKit.label(text, 16, UiKit.INK_SOFT, &"body")
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size.x = 600
+	l.custom_minimum_size.x = 400
 	return l
 
 

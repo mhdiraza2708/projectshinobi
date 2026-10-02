@@ -96,10 +96,15 @@ wrong trade.
   | wall | Rises from the ground and blocks projectiles for `duration` seconds | Stone Bulwark |
   | buff | Temporary modifier to move speed, damage reduction or attack power | Storm Mantle |
   | heal | Restores health | Mending Palm |
+  | summon | Chakra doubles of the caster fight on its side for `duration` seconds (`count`, `health`, `power` = how hard they hit relative to a chunin) | Shade Clones |
 
-  Future forms: clone, substitution, summon, trap/seal, genjutsu (status
-  effects), transformation, beam/channelled, and clash (two projectiles
-  colliding and resolving by element).
+  Future forms: substitution, trap/seal, genjutsu (status effects),
+  transformation, beam/channelled, and clash (two projectiles colliding and
+  resolving by element).
+
+  Shade Clones reuse the enemy shinobi AI on the player's team: each clone is
+  an `EnemyShinobi` wearing the player's look, following its owner and
+  picking foes. Enemies target them like anyone else, so they draw fire.
 
 - `JutsuRegistry` loads every `*.json` file and rejects bad data, duplicate
   ids and duplicate seal sequences.
@@ -107,6 +112,27 @@ wrong trade.
   effect. Projectile collision is swept in sub-steps, so fast jutsu can't
   tunnel through targets. A sequence that matches nothing is a **misfire**
   and costs a little chakra.
+
+### Clans, eye arts, loadouts and saves
+- **Clans and eye arts** (`Perks`, `game/data/clans.json`, `eye_arts.json`)
+  are data. Each grants named perks: fractions (`max_health`, `chakra_regen`,
+  `move_speed`, `dash_cooldown`, `damage`, `damage_<element>`, `cost`, `heal`,
+  `guard`, `cast_speed`, `clone_time`, `lock_range`, `homing`,
+  `enemy_seal_slow`) and flags (`clones`, `reads_natures`, `dodge_focus`,
+  `perfect_guard`). `Perks.value()` adds the clan's and the chosen eye art's;
+  the game reads it where it matters (player stats, caster cost and damage,
+  lock-on, enemy weaving). The loader rejects unknown perks and elements.
+  A clan lists which eye arts it allows. **Every clan and eye art is original**:
+  no canon clans, no named dojutsu (see section 2). Rename or retune them in
+  the JSON.
+- **Loadouts** (`Loadouts`): presets of 8 quick-cast slots, each slot a jutsu
+  and a cast style (`weave` forms the seals for you, `instant` skips them for
+  +35% chakra). They live in the Profile, so they are saved per slot.
+- **Saves** (`SaveSlots`, `Profile`, `Game`): three slot folders under
+  `user://saves/slot_N/` hold `profile.cfg` (the shinobi) and `records.cfg`
+  (story progress, trial times, play time). With no slot active nothing is
+  written. Settings stay global in `user://settings.cfg`. A pre-slot
+  `user://profile.cfg` is migrated into slot 1 on first run.
 
 ### Combat (`game/scripts/combat`, `game/scripts/player`)
 - `Stats`: health, chakra (passive regen plus much faster regen while

@@ -24,14 +24,28 @@ automatically. Prompts switch the moment you touch the other device.
 | Lock on | Tab or middle mouse | R3 |
 | **Weave seals** | **Right mouse (or F)** | **LT** |
 | Quick-cast slots 1–4 | 1 2 3 4 | D-pad ↑ → ↓ ← |
+| Quick-cast slots 5–8 | 5 6 7 8 | D-pad on page 2 (flip pages with Back / G), or the back paddles |
+| Previous / next jutsu loadout | Z / X | Touchpad / Misc button (rebindable) |
 | Pause / settings / customize | Esc | Start |
 
 ## Menus
 
-The game opens on the title screen: **Trial of the Five Natures**,
-**Training Ground**, **Customize** and **Quit**. Move with the stick, D-pad,
+The game opens on the title screen: **Continue** (the save you played last),
+**New Game**, **Load Game**, **Chapters**, **Trial of the Five Natures**,
+**Training Ground**, **Customize** and **Quit**. Without a save only New Game,
+the Trial, the Training Ground and Quit show. Move with the stick, D-pad,
 arrow keys or mouse. Confirm with A or Enter; B or Esc backs out. From the
 pause menu, **Title screen** leaves the current mode.
+
+**Saves.** There are three slots. New Game and Load Game list them as cards
+(name, clan, nature, chapters cleared, play time, when it was saved). Starting
+a new game over an occupied slot asks first, and Load Game has a Delete button
+that asks too. The game saves as you play and when you quit; settings
+(controls, audio, accessibility) belong to the machine, not a slot.
+
+**Character creation** follows New Game: tabs for Clan, Eyes, Identity (name
+and nature), Look, Colours, Gear and Jutsu. LB / RB switch tabs. Begin starts
+chapter one once a clan is chosen; Back abandons the new game.
 
 ## Story dialogue
 
@@ -104,6 +118,25 @@ keep weaving and can start the sequence again without letting go.
 Elements are never shown by colour alone. The HUD always prints the nature
 name (Fire, Water, and so on).
 
+## Jutsu Scroll (pause menu): loadouts and quick-cast slots
+
+Pause → **Jutsu Scroll** shows every jutsu with its seals for the device you
+are using, and the loadout editor above them:
+
+- **Loadout:** the arrows switch the equipped preset (what you edit is what
+  you carry), the name field renames it, and Copy, New empty, Restore starters
+  and Delete (which asks twice) manage up to eight.
+- **Quick-cast slots:** pick a slot, then press **Equip** on a jutsu. The next
+  empty slot is picked for you. A jutsu sits in one slot of a preset; equipping
+  it elsewhere moves it. **×** empties a slot.
+- **Weave / Instant** on each slot: *Weave* forms the seals for you (a little
+  slower than a fast manual weave); *Instant* skips the seals for 35% more
+  chakra.
+
+On a gamepad the D-pad casts the four slots of the current page; Back (View /
+Select) flips pages and the HUD dims the other page. Both devices can switch
+loadouts mid-fight with the previous / next loadout actions.
+
 ## Customize screen
 
 | Action | Keyboard + Mouse | Controller |
@@ -112,4 +145,4 @@ name (Fire, Water, and so on).
 | Choose | Enter / Space / click | A |
 | Switch tab | click the tab | LB / RB |
 | Rotate character | drag with the mouse | Right stick |
-| Done | Esc | B or Start |
+| Done (Begin, in character creation) | Esc | B or Start |

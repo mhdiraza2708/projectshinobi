@@ -9,7 +9,7 @@ var model: CharacterModel
 
 func after_each() -> void:
 	Profile.persist = false
-	Profile.save_path = Profile.SAVE_PATH
+	Profile.save_path = ""
 
 
 func _model(path := CharacterModel.DEFAULT_MODEL) -> CharacterModel:
