@@ -45,7 +45,8 @@ func test_clips_take_over_locomotion() -> void:
 	assert_true(anim.clips != null, "clip player created")
 	assert_true(model.poser.clip_states.has(HumanoidPoser.Pose.LOCOMOTION))
 	assert_false(model.poser.clip_states.has(HumanoidPoser.Pose.GUARD), "no guard clip -> procedural guard")
-	anim.speed_ratio = 1.0
+	# A jog's pace (the game's full run speed takes the sprint gait).
+	anim.speed_ratio = 0.5
 	await root.get_tree().process_frame
 	await root.get_tree().process_frame
 	assert_eq(anim.clips.current_animation, &"run")

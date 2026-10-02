@@ -77,7 +77,13 @@ func test_guard_raises_forearms_to_face() -> void:
 	assert_true(_bone(&"LeftHand").x > _bone(&"RightHand").x - 0.1 * _arm_len(), "forearms crossed")
 
 
+## The procedural run, used by rigs the clips can't drive (with clips,
+## test_animation.gd checks the motion-captured gait on every rig).
 func test_run_cycle_alternates_feet() -> void:
+	if model.animator.clips:
+		model.animator.set_process(false)
+		model.animator.clips.stop()
+	model.poser.clip_states = {}
 	model.poser.speed_ratio = 1.0
 	var min_z := INF
 	var max_z := -INF

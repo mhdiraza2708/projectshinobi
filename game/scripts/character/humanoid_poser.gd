@@ -46,6 +46,8 @@ var _strike_t := 0.0
 var _strike_side := 1.0
 var _throw_t := 0.0
 var _flick_t := 0.0
+var _cast_t := 0.0
+var _flinch_t := 0.0
 var _cur: Dictionary = {}               # smoothed pose parameters
 var _ready_for_pose := false
 
@@ -102,6 +104,26 @@ func throw() -> void:
 
 func seal_flick() -> void:
 	_flick_t = 0.14
+
+
+const CAST_TIME := 0.32
+const FLINCH_TIME := 0.26
+
+
+## Both palms thrust forward as a jutsu leaves the hands (on the move, or on
+## rigs without a cast clip).
+func cast_push() -> void:
+	_cast_t = CAST_TIME
+
+
+## Rocked back by a blow (without a hit clip).
+func flinch() -> void:
+	_flinch_t = FLINCH_TIME
+
+
+## Hip to ankle, in metres.
+func leg_length() -> float:
+	return _leg_len
 
 
 # --- Pose authoring ------------------------------------------------------------
@@ -213,6 +235,13 @@ func _target_params() -> Dictionary:
 		p["use_arms"] = false
 		p["use_legs"] = false
 		p["use_spine"] = false
+		if pose == Pose.LOCOMOTION and speed_ratio > 1.05 and not airborne:
+			# The shinobi sprint: the clip's legs, arms swept back behind,
+			# and a deeper lean than any sprinter would dare.
+			p["use_arms"] = true
+			p["use_spine"] = true
+			p["lean"] = 0.3
+			p["twist"] = 0.0
 	elif pose == Pose.WEAVE and clip_states.has(Pose.LOCOMOTION):
 		# Seal arms over the idle clip's stance.
 		p["use_legs"] = false
@@ -227,6 +256,27 @@ func _target_params() -> Dictionary:
 		p["twist"] += lerpf(-0.3, 0.35, t)
 		p["curl"] = maxf(p["curl"], 1.1)
 		p["use_arms"] = true
+		p["use_spine"] = true
+
+	if _cast_t > 0.0:
+		# Draw in, then both palms out, fingers up, as the technique leaves.
+		var t := 1.0 - _cast_t / CAST_TIME
+		var push := smoothstep(0.0, 0.35, t) * (1.0 - smoothstep(0.7, 1.0, t))
+		for side in ["L", "R"]:
+			var sx := -1.0 if side == "L" else 1.0
+			p["arm_" + side] = (p["arm_" + side] as Vector3).lerp(Vector3(0.1 * sx, -0.08, -0.92), push)
+			p["pole_" + side] = Vector3(sx, -1.0, 0.2)
+			p["hand_" + side] = (p["hand_" + side] as Vector3).lerp(Vector3(0, 1, -0.25), push)
+			p["thumb_" + side] = Vector3(-sx, 0, 0)
+		p["curl"] = lerpf(p["curl"], 0.0, push)
+		p["lean"] += 0.12 * push
+		p["use_arms"] = true
+		p["use_spine"] = true
+
+	if _flinch_t > 0.0:
+		var k := sin(clampf(_flinch_t / FLINCH_TIME, 0.0, 1.0) * PI)
+		p["lean"] -= 0.32 * k
+		p["head_pitch"] += 0.3 * k
 		p["use_spine"] = true
 
 	if _strike_t > 0.0:
@@ -251,6 +301,8 @@ func _process_modification_with_delta(delta: float) -> void:
 	_strike_t = maxf(0.0, _strike_t - delta)
 	_throw_t = maxf(0.0, _throw_t - delta)
 	_flick_t = maxf(0.0, _flick_t - delta)
+	_cast_t = maxf(0.0, _cast_t - delta)
+	_flinch_t = maxf(0.0, _flinch_t - delta)
 	if speed_ratio > 0.05 and not airborne:
 		_phase += delta * lerpf(6.0, 12.5, clampf(speed_ratio, 0.0, 1.6) / 1.6)
 

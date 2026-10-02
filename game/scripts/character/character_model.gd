@@ -70,6 +70,9 @@ func _process(delta: float) -> void:
 	_mouth_open = lerpf(_mouth_open, target, 1.0 - exp(-(30.0 if target > _mouth_open else 14.0) * delta))
 	_mouth_time += delta
 	set_mouth_open(_mouth_open)
+	if animator:
+		# Gesture through the line while it's being spoken.
+		animator.talking = Voice.speaker == voice_id and Voice.is_speaking()
 
 
 ## Opens the mouth 0-1: mostly "A", shading into "O" so it doesn't just

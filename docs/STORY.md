@@ -219,8 +219,9 @@ plays chapter 1 start to finish.
   unless you add VRoid models to the roster (see
   [CHARACTERS.md](CHARACTERS.md)). Story characters draw from the same
   roster.
-- Conversations have no animation beyond a gesture, a facial expression
-  and a mouth that opens with the voice (no real lip shapes).
+- Conversations are lightly animated: the speaker gestures (a talking
+  idle clip), holds an expression, and opens their mouth with the voice
+  (no real lip shapes).
 - The voices are text-to-speech. Kokoro reads naturally and clearly (in a
   speech-recognition check its lines came back with about 6% of words wrong,
   against 12% for the old Piper voices), but it is still reading, not

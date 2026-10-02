@@ -712,6 +712,39 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			customize_menu._select_tab({"creation": CustomizeMenu.T_CLAN, "creation_eyes": CustomizeMenu.T_EYES,
 				"creation_identity": CustomizeMenu.T_IDENTITY, "creation_jutsu": CustomizeMenu.T_JUTSU}[demo])
 			await _frames(40)
+		_ when demo.begins_with("anim:"):
+			# Five rigs frozen in one clip: --demo=anim:sprint:0.3 (clip, seconds).
+			var parts := demo.split(":")
+			var clip := StringName(parts[1])
+			var at := float(parts[2]) if parts.size() > 2 else 0.3
+			hud.visible = false
+			player.visible = false
+			var rigs := CharacterModel.roster().filter(func(e: Dictionary) -> bool:
+				return e["path"] != CharacterModel.PLACEHOLDER_MODEL)
+			var models: Array[CharacterModel] = []
+			for i in mini(rigs.size(), 5):
+				var m := CharacterModel.new()
+				m.use_profile = false
+				m.model_path = rigs[i]["path"]
+				add_child(m)
+				m.position = Vector3((i - 2) * 1.1, 0.0, -3.0)
+				m.rotation.y = float(_user_args().get("yaw", "2.4"))
+				models.append(m)
+			await _frames(5)
+			for m in models:
+				var a := m.animator
+				a.set_process(false)
+				a.speed_ratio = {&"sprint": 1.7, &"run": 0.75, &"walk": 0.2}.get(clip, 0.0)
+				if a.clips and a.has_clip(clip):
+					a.clips.play(clip)
+					a.clips.seek(at, true)
+					a.clips.speed_scale = 0.0
+			var cam := Camera3D.new()
+			add_child(cam)
+			cam.position = Vector3(0.0, 1.05, 1.1)
+			cam.look_at(Vector3(0.0, 0.85, -3.0))
+			cam.current = true
+			await _frames(20)
 		"menu_jutsu":
 			pause_menu.open()
 			pause_menu._select_tab(2)

@@ -561,7 +561,8 @@ func _weaving(delta: float) -> void:
 		return
 	if _target_ok():
 		_face_now(target.global_position - global_position)
-		caster.cast(_weave, target)
+		if caster.cast(_weave, target) and model.animator:
+			model.animator.cast()
 	var span: Vector2 = _r["jutsu_cd"]
 	_jutsu_cd = randf_range(span.x, span.y)
 	_enter(State.FIGHT)
@@ -686,6 +687,8 @@ func _interrupted() -> void:
 func _stagger() -> void:
 	_rush = 0.0
 	_enter(State.STAGGERED)
+	if model.animator:
+		model.animator.hit(true)
 	if _target_ok():
 		var away := global_position - target.global_position
 		away.y = 0.0
@@ -715,6 +718,8 @@ func _check_phases() -> void:
 
 func _on_damaged(amount: float, hit_element: int, multiplier: float) -> void:
 	_check_phases.call_deferred()
+	if model.animator and state != State.GUARDING and state != State.STAGGERED and not stats.is_dead():
+		model.animator.hit()
 	var text := str(roundi(amount))
 	if multiplier > 1.0:
 		text += "  WEAK!"

@@ -29,6 +29,7 @@ assets:
 # Configure Mixamo FBX clips in game/assets/animations/mixamo/ for humanoid
 # retargeting (see docs/CHARACTERS.md), then re-import them.
 animations: import
+	$(GODOT) --headless --path game --script res://tools/setup_ual.gd
 	$(GODOT) --headless --path game --script res://tools/setup_mixamo.gd
 	$(MAKE) import
 

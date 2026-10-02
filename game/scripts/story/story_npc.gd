@@ -52,6 +52,7 @@ func _process(delta: float) -> void:
 	if is_instance_valid(look_at_node):
 		turn_to(look_at_node.global_position, 6.0, delta)
 	if model.animator:
+		model.animator.run_speed = Cutscene.RUN_SPEED
 		model.animator.speed_ratio = speed_ratio
 		model.animator.airborne = airborne
 		model.animator.pose = pose

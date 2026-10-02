@@ -649,6 +649,7 @@ func _update_animator() -> void:
 	if scripted_pose >= 0 and not input_enabled:
 		animator.pose = scripted_pose
 	animator.airborne = not is_on_floor()
+	animator.run_speed = run_speed
 	animator.speed_ratio = Vector2(velocity.x, velocity.z).length() / run_speed
 
 
@@ -719,6 +720,8 @@ func _on_seal_added(seal: int, _sequence: Array[int]) -> void:
 func _on_cast_succeeded(jutsu: JutsuDefinition) -> void:
 	if jutsu == _kunai:
 		return
+	if animator:
+		animator.cast()
 	feedback.emit(jutsu.display_name, &"cast")
 	camera_rig.add_shake(0.15 if jutsu.form != JutsuDefinition.Form.AREA else 0.45)
 	InputDevice.rumble(0.25, 0.35 if jutsu.form == JutsuDefinition.Form.AREA else 0.1, 0.15)
@@ -743,6 +746,8 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 		_perfect_guard()
 		return
 	Sfx.play(&"guard" if state == State.GUARDING else &"hit_player")
+	if animator and state != State.GUARDING and not stats.is_dead():
+		animator.hit(amount >= interrupt_damage)
 	camera_rig.add_shake(clampf(amount / 30.0, 0.1, 0.6))
 	InputDevice.rumble(0.4, 0.5, 0.15)
 	if amount >= interrupt_damage and (state == State.WEAVING or state == State.AUTO_WEAVING):
@@ -769,9 +774,10 @@ func _on_died() -> void:
 	_set_lock(null)
 	_enter(State.DOWN)
 	Sfx.play(&"hit_player", 3.0)
-	# Topple forward onto the ground.
-	var tw := model.create_tween()
-	tw.tween_property(model, "rotation:x", -1.35, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# Fall (the death clip), or topple forward onto the ground without one.
+	if not (animator and animator.die()):
+		var tw := model.create_tween()
+		tw.tween_property(model, "rotation:x", -1.35, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	defeated.emit()
 
 
@@ -779,5 +785,7 @@ func _on_died() -> void:
 func revive() -> void:
 	stats.restore()
 	model.rotation = Vector3.ZERO
+	if animator:
+		animator.revive()
 	velocity = Vector3.ZERO
 	_enter(State.FREE)

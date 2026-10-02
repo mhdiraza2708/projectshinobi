@@ -150,11 +150,23 @@ Colour slots are found from material names. VRoid tags them (`_HAIR`,
 If a model's naming isn't recognised, it gets a single whole-model
 **Body** colour instead.
 
-## Animations: Mixamo
+## Animations
 
-Out of the box the character is animated procedurally. For motion-captured
-movement, add Mixamo clips. The game plays them on your VRoid character and
-**still layers the hand-seal pose on top** (no animation library has seals).
+Every character is animated by motion-captured clips from Quaternius'
+**Universal Animation Library** (CC0, in `game/assets/animations/ual/`),
+retargeted at import onto Godot's humanoid skeleton, so the same clips fit
+every VRoid body: idle, walk, jog, sprint, jump and landing, jab and cross,
+a spell cast, two hit reactions, a fall and a talking idle. Gaits play at
+the speed the character really moves (strides measured on all nine roster
+rigs by `tools/measure_strides.gd`). The procedural IK poser runs after the
+clips: hand seals, guard, chakra charge, the dash lean, the kunai throw, the
+arms-back sprint, and punches or casts made on the move.
+
+### Adding Mixamo clips (optional)
+
+Mixamo clips you download replace the library's clip of the same name, or
+fill the procedural slots. The game **still layers the hand-seal pose on
+top** (no animation library has seals).
 
 1. Sign in at [mixamo.com](https://www.mixamo.com) (free Adobe account).
 2. Find clips. Titles change over time, so search for terms like *idle* or
@@ -166,9 +178,12 @@ movement, add Mixamo clips. The game plays them on your VRoid character and
 
    | File | Used for | Without it |
    |---|---|---|
-   | `idle.fbx` + `run.fbx` | standing, running (both needed) | procedural |
-   | `sprint.fbx` | sprinting | `run` sped up |
-   | `jump.fbx` | in the air | procedural |
+   | `idle.fbx`, `walk.fbx`, `run.fbx`, `sprint.fbx` | standing, walking, running, sprinting | the library's |
+   | `jump.fbx`, `land.fbx` | in the air, landing | the library's |
+   | `strike_1.fbx`, `strike_2.fbx` | alternating standing strikes | the library's jab and cross |
+   | `cast.fbx` | a jutsu leaving the hands | the library's spell cast |
+   | `hit.fbx`, `hit_head.fbx`, `death.fbx` | flinch, heavy flinch, defeat | the library's |
+   | `talk.fbx` | story characters speaking | the library's talking idle |
    | `guard.fbx` | guarding | procedural |
    | `charge.fbx` | charging chakra | procedural |
    | `dash.fbx` | dashing | procedural |
@@ -211,12 +226,14 @@ by default. Check Adobe's current terms yourself.
   authored in a canonical frame (facing −Z, sizes in arm and leg lengths)
   and solved with two-bone IK, so the same data fits T-pose and A-pose rigs of
   any proportions. It runs after animation clips, which lets it layer the
-  hand seals on top of Mixamo locomotion.
-- `scripts/character/character_animator.gd` picks clips by player state,
-  crossfades them, scales run playback to movement speed, and tells the
+  hand seals on top of clip locomotion.
+- `scripts/character/character_animator.gd` picks clips by state and speed
+  (walk, jog, sprint), plays one-shots (strikes, casts, flinches, the fall)
+  over them, matches gait playback to the measured strides, and tells the
   poser which states the clips cover.
-- `tools/setup_mixamo.gd` writes the retarget settings into each clip's
-  `.import` file. `tests/unit/test_clips.gd` runs the whole path on
+- `tools/setup_ual.gd` and `tools/setup_mixamo.gd` write the retarget
+  settings (bone map, rest fixer) into each library's or clip's `.import`
+  file. `tests/unit/test_animation.gd` checks the clips on every roster rig. `tests/unit/test_clips.gd` runs the whole path on
   Mixamo-format fixtures made by `art/blender/make_mixamo_fixtures.py`.
 - `tests/unit/test_character.gd` checks, on a real VRM, that the model faces
   forward, arms hang at idle, palms meet for seals, guard raises the

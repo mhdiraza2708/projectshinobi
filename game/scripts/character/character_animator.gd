@@ -1,22 +1,60 @@
 class_name CharacterAnimator
 extends Node
-## Drives a humanoid character from gameplay state: Mixamo clips where they
-## exist, procedural IK (HumanoidPoser) for everything else. The hand-seal
-## pose is always procedural and layers on top of whatever clip is playing.
+## Drives a humanoid character from gameplay state with motion-captured clips
+## where they exist and procedural IK (HumanoidPoser) for everything else.
 ##
-## Clips are looked up by file name in CLIP_DIR (see docs/CHARACTERS.md):
-##   idle, run, sprint, jump, dash, guard, charge   (all optional)
+## Clips come from two places, retargeted to Godot's humanoid skeleton so they
+## play on every character rig:
+## - The Universal Animation Library (Quaternius, CC0) in UAL_DIR: idle, walk,
+##   jog, sprint, jumps, punches, a spell cast, hit reactions, a death and a
+##   talking idle. CLIP_SOURCES maps the game's clip names to its animations.
+## - Your own Mixamo downloads in CLIP_DIR, one clip per file named after the
+##   clip ("run.fbx"); they replace the library's clip of the same name.
+##
+## The procedural layer stays on top: hand seals, guard, charge, the dash
+## lean, the kunai throw, the sprinting arms swept back, and a strike or cast
+## made on the move (a full-body punch clip would freeze the running legs).
 
 const CLIP_DIR := "res://assets/animations/mixamo"
-const LOOPING: PackedStringArray = ["idle", "run", "sprint", "walk", "guard", "charge", "jump", "fall"]
+const UAL_DIR := "res://assets/animations/ual"
+## Game clip -> library animation (Godot drops the "_Loop" suffixes on import).
+const CLIP_SOURCES := {
+	&"idle": "Idle", &"walk": "Walk", &"run": "Jog_Fwd", &"sprint": "Sprint",
+	&"jump": "Jump", &"land": "Jump_Land", &"strike_1": "Punch_Jab", &"strike_2": "Punch_Cross",
+	&"cast": "Spell_Simple_Shoot", &"hit": "Hit_Chest", &"hit_head": "Hit_Head", &"death": "Death01",
+	&"talk": "Idle_Talking",
+}
+const LOOPING: PackedStringArray = ["idle", "walk", "run", "sprint", "jump", "talk", "guard", "charge", "fall"]
 const BLEND_TIME := 0.18
+## How fast each locomotion clip carries a character on its feet, in leg
+## lengths per second at speed 1, measured on all nine roster rigs with
+## tools/measure_strides.gd (the speed a planted foot slides back; the jog's
+## reading is pulled down by its stride length against the sprint's).
+## Playback speed follows the real speed so feet don't skate.
+const STRIDE := {&"walk": 1.28, &"run": 5.5, &"sprint": 7.0}
+## Above these ground speeds (leg lengths per second) the next gait takes over.
+# A brisk walk (a cutscene's 1.8 m/s) still walks.
+const GAIT_WALK_MAX := 2.9
+const GAIT_RUN_MAX := 6.2
+const GAIT_SPEED_RANGE := Vector2(0.6, 2.0)
+## One-shot playback speeds: game strikes come every 0.28 s, much faster
+## than a boxer's jab.
+const STRIKE_SPEED := 1.9
+const CAST_SPEED := 1.3
+const HIT_SPEED := 1.2
+## Above this speed ratio a strike or cast is done by the arms alone.
+const MOVING := 0.25
 
 ## Same API the player controller used with the poser directly.
 var pose := HumanoidPoser.Pose.LOCOMOTION:
 	set(v):
+		if v != pose and v != HumanoidPoser.Pose.LOCOMOTION and _action != &"" and _action != &"death":
+			# Weaving, guarding, dashing... cut an action short.
+			_action = &""
 		pose = v
 		if poser:
 			poser.pose = v
+## Ground speed over run speed: 0 = still, 1 = running, above 1 = sprinting.
 var speed_ratio := 0.0:
 	set(v):
 		speed_ratio = v
@@ -24,13 +62,23 @@ var speed_ratio := 0.0:
 			poser.speed_ratio = v
 var airborne := false:
 	set(v):
+		if airborne and not v:
+			_landed()
 		airborne = v
 		if poser:
 			poser.airborne = v
+## The run speed `speed_ratio` is measured against, in m/s.
+var run_speed := 7.0
+## Plays the talking idle while standing (story characters speaking).
+var talking := false
 
 var poser: HumanoidPoser
 var clips: AnimationPlayer
 var library: AnimationLibrary
+
+var _action := &""
+var _action_left := 0.0
+var _strike_flip := false
 
 static var _library_cache: Dictionary = {}
 
@@ -38,7 +86,10 @@ static var _library_cache: Dictionary = {}
 func setup(model_root: Node, humanoid_poser: HumanoidPoser, clip_dir := CLIP_DIR) -> void:
 	poser = humanoid_poser
 	library = load_library(clip_dir)
-	if library.get_animation_list().is_empty():
+	# Clips need the humanoid skeleton the retargeting targets.
+	if library.get_animation_list().is_empty() or not poser.active \
+			or model_root.get_node_or_null(^"%GeneralSkeleton") == null:
+		library = AnimationLibrary.new()
 		return
 	clips = AnimationPlayer.new()
 	clips.name = "ClipPlayer"
@@ -67,8 +118,16 @@ func covered_states() -> Dictionary:
 	return states
 
 
+## The clip playing right now (&"" without clips).
+func current_clip() -> StringName:
+	return StringName(clips.current_animation) if clips else &""
+
+
 func strike() -> void:
-	if poser:
+	if _can_act(&"strike_1"):
+		_strike_flip = not _strike_flip
+		_play_action(&"strike_2" if _strike_flip else &"strike_1", STRIKE_SPEED, 0.06)
+	elif poser:
 		poser.strike()
 
 
@@ -77,23 +136,92 @@ func throw() -> void:
 		poser.throw()
 
 
+## A jutsu leaves the hands.
+func cast() -> void:
+	# A jutsu is released straight out of the weave, before the pose changes.
+	if _can_act(&"cast", [HumanoidPoser.Pose.LOCOMOTION, HumanoidPoser.Pose.WEAVE]):
+		_play_action(&"cast", CAST_SPEED, 0.08)
+	elif poser:
+		poser.cast_push()
+
+
+## Flinch from a blow (`heavy`: snapped back by the head).
+func hit(heavy := false) -> void:
+	var clip := &"hit_head" if heavy and has_clip(&"hit_head") else &"hit"
+	if clips and has_clip(clip) and _action != &"death":
+		_play_action(clip, HIT_SPEED, 0.05)
+	elif poser:
+		poser.flinch()
+
+
+## Falls and stays down. Returns false when there is no clip for it (the
+## caller topples the body instead).
+func die() -> bool:
+	if not (clips and has_clip(&"death")):
+		return false
+	_play_action(&"death", 1.0, 0.1)
+	_action_left = INF
+	return true
+
+
+## Back up after die().
+func revive() -> void:
+	_action = &""
+
+
 func seal_flick() -> void:
 	if poser:
 		poser.seal_flick()
 
 
-func _process(_delta: float) -> void:
+func _can_act(clip: StringName, poses: Array = [HumanoidPoser.Pose.LOCOMOTION]) -> bool:
+	return clips != null and has_clip(clip) and speed_ratio < MOVING and not airborne \
+		and pose in poses and _action != &"death"
+
+
+func _play_action(clip: StringName, speed: float, blend: float) -> void:
+	_action = clip
+	_action_left = library.get_animation(clip).length / speed
+	clips.speed_scale = speed
+	# Restart even if this clip is already playing (a combo of jabs).
+	clips.play(clip, blend)
+	clips.seek(0.0, true)
+
+
+func _landed() -> void:
+	if clips and has_clip(&"land") and speed_ratio < MOVING and _action == &"" \
+			and pose == HumanoidPoser.Pose.LOCOMOTION:
+		# Only the crouch into the landing; standing up again is the idle's job.
+		_play_action(&"land", 1.6, 0.06)
+		_action_left = 0.35
+
+
+func _process(delta: float) -> void:
 	if clips == null:
 		return
+	if _action != &"":
+		_action_left -= delta
+		if _action_left > 0.0:
+			return
+		_action = &""
 	var want := _clip_for_state()
 	if want == &"":
 		return
-	var speed := 1.0
-	if want == &"run" or want == &"sprint":
-		speed = clampf(speed_ratio / (1.5 if want == &"sprint" else 1.0), 0.6, 1.4)
-	clips.speed_scale = speed
+	clips.speed_scale = _speed_for(want)
 	if clips.current_animation != want:
 		clips.play(want, BLEND_TIME)
+
+
+## Leg lengths per second the character is covering.
+func _ground_speed() -> float:
+	var leg := poser.leg_length() if poser else 0.8
+	return speed_ratio * run_speed / maxf(leg, 0.1)
+
+
+func _speed_for(clip: StringName) -> float:
+	if STRIDE.has(clip):
+		return clampf(_ground_speed() / STRIDE[clip], GAIT_SPEED_RANGE.x, GAIT_SPEED_RANGE.y)
+	return 1.0
 
 
 func _clip_for_state() -> StringName:
@@ -109,19 +237,26 @@ func _clip_for_state() -> StringName:
 				return &"dash"
 	if airborne and has_clip(&"jump"):
 		return &"jump"
-	if speed_ratio > 1.05 and has_clip(&"sprint"):
-		return &"sprint"
-	if speed_ratio > 0.05 and has_clip(&"run"):
-		return &"run"
+	var ground := _ground_speed()
+	if speed_ratio > 0.05:
+		if ground > GAIT_RUN_MAX and has_clip(&"sprint"):
+			return &"sprint"
+		if ground > GAIT_WALK_MAX or not has_clip(&"walk"):
+			if has_clip(&"run"):
+				return &"run"
+		return &"walk"
+	if talking and has_clip(&"talk") and pose == HumanoidPoser.Pose.LOCOMOTION:
+		return &"talk"
 	return &"idle" if has_clip(&"idle") else &""
 
 
-## Builds (and caches) an AnimationLibrary from every retargeted clip in
-## `dir`, named after the file ("run.fbx" -> "run").
+## Builds (and caches) the clip library: the animation library in UAL_DIR,
+## then any per-file clips in `dir` (Mixamo downloads) on top.
 static func load_library(dir: String) -> AnimationLibrary:
 	if _library_cache.has(dir):
 		return _library_cache[dir]
 	var lib := AnimationLibrary.new()
+	_add_ual(lib)
 	if DirAccess.dir_exists_absolute(dir):
 		for file in ResourceLoader.list_directory(dir):
 			if file.get_extension().to_lower() != "fbx" and file.get_extension().to_lower() != "glb":
@@ -129,12 +264,41 @@ static func load_library(dir: String) -> AnimationLibrary:
 			var anim := _first_animation(dir.path_join(file))
 			if anim == null:
 				continue
-			var clip := file.get_basename().to_lower()
+			var clip := StringName(file.get_basename().to_lower())
 			anim = anim.duplicate()
 			anim.loop_mode = Animation.LOOP_LINEAR if LOOPING.has(clip) else Animation.LOOP_NONE
-			lib.add_animation(StringName(clip), anim)
+			if lib.has_animation(clip):
+				lib.remove_animation(clip)
+			lib.add_animation(clip, anim)
 	_library_cache[dir] = lib
 	return lib
+
+
+static func _add_ual(lib: AnimationLibrary) -> void:
+	if not DirAccess.dir_exists_absolute(UAL_DIR):
+		return
+	for file in ResourceLoader.list_directory(UAL_DIR):
+		if not file.get_extension().to_lower() in ["gltf", "glb"]:
+			continue
+		var scene := load(UAL_DIR.path_join(file)) as PackedScene
+		if scene == null:
+			continue
+		var root := scene.instantiate()
+		var players := root.find_children("*", "AnimationPlayer", true, false)
+		if not players.is_empty():
+			var player := players[0] as AnimationPlayer
+			for clip: StringName in CLIP_SOURCES:
+				var source := StringName(CLIP_SOURCES[clip])
+				if not player.has_animation(source):
+					continue
+				var anim := player.get_animation(source)
+				if anim.get_track_count() == 0 or not String(anim.track_get_path(0)).begins_with("%GeneralSkeleton"):
+					push_warning("%s is not retargeted; run `make animations`" % UAL_DIR)
+					break
+				anim = anim.duplicate()
+				anim.loop_mode = Animation.LOOP_LINEAR if LOOPING.has(clip) else Animation.LOOP_NONE
+				lib.add_animation(clip, anim)
+		root.free()
 
 
 static func _first_animation(path: String) -> Animation:
