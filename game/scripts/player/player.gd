@@ -68,6 +68,10 @@ var lock_target: Node3D
 var quick_slots: Array[StringName] = [&"chakra_bolt", &"ember_volley", &"stone_bulwark", &"mending_palm"]
 ## Disable to freeze player control (cutscenes, menus, tests).
 var input_enabled := true
+## While input is off, a cutscene can walk you (horizontal velocity) and pose
+## you (a HumanoidPoser.Pose, or -1 for none).
+var scripted_velocity := Vector3.ZERO
+var scripted_pose := -1
 
 var _state_time := 0.0
 var _weave_started_frame := -1
@@ -149,7 +153,12 @@ func _physics_process(delta: float) -> void:
 	elif not input_enabled:
 		if state == State.CHARGING or state == State.GUARDING:
 			_enter(State.FREE)
-		_decelerate(delta)
+		if scripted_velocity != Vector3.ZERO:
+			velocity.x = scripted_velocity.x
+			velocity.z = scripted_velocity.z
+			_face_towards(scripted_velocity, delta)
+		else:
+			_decelerate(delta)
 	else:
 		match state:
 			State.FREE: _state_free(delta)
@@ -575,6 +584,8 @@ func _update_animator() -> void:
 		State.GUARDING: animator.pose = HumanoidPoser.Pose.GUARD
 		State.DASHING: animator.pose = HumanoidPoser.Pose.DASH
 		_: animator.pose = HumanoidPoser.Pose.LOCOMOTION
+	if scripted_pose >= 0 and not input_enabled:
+		animator.pose = scripted_pose
 	animator.airborne = not is_on_floor()
 	animator.speed_ratio = Vector2(velocity.x, velocity.z).length() / run_speed
 

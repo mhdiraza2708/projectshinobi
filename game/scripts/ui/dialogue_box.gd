@@ -11,6 +11,10 @@ signal finished
 const CHARS_PER_SECOND := 48.0
 ## While confirm is held, lines advance this often.
 const HOLD_ADVANCE := 0.22
+## In cutscenes (`auto`), a line moves on by itself this long after its voice
+## ends, or after a reading time for silent lines.
+const AUTO_PAUSE := 0.6
+const READ_SECONDS_PER_CHAR := 0.055
 
 var story: Story
 var lines: Array = []
@@ -24,6 +28,10 @@ var _text: Label
 var _next: Label
 var _typing := 0.0
 var _hold := 0.0
+## Lines advance on their own (cutscenes); confirm still moves on sooner.
+var auto := false
+var _auto_wait := 0.0
+var _voiced := false
 
 
 func _init() -> void:
@@ -48,6 +56,16 @@ func play(new_lines: Array, with_story: Story) -> void:
 	visible = true
 	set_process(true)
 	_advance()
+
+
+## Closes at once without `finished` (a skipped cutscene).
+func abort() -> void:
+	if not visible:
+		return
+	Voice.stop()
+	visible = false
+	set_process(false)
+	index = lines.size()
 
 
 ## Finishes the current line, or moves to the next one.
@@ -82,7 +100,8 @@ func _advance() -> void:
 	_typing = 0.0
 	Sfx.ui(&"ui_move", -6.0)
 	# Recorded lines play as they appear; moving on cuts the last one off.
-	Voice.speak(who, line["text"])
+	_voiced = Voice.speak(who, line["text"])
+	_auto_wait = 0.0
 	line_started.emit(index, line)
 
 
@@ -92,6 +111,12 @@ func _process(delta: float) -> void:
 		_typing += delta * CHARS_PER_SECOND
 		_text.visible_ratio = minf(1.0, _typing / count)
 	_next.modulate.a = 1.0 if _text.visible_ratio >= 1.0 else 0.0
+	if auto and _text.visible_ratio >= 1.0 and not Voice.is_speaking():
+		_auto_wait += delta
+		var pause := AUTO_PAUSE if _voiced else maxf(1.2, count * READ_SECONDS_PER_CHAR - count / CHARS_PER_SECOND)
+		if _auto_wait >= pause:
+			_advance()
+			return
 	if Input.is_action_pressed(&"ui_accept"):
 		_hold += delta
 		if _hold >= HOLD_ADVANCE * 2.0:

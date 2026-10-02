@@ -18,7 +18,46 @@ const BEATS := {
 	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "size", "aura"]],
 	"wait": [["seconds"], []],
 	"banner": [["text"], []],
+	"scene": [["steps"], []],
 }
+## Cutscene steps: the action key (holding the main value), then the other
+## keys it takes. Every step may also have "async": true.
+const SCENE_STEPS := {
+	"wait": [],
+	"cam": ["on", "from", "at", "to", "look", "look_to", "seconds", "blend", "fov", "dist", "height", "side", "radius", "degrees"],
+	"say": [],
+	"enter": ["at", "from", "facing", "puff"],
+	"exit": ["puff"],
+	"move": ["to", "run"],
+	"leap": ["to", "from", "height", "seconds"],
+	"face": ["to"],
+	"pose": ["as", "seconds"],
+	"weave": ["seals"],
+	"cast": ["element", "at", "kind"],
+	"fx": ["at", "from", "to", "on", "color", "element", "seconds", "size"],
+	"grow": ["scale", "seconds"],
+	"music": [],
+	"sfx": [],
+	"time": [],
+	"weather": [],
+	"fade": ["seconds", "color"],
+	"title": ["sub", "seconds"],
+}
+## Camera framings and their defaults: [distance, height, side, fov].
+const SHOTS := {
+	"close": [1.5, 1.5, 1.0, 40.0],
+	"mid": [3.0, 1.4, 0.6, 46.0],
+	"wide": [7.5, 2.2, 0.0, 50.0],
+	"low": [3.2, 0.35, 0.4, 50.0],
+	"over": [0.0, 0.0, 1.0, 46.0],
+	"two": [0.0, 0.0, 1.0, 50.0],
+	"orbit": [0.0, 1.5, 0.0, 50.0],
+	"free": [0.0, 0.0, 0.0, 50.0],
+}
+const SCENE_POSES := {"idle": HumanoidPoser.Pose.LOCOMOTION, "weave": HumanoidPoser.Pose.WEAVE,
+	"guard": HumanoidPoser.Pose.GUARD, "charge": HumanoidPoser.Pose.CHARGE}
+const CAST_KINDS: PackedStringArray = ["projectile", "blast", "bolt"]
+const FX_KINDS: PackedStringArray = ["flash", "shake", "lightning", "blast", "smoke", "dust", "aura", "beam"]
 const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_hit", "cast", "guard", "dash", "charge", "lock_on", "interrupt"]
 const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
 const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
@@ -378,6 +417,15 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 			b["seconds"] = float(raw["seconds"])
 		"banner":
 			b["text"] = str(raw["text"])
+		"scene":
+			b["steps"] = []
+			if not raw["steps"] is Array or raw["steps"].is_empty():
+				errors.append("%s: steps must be a non-empty list" % label)
+			else:
+				for i in raw["steps"].size():
+					var step := _parse_step("%s step %d" % [label, i + 1], raw["steps"][i], present)
+					if not step.is_empty():
+						b["steps"].append(step)
 	return b
 
 
@@ -431,3 +479,194 @@ func _vec2(label: String, raw: Variant) -> Vector2:
 		return Vector2(raw[0], raw[1])
 	errors.append("%s: positions are [x, z]" % label)
 	return Vector2.ZERO
+
+
+## One cutscene step, checked and filled in with defaults.
+func _parse_step(label: String, raw: Variant, present: Dictionary) -> Dictionary:
+	if not raw is Dictionary:
+		errors.append("%s: must be an object" % label)
+		return {}
+	var actions: Array = raw.keys().filter(func(k: Variant) -> bool: return SCENE_STEPS.has(k))
+	if actions.size() != 1:
+		errors.append("%s: needs exactly one of %s" % [label, SCENE_STEPS.keys()])
+		return {}
+	var action: String = actions[0]
+	for key: String in raw:
+		if key != action and key != "async" and not SCENE_STEPS[action].has(key):
+			errors.append("%s (%s): unknown key '%s'" % [label, action, key])
+	var v: Variant = raw[action]
+	var s := {"action": action, "async": bool(raw.get("async", false))}
+	match action:
+		"wait":
+			s["seconds"] = float(v)
+		"cam":
+			var kind := str(v)
+			if not SHOTS.has(kind):
+				errors.append("%s: unknown shot '%s' (one of %s)" % [label, kind, SHOTS.keys()])
+				return {}
+			var d: Array = SHOTS[kind]
+			s["cam"] = kind
+			s["seconds"] = float(raw.get("seconds", 2.0))
+			s["blend"] = float(raw.get("blend", 0.0))
+			s["fov"] = float(raw.get("fov", d[3]))
+			s["dist"] = float(raw.get("dist", d[0]))
+			s["height"] = float(raw.get("height", d[1]))
+			s["side"] = float(raw.get("side", d[2]))
+			s["radius"] = float(raw.get("radius", 5.0))
+			s["degrees"] = float(raw.get("degrees", 90.0))
+			match kind:
+				"free":
+					if not raw.has("at") or not raw.has("look"):
+						errors.append("%s: a free shot needs 'at' and 'look'" % label)
+						return {}
+					for key in ["at", "to", "look", "look_to"]:
+						if raw.has(key):
+							s[key] = _target(label, raw[key], present)
+				"two":
+					if not raw.get("on") is Array or raw["on"].size() != 2:
+						errors.append("%s: a two shot is 'on': [who, who]" % label)
+						return {}
+					s["on"] = [_actor(label, raw["on"][0], present, true), _actor(label, raw["on"][1], present, true)]
+				"over":
+					s["from"] = _actor(label, raw.get("from", PLAYER), present, true)
+					s["on"] = _actor(label, raw.get("on", ""), present, true)
+				_:
+					s["on"] = _actor(label, raw.get("on", ""), present, true)
+		"say":
+			var say := _parse_beat(label, {"do": "say", "lines": v}, present)
+			if say.is_empty():
+				return {}
+			s["lines"] = say["lines"]
+		"enter":
+			s["who"] = _who(label, v, false)
+			s["at"] = _vec2(label, raw.get("at", null))
+			s["from"] = _vec3(label, raw["from"]) if raw.has("from") else null
+			s["puff"] = bool(raw.get("puff", true))
+			present[s["who"]] = true
+			s["facing"] = _target(label, raw["facing"], present) if raw.has("facing") else null
+		"exit":
+			s["who"] = _who(label, v, false)
+			if not present.has(s["who"]):
+				errors.append("%s: '%s' exits without having entered" % [label, s["who"]])
+			present.erase(s["who"])
+			s["puff"] = bool(raw.get("puff", true))
+		"move":
+			s["who"] = _actor(label, v, present, true)
+			s["to"] = _target(label, raw.get("to", null), present)
+			s["run"] = bool(raw.get("run", false))
+		"leap":
+			s["who"] = _actor(label, v, present, false)
+			s["to"] = _target(label, raw.get("to", null), present)
+			s["from"] = _vec3(label, raw["from"]) if raw.has("from") else null
+			s["height"] = float(raw.get("height", 2.5))
+			s["seconds"] = float(raw.get("seconds", 0.0))
+		"face":
+			s["who"] = _actor(label, v, present, true)
+			s["to"] = _target(label, raw.get("to", null), present)
+		"pose":
+			s["who"] = _actor(label, v, present, true)
+			var pose := str(raw.get("as", ""))
+			if not SCENE_POSES.has(pose):
+				errors.append("%s: pose 'as' is one of %s" % [label, SCENE_POSES.keys()])
+			s["as"] = SCENE_POSES.get(pose, HumanoidPoser.Pose.LOCOMOTION)
+			s["seconds"] = float(raw.get("seconds", 0.0))
+		"weave":
+			s["who"] = _actor(label, v, present, true)
+			s["seals"] = []
+			for seal_name: Variant in raw.get("seals", []):
+				var seal := Seal.from_name(str(seal_name))
+				if seal < 0:
+					errors.append("%s: unknown seal '%s'" % [label, seal_name])
+				else:
+					s["seals"].append(seal)
+			if s["seals"].is_empty():
+				errors.append("%s: weave needs 'seals'" % label)
+		"cast":
+			s["who"] = _actor(label, v, present, true)
+			s["element"] = _element(label, raw.get("element", "none"))
+			s["at"] = _target(label, raw.get("at", null), present)
+			s["kind"] = str(raw.get("kind", "projectile"))
+			if not CAST_KINDS.has(s["kind"]):
+				errors.append("%s: cast kind is one of %s" % [label, CAST_KINDS])
+		"fx":
+			s["fx"] = str(v)
+			if not FX_KINDS.has(s["fx"]):
+				errors.append("%s: unknown fx '%s' (one of %s)" % [label, v, FX_KINDS])
+				return {}
+			s["element"] = _element(label, raw["element"]) if raw.has("element") else Element.NONE
+			s["color"] = Element.color(s["element"]) if raw.has("element") else Color.WHITE
+			if raw.has("color"):
+				if Color.html_is_valid(str(raw["color"])):
+					s["color"] = Color.html(str(raw["color"]))
+				else:
+					errors.append("%s: color must be a colour like \"#ffffff\"" % label)
+			s["seconds"] = float(raw.get("seconds", 0.0))
+			s["size"] = float(raw.get("size", 1.0))
+			var needs: Dictionary = {"lightning": ["at"], "blast": ["at"], "smoke": ["at"], "dust": ["at"],
+				"aura": ["on"], "beam": ["from", "to"]}
+			for key: String in needs.get(s["fx"], []):
+				if not raw.has(key):
+					errors.append("%s: fx %s needs '%s'" % [label, s["fx"], key])
+					return {}
+			for key in ["at", "from", "to"]:
+				if raw.has(key):
+					s[key] = _target(label, raw[key], present)
+			if raw.has("on"):
+				s["on"] = _actor(label, raw["on"], present, true)
+		"grow":
+			s["who"] = _actor(label, v, present, false)
+			s["scale"] = float(raw.get("scale", 1.0))
+			s["seconds"] = float(raw.get("seconds", 1.0))
+		"music":
+			s["track"] = str(v)
+			if s["track"] != "none" and not Music.has_track(StringName(s["track"])):
+				errors.append("%s: unknown music '%s' (or \"none\")" % [label, v])
+		"sfx":
+			s["sound"] = str(v)
+			if not ResourceLoader.exists("res://assets/audio/sfx/%s.wav" % s["sound"]):
+				errors.append("%s: unknown sound '%s'" % [label, v])
+		"time":
+			s["time"] = str(v)
+			if not TIMES.has(s["time"]):
+				errors.append("%s: time is one of %s" % [label, TIMES])
+		"weather":
+			s["weather"] = str(v)
+			if not WEATHERS.has(s["weather"]):
+				errors.append("%s: weather is one of %s" % [label, WEATHERS])
+		"fade":
+			s["fade"] = str(v)
+			if not s["fade"] in ["in", "out"]:
+				errors.append("%s: fade is \"in\" or \"out\"" % label)
+			s["seconds"] = float(raw.get("seconds", 0.8))
+			var color := str(raw.get("color", "#000000"))
+			s["color"] = Color.html(color) if Color.html_is_valid(color) else Color.BLACK
+		"title":
+			s["title"] = str(v)
+			s["sub"] = str(raw.get("sub", ""))
+			s["seconds"] = float(raw.get("seconds", 3.0))
+	return s
+
+
+## A character a step acts on: on stage (or the player, if allowed).
+func _actor(label: String, raw: Variant, present: Dictionary, allow_player: bool) -> String:
+	var who := _who(label, raw, allow_player)
+	if who != PLAYER and not present.has(who):
+		errors.append("%s: '%s' isn't on stage (enter them first)" % [label, who])
+	return who
+
+
+## Where a step points: a character on stage (or the player), [x, z] on the
+## ground or [x, y, z].
+func _target(label: String, raw: Variant, present: Dictionary) -> Variant:
+	if raw is String:
+		return _actor(label, raw, present, true)
+	if raw is Array and raw.size() == 3:
+		return _vec3(label, raw)
+	return _vec2(label, raw)
+
+
+func _vec3(label: String, raw: Variant) -> Vector3:
+	if raw is Array and raw.size() == 3 and raw.all(func(n: Variant) -> bool: return n is float or n is int):
+		return Vector3(raw[0], raw[1], raw[2])
+	errors.append("%s: points are [x, y, z]" % label)
+	return Vector3.ZERO

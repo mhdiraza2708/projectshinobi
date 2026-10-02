@@ -9,7 +9,18 @@
 	"dummies": true,
 	"player_at": [0, 4],
 	"beats": [
-		{"do": "enter", "who": "hisame", "at": [-3.5, -0.5]},
+		{"do": "scene", "steps": [
+			{"fade": "out", "seconds": 0},
+			{"cam": "free", "at": [9, 4.6, 20], "to": [4.5, 2.6, 12], "look": [0, 4.0, -24], "fov": 34, "seconds": 8.5, "async": true},
+			{"fade": "in", "seconds": 1.8, "async": true},
+			{"title": "Emberwood Academy", "sub": "Dawn", "seconds": 4, "async": true},
+			{"wait": 3.2},
+			{"enter": "hisame", "at": [-3.5, -0.5], "from": [0.4, 4.85, -24]},
+			{"wait": 1.5},
+			{"leap": "hisame", "to": [-3.5, -0.5], "height": 7, "seconds": 1.5, "async": true},
+			{"cam": "wide", "on": "hisame", "dist": 8, "height": 2.4, "side": 0.15, "seconds": 1.7},
+			{"cam": "mid", "on": "hisame", "dist": 3.6, "seconds": 2.2}
+		]},
 		{"do": "say", "lines": [
 			["hisame", "You're late, {name}. The sun is up, and so are the dummies.", "relaxed"],
 			["player", "The dummies weren't going anywhere, Sensei."],

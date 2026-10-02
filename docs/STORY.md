@@ -127,6 +127,44 @@ A new island is a new entry in `PRESETS`: colours, `hills` (height), `coast`
 | `survive` | `seconds`, `enemies` (`[[rank, element], ...]`), optional `max_alive`, `text` | Hold out: enemies keep arriving (up to `max_alive` at once) until the timer runs out. |
 | `wait` | `seconds` | A pause with control. |
 | `banner` | `text` | A big banner (for example "End of Part One"). |
+| `scene` | `steps` | A cutscene (see below). |
+
+### Cutscenes: the `scene` beat
+
+A `scene` is a short film played under letterbox bars: `{"do": "scene",
+"steps": [...]}`. Steps run one after another; add `"async": true` to run
+one alongside the steps after it. **Hold Pause to skip**: everyone ends up
+where the scene would have left them (and time of day, weather and music
+changes still happen). Dialogue inside a scene advances by itself.
+
+Each step has one action key plus its options. Points are `[x, z]` on the
+ground, `[x, y, z]` in the air, or a character on stage (`"hisame"`,
+`"player"`).
+
+| Step | Options | What it does |
+|---|---|---|
+| `{"wait": 1.5}` | | Pause. |
+| `{"cam": "<shot>"}` | `on`, `seconds`, `dist`, `height`, `side`, `fov`, `blend` | A camera shot: `close`, `mid`, `wide`, `low` (framings of one character, pushing slowly in), `over` (`from` + `on`, over a shoulder), `two` (`on: [a, b]`), `orbit` (`on`, `radius`, `degrees`), or `free` (`at` → `to`, `look` → `look_to`). Cuts by default, or glides from the last shot over `blend` seconds. Keep free cameras inside the clearing: trees ring it. |
+| `{"say": [[who, text, mood], ...]}` | | Lines, voiced, advancing on their own. Speakers must be on stage. |
+| `{"enter": "who"}` | `at`, `from` ([x, y, z] to start somewhere else), `facing`, `puff` (false: no smoke) | Brings a character on. |
+| `{"exit": "who"}` | `puff` | Sends them off. |
+| `{"move": "who"}` | `to`, `run` | Walk (or run) there. Works on `player` too. |
+| `{"leap": "who"}` | `to`, `from`, `height`, `seconds` | A bounding leap, landing in dust. |
+| `{"face": "who"}` | `to` | Turn towards someone or a point. |
+| `{"pose": "who"}` | `as` (`idle`, `weave`, `guard`, `charge`), `seconds` | Hold a pose. |
+| `{"weave": "who"}` | `seals` (`["rat", "tiger", ...]`) | Hands seals flash above their head, then a flare. |
+| `{"cast": "who"}` | `element`, `at`, `kind` (`projectile`, `blast`, `bolt`) | A technique for show (nobody is hurt). |
+| `{"fx": "<kind>"}` | `at`, `from`, `to`, `on`, `element`, `color`, `seconds`, `size` | `flash`, `shake`, `lightning`, `blast`, `smoke`, `dust`, `aura` (`on`), `beam` (`from` → `to`). |
+| `{"grow": "who"}` | `scale`, `seconds` | Change size. |
+| `{"music": "calm"}`, `{"sfx": "thunder"}` | | Change the music (or `"none"`), play a sound. |
+| `{"time": "dawn"}`, `{"weather": "rain"}` | | Relight the scene. |
+| `{"fade": "out"}` | `seconds`, `color` | Fade to black (or `"in"`). |
+| `{"title": "Place"}` | `sub`, `seconds` | A caption. |
+
+Dialogue spoken inside a scene is recorded by `make voices` like any other.
+Preview a scene from the command line with
+`--demo=scene:<chapter id>:<beat number>:<seconds>` (best with
+`--fixed-fps 10`).
 
 Text can use `{name}` (your shinobi's name), `{nature}` (your chakra
 nature) and any input action in braces, such as `{weave}`, `{throw_tool}`

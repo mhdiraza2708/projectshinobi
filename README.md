@@ -33,6 +33,11 @@ controls can be remapped.
   possessed giant sealed with a five-seal technique). Chapters have their
   own time of day and weather (rain, storm, snow, falling leaves). Chapters are plain data files. See
   [docs/STORY.md](docs/STORY.md) to write your own.
+- **Cutscenes:** the chapters open and close with short in-engine films: a
+  dawn drop from the torii, lightning-borne rivals, a leap into a standoff,
+  a possession by five natures, a storm clearing to dawn. Camera shots,
+  walks and leaps, flashes of chakra, all data-driven (see
+  [docs/STORY.md](docs/STORY.md)). Hold Pause to skip.
 - **Trial of the Five Natures** (from the title screen): five waves of
   enemy shinobi (chakra clones), one nature per wave: Fire, Wind, Lightning,
   Earth, then Water with a jonin. Each wave's weakness is shown. Enemies

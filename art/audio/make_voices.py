@@ -110,6 +110,11 @@ def collect() -> tuple[dict, list[Line]]:
 			if kind == "say":
 				for entry in beat["lines"]:
 					add(entry[0], entry[1], entry[2] if len(entry) > 2 else "neutral")
+			elif kind == "scene":
+				# Cutscenes talk too: {"say": [[who, text, mood], ...]} steps.
+				for step in beat.get("steps", []):
+					for entry in step.get("say", []):
+						add(entry[0], entry[1], entry[2] if len(entry) > 2 else "neutral")
 			elif kind == "boss":
 				add(beat["who"], beat.get("taunt", ""), "angry")
 				for phase in beat.get("phases", []):

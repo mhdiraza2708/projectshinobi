@@ -10,7 +10,13 @@
 	"summary": "Kagerou finds you alone and tells you why.",
 	"player_at": [0, 5],
 	"beats": [
-		{"do": "enter", "who": "kagerou", "at": [0, -5]},
+		{"do": "scene", "steps": [
+			{"cam": "free", "at": [1.6, 1.5, 9], "to": [0.6, 1.5, 7], "look": [0, 1.7, -8], "seconds": 8, "async": true},
+			{"wait": 1.8},
+			{"enter": "kagerou", "at": [0, -5], "from": [0, 0, -17], "puff": false},
+			{"move": "kagerou", "to": [0, -5]},
+			{"cam": "close", "on": "kagerou", "dist": 1.8, "side": 0.4, "seconds": 2.6}
+		]},
 		{"do": "say", "lines": [
 			["kagerou", "Alone, {name}? Your sensei sends children out and lets them walk the road by themselves.", "relaxed"],
 			["player", "Maybe she trusts us."],

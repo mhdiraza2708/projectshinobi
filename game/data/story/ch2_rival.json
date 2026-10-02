@@ -8,8 +8,17 @@
 	"summary": "Asahi's challenge.",
 	"player_at": [0, 4],
 	"beats": [
-		{"do": "enter", "who": "hisame", "at": [-5, 1]},
-		{"do": "enter", "who": "asahi", "at": [0, -4]},
+		{"do": "scene", "steps": [
+			{"cam": "free", "at": [2.4, 1.9, 8], "look": [-1, 1.7, -3], "seconds": 5, "async": true},
+			{"enter": "hisame", "at": [-5, 1]},
+			{"wait": 1.6},
+			{"fx": "lightning", "at": [0, -4], "element": "lightning"},
+			{"enter": "asahi", "at": [0, -4], "puff": false},
+			{"fx": "aura", "on": "asahi", "element": "lightning", "size": 0.9, "seconds": 2.6},
+			{"fx": "dust", "at": [0, -4], "size": 1.6},
+			{"fx": "flash", "color": "#ffffff", "seconds": 0.4},
+			{"cam": "low", "on": "asahi", "dist": 3.4, "side": 0.35, "seconds": 2.8}
+		]},
 		{"do": "say", "lines": [
 			["asahi", "You came. I bet myself you wouldn't. I lost. I hate losing.", "happy"],
 			["hisame", "A duel under academy rules. No real blades, no lasting harm. Stop when I say stop."],

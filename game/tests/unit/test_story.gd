@@ -30,9 +30,13 @@ func _load() -> void:
 	await physics_frames(5)
 
 
-## Advances any open dialogue until a non-dialogue beat is reached.
+## Advances any open dialogue until a non-dialogue beat is reached, skipping
+## cutscenes (holding Pause does that for a player).
 func _talk_through() -> void:
 	for i in 400:
+		var cutscene: Cutscene = scene.story_director.cutscene
+		if cutscene and not cutscene.skipping:
+			cutscene.skip()
 		if not scene.dialogue.is_open():
 			return
 		scene.dialogue.advance()
@@ -148,6 +152,10 @@ func test_chapter_one_plays_through() -> void:
 	var finished := []
 	scene.story_director.chapter_finished.connect(func(c: Dictionary) -> void: finished.append(c["id"]))
 	assert_eq(scene.find_children("*", "TrainingDummy", true, false).size(), 3, "chapter 1 keeps the dummies")
+	assert_eq(_beat(), "scene", "the chapter opens with a cutscene")
+	assert_true(Cutscene.active != null, "which is playing")
+	await _await_beat("task")
+	assert_true(Cutscene.active == null, "and has ended")
 	assert_true(scene.story_director.npcs.has("hisame"), "Hisame is on stage")
 
 	if _beat() != "task":

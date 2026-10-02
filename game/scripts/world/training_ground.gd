@@ -8,7 +8,8 @@ extends Node3D
 ## NAME is one of: overview (default), weave, cast, kunai, menu, customize,
 ## customize_colours, customize_gear, title, trial, results, story,
 ## story_boss, story_menu, chapter_card, night, chapter:<id>, island:<id> (from
-## the air), teleport, teleport_night, and the close-up character
+## the air), scene:<id>:<beat>:<seconds> (a cutscene partway through, best
+## with --fixed-fps 60), teleport, teleport_night, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
 const KILL_PLANE_Y := -20.0
@@ -39,6 +40,8 @@ var lantern_lights: Array[OmniLight3D] = []
 var island: Island
 ## Skip the teleport effects (chapters started with skip_card, i.e. tests).
 var _quick := false
+## Which beat a chapter starts at (screenshots only).
+var demo_start_beat := 0
 var _flash: ColorRect
 ## "none", "rain", "storm", "snow" or "leaves".
 var weather := "none"
@@ -173,7 +176,7 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 			return
 		await _teleport_in()
 	if is_inside_tree():
-		story_director.start(chapter)
+		story_director.start(chapter, demo_start_beat)
 
 
 ## Replaces the training ground with a story island.
@@ -624,6 +627,23 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.look_at(Vector3(0, 0, -6))
 			cam.current = true
 			await _frames(30)
+		_ when demo.begins_with("scene:"):
+			# A cutscene some seconds in: --demo=scene:ch1_graduation:0:5.5
+			# (the chapter, the beat's position in it, seconds into the scene).
+			var parts := demo.split(":")
+			demo_start_beat = int(parts[2])
+			start_story(parts[1], true)
+			# Frames at --fps=N (match --fixed-fps), 60 by default.
+			var fps := float(_user_args().get("fps", "60"))
+			# "2,5.5,8" saves the earlier times as <path>_<t>.png as well.
+			var times := parts[3].split(",")
+			var done := 0
+			for i in times.size():
+				var target := ceili(float(times[i]) * fps) + 1
+				await _frames(target - done)
+				done = target
+				if i < times.size() - 1:
+					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
 		_ when demo.begins_with("shore:"):
 			# An island seen across the water from just offshore: --demo=shore:emberwood
 			hud.visible = false

@@ -13,6 +13,12 @@ func _spoken(story: Story) -> Array:
 					for line: Dictionary in b["lines"]:
 						if line["who"] != Story.PLAYER:
 							out.append([line["who"], line["text"]])
+				"scene":
+					for step: Dictionary in b["steps"]:
+						if step["action"] == "say":
+							for line: Dictionary in step["lines"]:
+								if line["who"] != Story.PLAYER:
+									out.append([line["who"], line["text"]])
 				"boss":
 					if b["taunt"] != "":
 						out.append([b["who"], b["taunt"]])

@@ -18,7 +18,27 @@
 			["kagerou", "You came, and you brought everyone. Good. Someone should see this."],
 			["hisame", "Kagerou, stop. It isn't too late."],
 			["kagerou", "It was too late the day they made me leave.", "angry"],
-			["kagerou", "Five natures, bound in one. Wake, Nue!"],
+			["kagerou", "Five natures, bound in one. Wake, Nue!"]
+		]},
+		{"do": "scene", "steps": [
+			{"cam": "close", "on": "kagerou", "dist": 1.7, "side": 0.3, "seconds": 3.2, "async": true},
+			{"weave": "kagerou", "seals": ["rat", "tiger", "dragon", "snake", "boar"]},
+			{"fx": "shake", "size": 1.3, "seconds": 3.4, "async": true},
+			{"fx": "beam", "from": [0, 6.75, -21], "to": "kagerou", "element": "fire", "seconds": 3.0, "async": true},
+			{"fx": "beam", "from": [19.97, 6.75, -6.49], "to": "kagerou", "element": "wind", "seconds": 3.0, "async": true},
+			{"fx": "beam", "from": [12.34, 6.75, 16.99], "to": "kagerou", "element": "lightning", "seconds": 3.0, "async": true},
+			{"fx": "beam", "from": [-12.34, 6.75, 16.99], "to": "kagerou", "element": "earth", "seconds": 3.0, "async": true},
+			{"fx": "beam", "from": [-19.97, 6.75, -6.49], "to": "kagerou", "element": "water", "seconds": 3.0, "async": true},
+			{"cam": "orbit", "on": "kagerou", "radius": 9, "height": 3.4, "degrees": 150, "seconds": 3.4, "async": true},
+			{"grow": "kagerou", "scale": 1.2, "seconds": 3.0, "async": true},
+			{"wait": 2.2},
+			{"fx": "aura", "on": "kagerou", "color": "#8a4fd0", "size": 1.4},
+			{"wait": 1.2},
+			{"fx": "flash", "color": "#d9c2ff", "seconds": 0.6},
+			{"fx": "blast", "at": "kagerou", "color": "#8a4fd0", "element": "none", "size": 1.4},
+			{"wait": 0.8}
+		]},
+		{"do": "say", "lines": [
 			["tsumugi", "The seal's broken! That chakra... it's inside him!"],
 			["asahi", "Clones everywhere! We've got them. {name}, the big one's yours!"],
 			["hisame", "Wear it down. When it breaks, I'll give you the seals. Go!"]
@@ -43,9 +63,19 @@
 		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Tiger, Dragon, Snake, Boar (hold {weave}; {charge_chakra} charges chakra)",
 			"goal": "cast", "jutsu": "five_nature_seal"},
 		{"do": "banner", "text": "The Nue is sealed"},
-		{"do": "enter", "who": "kagerou", "at": [0, -5]},
-		{"do": "enter", "who": "asahi", "at": [3, 3]},
-		{"do": "enter", "who": "tsumugi", "at": [5, 1]},
+		{"do": "scene", "steps": [
+			{"fade": "out", "seconds": 1.4},
+			{"time": "dawn"},
+			{"weather": "none"},
+			{"music": "calm"},
+			{"enter": "kagerou", "at": [0, -5], "puff": false},
+			{"enter": "asahi", "at": [3, 3], "puff": false},
+			{"enter": "tsumugi", "at": [5, 1], "puff": false},
+			{"cam": "free", "at": [-9, 1.5, 13], "to": [-6, 1.9, 10], "look": [0, 2.2, -6], "seconds": 7, "async": true},
+			{"fade": "in", "seconds": 2.4, "async": true},
+			{"wait": 4.0},
+			{"cam": "two", "on": ["kagerou", "player"], "side": 1, "seconds": 3.0}
+		]},
 		{"do": "say", "lines": [
 			["kagerou", "...It's quiet. For the first time in years, it's quiet.", "sad"],
 			["hisame", "You're still here, Kagerou. That's more than the Nue wanted."],

@@ -42,6 +42,8 @@ var _ally_beats: Dictionary = {}
 var _survive: Dictionary = {}
 var _survive_spawned := 0
 var _survive_timer := 0.0
+## The cutscene playing, if any.
+var cutscene: Cutscene
 
 
 func setup(p: Player, h: Hud, d: DialogueBox, where: Node3D, s: Story) -> void:
@@ -56,7 +58,9 @@ func setup(p: Player, h: Hud, d: DialogueBox, where: Node3D, s: Story) -> void:
 		player.defeated.connect(_on_player_defeated)
 
 
-func start(c: Dictionary) -> void:
+## `at_beat` starts partway through (screenshots): the stage is set as it
+## would be just before that beat.
+func start(c: Dictionary, at_beat := 0) -> void:
 	chapter = c
 	running = true
 	beat_index = -1
@@ -64,7 +68,29 @@ func start(c: Dictionary) -> void:
 	player.global_position = Vector3(at.x, 0.1, at.y)
 	player.velocity = Vector3.ZERO
 	_hook_tasks()
+	if at_beat > 0:
+		await _stage_before(at_beat)
+	beat_index = at_beat - 1
 	_next()
+
+
+## Applies what every beat before `index` does to the stage (who is standing
+## where), without playing any of them.
+func _stage_before(index: int) -> void:
+	for i in index:
+		var b: Dictionary = chapter["beats"][i]
+		match b["do"]:
+			"enter":
+				add_npc(b["who"], b["at"], true)
+			"exit", "boss":
+				remove_npc(b["who"], false)
+			"scene":
+				var quick := Cutscene.new(self)
+				quick.skipping = true
+				add_child(quick)
+				quick.play(b["steps"])
+				await quick.finished
+				quick.queue_free()
 
 
 func current_beat() -> Dictionary:
@@ -84,19 +110,13 @@ func _next() -> void:
 	_score(b["do"])
 	match b["do"]:
 		"enter":
-			_enter_npc(b)
+			add_npc(b["who"], b["at"])
 			_next.call_deferred()
 		"exit":
-			var npc: StoryNpc = npcs.get(b["who"])
-			if npc:
-				npc.vanish()
-			npcs.erase(b["who"])
-			var ally: EnemyShinobi = allies.get(b["who"])
-			if is_instance_valid(ally):
-				ally.leave()
-			allies.erase(b["who"])
-			_ally_beats.erase(b["who"])
+			remove_npc(b["who"])
 			_next.call_deferred()
+		"scene":
+			_play_scene(b)
 		"ally":
 			_spawn_ally(b)
 			_next.call_deferred()
@@ -142,13 +162,15 @@ func _score(kind: String) -> void:
 			Music.play(&"boss")
 		"say", "task":
 			Music.play(&"calm")
+		# Scenes set their own music (or keep what's playing).
 
 
 # --- Talking ---------------------------------------------------------------------
 
-func _enter_npc(b: Dictionary) -> void:
-	var who: String = b["who"]
-	if npcs.has(who):
+## Puts a story character on stage at `at` ([x, z]), facing you; `quiet`
+## skips the puff of smoke, `from` starts them somewhere else ([x, y, z]).
+func add_npc(who: String, at: Vector2, quiet := false, from: Variant = null) -> StoryNpc:
+	if npcs.has(who) and is_instance_valid(npcs[who]):
 		npcs[who].queue_free()
 	# An ally stepping back into the conversation stops fighting.
 	var ally: EnemyShinobi = allies.get(who)
@@ -165,10 +187,41 @@ func _enter_npc(b: Dictionary) -> void:
 	npc.style = info["style"]
 	npc.model_name = info["model"]
 	npc.look_at_node = player
-	var at: Vector2 = b["at"]
-	npc.position = Vector3(at.x, 0.0, at.y)
+	npc.quiet = quiet
+	npc.position = from if from is Vector3 else Vector3(at.x, 0.0, at.y)
 	stage.add_child(npc)
 	npcs[who] = npc
+	if cutscene:
+		npc.show_tag(false)
+	return npc
+
+
+## Takes a character off stage (in a puff of smoke unless `puff` is false),
+## including an ally who's fighting.
+func remove_npc(who: String, puff := true) -> void:
+	var npc: StoryNpc = npcs.get(who)
+	if is_instance_valid(npc):
+		if puff:
+			npc.vanish()
+		else:
+			npc.queue_free()
+	npcs.erase(who)
+	var ally: EnemyShinobi = allies.get(who)
+	if is_instance_valid(ally):
+		ally.leave()
+	allies.erase(who)
+	_ally_beats.erase(who)
+
+
+func _play_scene(b: Dictionary) -> void:
+	cutscene = Cutscene.new(self)
+	add_child(cutscene)
+	cutscene.play(b["steps"])
+	await cutscene.finished
+	if is_instance_valid(cutscene):
+		cutscene.queue_free()
+	cutscene = null
+	_next()
 
 
 func _begin_talk(b: Dictionary) -> void:
@@ -196,7 +249,9 @@ func _on_line(_index: int, line: Dictionary) -> void:
 	var npc: StoryNpc = npcs.get(line["who"])
 	if npc:
 		npc.speak(line["mood"])
-		player.camera_rig.begin_conversation(npc)
+		# A cutscene points its own camera.
+		if cutscene == null:
+			player.camera_rig.begin_conversation(npc)
 
 
 func _on_dialogue_finished() -> void:
