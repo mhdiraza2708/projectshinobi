@@ -28,8 +28,10 @@ const MIN_ELEVATION := 10.0
 const DISC_RADIUS := 0.0047
 ## The Compatibility renderer shows these light levels without the filmic
 ## curve that brings their middle tones down in Forward+: scale the light
-## by about as much instead.
-const COMPATIBILITY_GAIN := 0.5
+## by about as much instead. 0.4 matches Forward+ on mid-tones (grass,
+## clothes) in side-by-side frames; bright ground still runs a little hotter,
+## since one gain can't reproduce the curve's highlight roll-off.
+const COMPATIBILITY_GAIN := 0.4
 
 static var _data: Dictionary = {}
 
