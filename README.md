@@ -29,7 +29,7 @@ controls can be remapped.
 | ![Pause → Map: the islands charted, found ones named and travelled to](docs/images/world_map.jpg) | ![Pause → Quests: the story mission, a side quest under way, one on offer and two done](docs/images/world_quests.jpg) |
 | ![The Kenjutsu skill tree beside your shinobi on a lit stage, katana drawn](docs/images/skills_kenjutsu.jpg) | ![The Dojutsu skill tree: the camera pushes in on your face with your eyes open](docs/images/skills_dojutsu.jpg) |
 
-![Story mode, chapter 2, The Ashen Trail: Kagerou wreathed in fire on a snowy night](docs/images/story_night.jpg)
+![Story mode, chapter 2, The Ashen Trail: Kagerou wreathed in fire on a snowy night, before the burned torii of the Ashen Pass](docs/images/story_night.jpg)
 
 ![Weaving seals on a controller: each seal stamped as a talisman with its zodiac kanji and the buttons that make it; a fuse burns down the timing window and the next seal is hinted](docs/images/weaving.jpg)
 

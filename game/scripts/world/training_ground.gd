@@ -1258,29 +1258,14 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				if i < times.size() - 1:
 					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
 			if _user_args().has("hide"):
-				# Debugging: hide nodes whose path has any of these words.
+				# --hide=<word>,... hides nodes whose path or class has any of
+				# these words before the shot (to find what draws something).
 				var words: PackedStringArray = str(_user_args()["hide"]).split(",")
 				for node in get_tree().root.find_children("*", "Node3D", true, false):
 					for w in words:
 						if str(node.get_path()).contains(w) or node.get_class() == w:
 							(node as Node3D).visible = false
 				await _frames(2)
-			if _user_args().has("rods"):
-				# Debugging: long thin things on stage, and what they are.
-				for node in get_tree().root.find_children("*", "GeometryInstance3D", true, false):
-					var gi := node as GeometryInstance3D
-					if not gi.is_visible_in_tree():
-						continue
-					var box := gi.global_transform * gi.get_aabb()
-					var sz := box.size
-					var longest := maxf(sz.x, maxf(sz.y, sz.z))
-					var shortest := minf(sz.x, minf(sz.y, sz.z))
-					if gi.global_position.distance_to(Vector3(0, 1, -5)) < 4.0:
-						var extra := ""
-						if gi is GPUParticles3D:
-							var gp := gi as GPUParticles3D
-							extra = "emitting=%s one_shot=%s lifetime=%s amount=%d speed=%s" % [gp.emitting, gp.one_shot, gp.lifetime, gp.amount, gp.speed_scale]
-						print("ROD %s %s size=%s %s" % [gi.get_class(), gi.get_path(), sz.snappedf(0.01), extra])
 		_ when demo.begins_with("shore:"):
 			# An island seen across the water from just offshore: --demo=shore:emberwood
 			hud.visible = false

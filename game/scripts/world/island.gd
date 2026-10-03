@@ -66,7 +66,8 @@ const PRESETS := {
 		"far": Color("4a4a55"), "textures": {"grass": "dirt"},
 		"paths": [[[[0, -20], [0, -34], [4, -46]], 3.0]],
 		"props": [
-			{"scene": "gate_broken", "at": [0, -24]},
+			# Burned with the rest of the pass: charred, not lacquer-bright.
+			{"scene": "gate_broken", "at": [0, -24], "tint": "#57463f"},
 			{"scene": "shrine", "at": [0, -38], "yaw": 4},
 			{"scene": "lantern", "at": [-4.2, -21], "yaw": 57}, {"scene": "lantern", "at": [4.2, -21], "yaw": 2},
 			{"scene": "lantern", "at": [-13, 6], "yaw": 25}, {"scene": "lantern", "at": [13, 6], "yaw": 20},
@@ -452,6 +453,8 @@ func _place_prop(prop: Dictionary) -> Vector2:
 	node.rotation.y = deg_to_rad(float(prop.get("yaw", 0.0)))
 	node.position = Vector3(at.x, _ground_under(at, 1.5 * s), at.y)
 	add_child(node)
+	if prop.has("tint"):
+		_tint(node, Color(str(prop["tint"])))
 	if open_world:
 		# Landmarks stay in view further than trees, but not across the map.
 		var far := SCENERY_RANGE * (1.8 if scene_name in ["dam", "shrine", "pillar", "gate"] else 1.2)
@@ -481,6 +484,23 @@ func _place_prop(prop: Dictionary) -> Vector2:
 		light.position = orb.position
 		node.add_child(light)
 	return at
+
+
+## Darkens a prop's colours (its own copies of the materials): a burned
+## ruin's lacquer, say.
+static func _tint(node: Node3D, tint: Color) -> void:
+	for mesh in node.find_children("*", "MeshInstance3D", true, false):
+		var mi := mesh as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var src := mi.get_active_material(i)
+			if not src is BaseMaterial3D:
+				continue
+			var m := (src as BaseMaterial3D).duplicate() as BaseMaterial3D
+			m.albedo_color *= tint
+			m.roughness = maxf(m.roughness, 0.95)
+			mi.set_surface_override_material(i, m)
 
 
 ## The lowest ground under a footprint, so props never float on a slope.
