@@ -50,6 +50,7 @@ var story_in_world := false
 ## Build every island at once instead of a frame apart (screenshots, tests).
 var instant_world := false
 var _arena: ArenaWall
+var _time_tween: Tween
 ## Skip the teleport effects (chapters started with skip_card, i.e. tests).
 var _quick := false
 ## Which beat a chapter starts at (screenshots only).
@@ -283,7 +284,7 @@ func start_world() -> void:
 	add_child(world)
 	world.chapter_requested.connect(start_story_in_world)
 	player.camera_rig.camera.far = 3000.0
-	set_time_of_day("day")
+	set_time_of_day(world.phase())
 	set_weather("none")
 	await world.start(instant_world)
 	if not is_inside_tree():
@@ -342,7 +343,7 @@ func return_to_world() -> void:
 		if is_instance_valid(light):
 			light.queue_free()
 	lantern_lights.clear()
-	set_time_of_day("day")
+	set_time_of_day(world.phase())
 	set_weather("none")
 	hud.set_objective("")
 	hud.visible = true
@@ -478,6 +479,12 @@ func set_time_of_day(time: String) -> void:
 		return
 	_mood = time
 	_relight()
+	# Day puts the lanterns out again (the open world's clock turns).
+	if not TIMES[time]["lanterns"]:
+		for light in lantern_lights:
+			if is_instance_valid(light):
+				light.queue_free()
+		lantern_lights.clear()
 	if TIMES[time]["lanterns"] and lantern_lights.is_empty():
 		for node in lanterns():
 			var light := OmniLight3D.new()
@@ -511,10 +518,53 @@ func apply_graphics() -> void:
 		add_child(_grain)
 
 
-## The lantern props: the island's, or the training ground's.
+## Eases from the current time of day to `time` over `seconds`: the skies
+## crossfade and the sun, ambient light and fog move between them.
+func transition_time(time: String, seconds := 8.0) -> void:
+	var env := ($WorldEnvironment as WorldEnvironment).environment
+	var sun := $Sun as DirectionalLight3D
+	var old_sky := Skies.material(env)
+	var from := {"sun": sun.quaternion, "energy": sun.light_energy, "color": sun.light_color,
+		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy}
+	set_time_of_day(time)
+	if seconds <= 0.0:
+		return
+	var to := {"sun": sun.quaternion, "energy": sun.light_energy, "color": sun.light_color,
+		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy}
+	var new_sky := Skies.material(env)
+	if old_sky and new_sky and old_sky != new_sky:
+		new_sky.set_shader_parameter(&"prev_panorama", old_sky.get_shader_parameter(&"panorama"))
+		new_sky.set_shader_parameter(&"prev_scale", old_sky.get_shader_parameter(&"scale"))
+		new_sky.set_shader_parameter(&"prev_to_panorama", old_sky.get_shader_parameter(&"to_panorama"))
+	if _time_tween and _time_tween.is_valid():
+		_time_tween.kill()
+	_time_tween = create_tween()
+	_time_tween.tween_method(func(k: float) -> void:
+		var e := k * k * (3.0 - 2.0 * k)
+		sun.quaternion = (from["sun"] as Quaternion).slerp(to["sun"], e)
+		sun.light_energy = lerpf(from["energy"], to["energy"], e)
+		sun.light_color = (from["color"] as Color).lerp(to["color"], e)
+		env.ambient_light_energy = lerpf(from["ambient"], to["ambient"], e)
+		env.fog_light_color = (from["fog"] as Color).lerp(to["fog"], e)
+		env.fog_light_energy = lerpf(from["fog_energy"], to["fog_energy"], e)
+		if new_sky:
+			new_sky.set_shader_parameter(&"blend", e), 0.0, 1.0, seconds)
+
+
+## The current time of day (dawn, day, dusk, night).
+func time_of_day() -> String:
+	return _mood
+
+
+## The lantern props: the island's, the open world's, or the training ground's.
 func lanterns() -> Array[Node3D]:
 	if island:
 		return island.lanterns
+	if world and world.archipelago.is_inside_tree():
+		var all: Array[Node3D] = []
+		for isl: Island in world.archipelago.islands.values():
+			all.append_array(isl.lanterns)
+		return all
 	var out: Array[Node3D] = []
 	var scenery := get_node_or_null("Scenery")
 	if scenery:

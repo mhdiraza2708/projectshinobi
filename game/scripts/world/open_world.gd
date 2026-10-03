@@ -24,6 +24,14 @@ const FIGHT_TRIGGER := 22.0
 const PICKUP_RANGE := 1.6
 ## How often your place is saved (seconds).
 const SAVE_EVERY := 3.0
+## A whole day in free roam, in real seconds, and where each part of it
+## starts (fractions of the day): a short dawn and dusk, a long day, a night.
+const DAY_LENGTH := 1440.0
+const PHASES := [[0.0, "dawn"], [0.1, "day"], [0.55, "dusk"], [0.66, "night"]]
+## A new game starts mid-morning.
+const START_CLOCK := 0.2
+## Seconds a change of the time of day takes to ease in.
+const DAWNING := 10.0
 ## Each island's mark on the location card.
 const ISLAND_KANJI := {
 	"emberwood": "燠", "ashen_pass": "灰", "autumn_wood": "楓",
@@ -49,6 +57,8 @@ var _interact: Dictionary = {}     # {kind, id, node}
 var _island := ""
 var _save_left := SAVE_EVERY
 var _ripple_left := 0.0
+## Seconds into the day (saved with the slot).
+var clock := START_CLOCK * DAY_LENGTH
 
 
 func setup(p: Player, h: Hud, s: Story) -> void:
@@ -56,6 +66,28 @@ func setup(p: Player, h: Hud, s: Story) -> void:
 	hud = h
 	story = s
 	story.add_cast(Quests.people())
+	clock = float(Game.record("world", "clock", START_CLOCK * DAY_LENGTH))
+
+
+## The part of the day it is at `at` seconds (default: now).
+func phase(at := -1.0) -> String:
+	var k := fposmod((clock if at < 0.0 else at) / DAY_LENGTH, 1.0)
+	var out: String = PHASES[0][1]
+	for p: Array in PHASES:
+		if k >= float(p[0]):
+			out = p[1]
+	return out
+
+
+func _process(delta: float) -> void:
+	# The day turns while you roam (not during a chapter or a conversation).
+	if busy or get_parent().get(&"mode") != Game.Mode.WORLD or get_tree().paused:
+		return
+	var before := phase()
+	clock = fposmod(clock + delta, DAY_LENGTH)
+	var now := phase()
+	if now != before and get_parent().has_method(&"transition_time"):
+		get_parent().transition_time(now, DAWNING)
 
 
 func _ready() -> void:
@@ -322,6 +354,7 @@ func _physics_process(delta: float) -> void:
 func save_position() -> void:
 	if player and archipelago.is_inside_tree():
 		Game.set_record("world", "position", archipelago.to_local(player.global_position))
+	Game.set_record("world", "clock", clock)
 
 
 ## Running on the sea: a faster sprint, and ripples where your feet land.
@@ -553,4 +586,54 @@ func _check_island() -> void:
 		return
 	_island = here
 	if here != "":
+		var first := not discovered(here)
+		discover(here)
 		tracker.show_location(Island.display_name(here), ISLAND_KANJI.get(here, ""))
+		if first and here != "emberwood":
+			hud.show_banner("Discovered %s: you can travel here from the map" % Island.display_name(here), &"info")
+
+
+## Islands you've set foot on (Emberwood, home, always).
+func discovered(id: String) -> bool:
+	return id == "emberwood" or (Game.record("world", "discovered", []) as Array).has(id)
+
+
+func discover(id: String) -> void:
+	var list: Array = (Game.record("world", "discovered", []) as Array).duplicate()
+	if not list.has(id):
+		list.append(id)
+		Game.set_record("world", "discovered", list)
+
+
+## Where travel to an island sets you down: by its clearing.
+const TRAVEL_POINT := Vector2(0.0, 12.0)
+
+
+## Whether travel is possible right now (not mid-fight or mid-chapter).
+func can_travel() -> bool:
+	return not busy and _fight == null and not is_instance_valid(_duelist) \
+		and get_parent().get(&"mode") == Game.Mode.WORLD
+
+
+## Travels to an island you've been to: the seal flares, a white flash, and
+## you stand by its clearing.
+func fast_travel(id: String) -> bool:
+	if not discovered(id) or not can_travel():
+		return false
+	busy = true
+	player.input_enabled = false
+	var scene := get_parent()
+	if scene.has_method(&"_teleport_out"):
+		await scene._teleport_out()
+	if not is_inside_tree():
+		return false
+	var at := archipelago.on_island(id, TRAVEL_POINT)
+	player.global_position = at + Vector3.UP * 0.3
+	player.velocity = Vector3.ZERO
+	save_position()
+	if scene.has_method(&"_teleport_in"):
+		await scene._teleport_in()
+	if is_instance_valid(player):
+		player.input_enabled = true
+	busy = false
+	return true

@@ -19,40 +19,51 @@ uniform float sun_radius = 0.0045;
 // Darkens toward a storm's grey and lets lightning light the clouds.
 uniform vec3 tint = vec3(1.0);
 uniform float flash = 0.0;
+// A time of day changing (the open world's clock): the previous sky fades
+// out as this one fades in (blend 0 = all previous, 1 = all this one).
+uniform sampler2D prev_panorama : source_color, filter_linear_mipmap, repeat_enable;
+uniform float prev_scale = 1.0;
+uniform mat3 prev_to_panorama = mat3(1.0);
+uniform float blend = 1.0;
 
 vec2 panorama_uv(vec3 d) {
 	return vec2(atan(d.x, -d.z) / TAU + 0.5, acos(clamp(d.y, -1.0, 1.0)) / PI);
 }
 
-void sky() {
-	vec3 d = normalize(to_panorama * EYEDIR);
-	vec2 uv = panorama_uv(d);
-	vec3 col;
-	if (AT_CUBEMAP_PASS) {
+// One panorama's colour toward EYEDIR, turned by `turn`.
+vec3 sample_sky(sampler2D tex, mat3 turn, bool cubemap) {
+	vec2 uv = panorama_uv(normalize(turn * EYEDIR));
+	if (cubemap) {
 		// Reflections and ambient light: a blurred lookup is all they need.
-		col = textureLod(panorama, uv, 4.0).rgb;
-	} else {
-		// No seam where the panorama wraps: take derivatives from whichever
-		// of two wrap points is further from this pixel.
-		vec2 uv2 = vec2(fract(uv.x + 0.5) - 0.5, uv.y);
-		vec2 dx = dFdx(uv);
-		vec2 dy = dFdy(uv);
-		vec2 dx2 = dFdx(uv2);
-		vec2 dy2 = dFdy(uv2);
-		if (dot(dx2, dx2) + dot(dy2, dy2) < dot(dx, dx) + dot(dy, dy)) {
-			dx = dx2;
-			dy = dy2;
-		}
-		col = textureGrad(panorama, uv, dx, dy).rgb;
+		return textureLod(tex, uv, 4.0).rgb;
 	}
-	col *= scale * tint;
+	// No seam where the panorama wraps: take derivatives from whichever of
+	// two wrap points is further from this pixel.
+	vec2 uv2 = vec2(fract(uv.x + 0.5) - 0.5, uv.y);
+	vec2 dx = dFdx(uv);
+	vec2 dy = dFdy(uv);
+	vec2 dx2 = dFdx(uv2);
+	vec2 dy2 = dFdy(uv2);
+	if (dot(dx2, dx2) + dot(dy2, dy2) < dot(dx, dx) + dot(dy, dy)) {
+		dx = dx2;
+		dy = dy2;
+	}
+	return textureGrad(tex, uv, dx, dy).rgb;
+}
+
+void sky() {
+	vec3 col = sample_sky(panorama, to_panorama, AT_CUBEMAP_PASS) * scale;
+	if (blend < 0.999) {
+		col = mix(sample_sky(prev_panorama, prev_to_panorama, AT_CUBEMAP_PASS) * prev_scale, col, blend);
+	}
+	col *= tint;
 	col += flash * vec3(0.55, 0.6, 0.75) * smoothstep(-0.05, 0.4, EYEDIR.y);
 	if (!AT_CUBEMAP_PASS) {
 		float c = dot(EYEDIR, sun_direction);
 		float a = acos(clamp(c, -1.0, 1.0));
 		// Disc, then a tight glow and a wide halo (bloom spreads them more).
 		col += sun_color * (smoothstep(sun_radius, sun_radius * 0.6, a) * 40.0
-			+ exp(-a / (sun_radius * 3.0)) * 2.0 + exp(-a * 9.0) * 0.12);
+			+ exp(-a / (sun_radius * 3.0)) * 2.0 + exp(-a * 9.0) * 0.12) * blend;
 	}
 	COLOR = col;
 }

@@ -36,9 +36,14 @@ controls can be remapped.
   there. People around the islands ask for help: **eight original side
   quests** (gather, drive off bandits, a duel, a delivery across the sea,
   and a post-game trial), opened as the story goes on, tracked on screen
-  with a marker and listed in **Pause → Quests**, and paid in XP. Your place
-  in the world is saved with the slot. (Chapters can still be replayed on
-  their own from the title's chapter list.)
+  with a marker and listed in **Pause → Quests**, and paid in XP. The day
+  turns while you roam (a 24-minute day: dawn, day, dusk and night, the
+  photographed skies crossfading and every island's lanterns lit at night),
+  **Pause → Map** charts the islands with you, the story's pillar and
+  quest-givers on it, and any island you've set foot on can be travelled
+  back to from there. Your place and the time of day are saved with the
+  slot. (Chapters can still be replayed on their own from the title's
+  chapter list.)
 - **Story mode: two parts, ten chapters.** *Part One: The Stolen Scroll*
   (tutorial, rival duel, clone ambushes, a boss who changes nature as it
   weakens) and *Part Two: The Last Seal* (interrupt training, a hunter's
@@ -127,7 +132,7 @@ controls can be remapped.
   Wayfarer. A clan fixes your chakra nature (a Wayfarer chooses) and brings
   perks such as extra health, faster chakra recovery, a shorter dash
   cooldown or more damage in its nature.
-- **Eye arts** (original, not anyone's dojutsu): **Hawk Eye** (longer
+- **Dojutsu** (all original; no canon eyes): **Hawk Eye** (longer
   lock-on, homing jutsu, shows who is weak to you), **Mirror Eye** (a dash
   through a hit slows time and refunds chakra), **Seal Eye** (rivals weave
   slower, your own seals fly faster) and **Still Eye** (a guard raised at the

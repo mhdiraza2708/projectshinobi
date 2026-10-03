@@ -8,12 +8,13 @@ extends CanvasLayer
 ## switch tabs.
 
 const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["画", "Graphics"], ["巻", "Jutsu Scroll"], ["技", "Skills"],
-	["任", "Quests"]]
+	["任", "Quests"], ["地", "Map"]]
 const TAB_ACCESSIBILITY := 1
 const TAB_GRAPHICS := 2
 const TAB_JUTSU := 3
 const TAB_SKILLS := 4
 const TAB_QUESTS := 5
+const TAB_MAP := 6
 
 signal customize_requested
 signal title_requested
@@ -34,6 +35,9 @@ var skill_screen: SkillScreen
 var _skills_summary: VBoxContainer
 var _skills_open: Button
 var _quest_list: VBoxContainer
+var _map_box: HBoxContainer
+var _map: WorldMap
+var _travel: VBoxContainer
 var _notice: Label
 var _resume: Button
 ## {action, device, button} while waiting for a new input.
@@ -76,6 +80,7 @@ func open() -> void:
 	_refresh_jutsu()
 	_refresh_skills()
 	_refresh_quests()
+	_refresh_map()
 	_resume.grab_focus()
 
 
@@ -206,6 +211,9 @@ func _build() -> void:
 	_quest_list = VBoxContainer.new()
 	_quest_list.add_theme_constant_override(&"separation", 8)
 	_tabs.add_child(_scroll("Quests", _quest_list))
+	_map_box = HBoxContainer.new()
+	_map_box.add_theme_constant_override(&"separation", 24)
+	_tabs.add_child(_scroll("Map", _map_box))
 	_select_tab(0)
 
 	vbox.add_child(_rule())
@@ -711,6 +719,50 @@ func _refresh_quests() -> void:
 	hint.text = "Talk with %s beside someone. Run on the sea between islands; hold %s on open water to sprint faster." % [
 		InputDevice.glyph(&"interact"), InputDevice.glyph(&"evade")]
 	_quest_list.add_child(hint)
+
+
+# --- Map tab -------------------------------------------------------------------
+
+## The chart of the islands, and travel to the ones you've been to.
+func _refresh_map() -> void:
+	if _map_box == null:
+		return
+	var world := _open_world()
+	if world == null:
+		for c in _map_box.get_children():
+			c.queue_free()
+		_map = null
+		_map_box.add_child(_hint_row("The map is of the open world: Continue a save from the title screen."))
+		return
+	if _map == null:
+		for c in _map_box.get_children():
+			c.queue_free()
+		_map = WorldMap.new()
+		_map_box.add_child(_map)
+		_travel = VBoxContainer.new()
+		_travel.add_theme_constant_override(&"separation", 8)
+		_travel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_map_box.add_child(_travel)
+	_map.bind(world)
+	for c in _travel.get_children():
+		_travel.remove_child(c)
+		c.queue_free()
+	_travel.add_child(_section("Travel"))
+	var can := world.can_travel()
+	for id: String in Archipelago.LAYOUT:
+		var known := world.discovered(id)
+		var b := _button("%s  %s" % [OpenWorld.ISLAND_KANJI.get(id, ""), Island.display_name(id)] if known else "?  Not yet found",
+			func() -> void:
+				close()
+				world.fast_travel(id))
+		b.disabled = not known or not can
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		_travel.add_child(b)
+	var hint := _hint_label()
+	hint.text = "Set foot on an island to travel back to it from here." if can \
+		else "No travelling during a fight or a chapter."
+	hint.custom_minimum_size.x = 420
+	_travel.add_child(hint)
 
 
 func _quest_row(kanji: String, title: String, line: String, track_id: String, tracked: String) -> HBoxContainer:

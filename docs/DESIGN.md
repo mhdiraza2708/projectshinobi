@@ -192,6 +192,13 @@ wrong trade.
   `OpenWorld` keeps one figure per person and decides what talking to them
   means; `QuestTracker` draws the tracked objective, an edge-pinned marker,
   the Interact prompt and island arrival cards.
+- **Day and night:** `OpenWorld.clock` runs a `DAY_LENGTH` day through
+  `PHASES`; a change calls `transition_time()`, which crossfades the sky
+  shader (`prev_panorama` + `blend`) and eases the sun, ambient and fog.
+- **Map and travel:** `WorldMap` paints a chart from every island's real
+  heights once per world (4 m a pixel). Islands are `discovered` when you
+  set foot on them (saved in records); `fast_travel()` uses the summoning
+  seal to set you by a discovered island's clearing.
 
 ### Combat (`game/scripts/combat`, `game/scripts/player`)
 - `Stats`: health, chakra (passive regen plus much faster regen while

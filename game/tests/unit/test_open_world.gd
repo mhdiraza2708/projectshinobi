@@ -212,3 +212,53 @@ func test_the_quest_log_lists_and_tracks() -> void:
 	track.pressed.emit()
 	assert_eq(Quests.tracked(), Quests.MAIN, "the story can be tracked again")
 	menu.close()
+
+
+func test_the_day_turns_and_the_sky_crossfades() -> void:
+	await _load()
+	assert_eq(world.phase(), "day", "a new game starts mid-morning")
+	assert_eq(world.phase(0.62 * OpenWorld.DAY_LENGTH), "dusk")
+	assert_eq(world.phase(0.9 * OpenWorld.DAY_LENGTH), "night")
+	assert_eq(world.phase(0.02 * OpenWorld.DAY_LENGTH), "dawn")
+	# Just before dusk, a moment later it's dusk, easing in.
+	world.clock = 0.55 * OpenWorld.DAY_LENGTH - 0.05
+	await seconds(0.3)
+	assert_eq(scene.time_of_day(), "dusk", "the clock moves the world's time")
+	var env := (scene.get_node("WorldEnvironment") as WorldEnvironment).environment
+	var sky := Skies.material(env)
+	if sky:
+		assert_true(float(sky.get_shader_parameter(&"blend")) < 1.0, "the old sky is still fading out")
+	# Night lights the lanterns on every island; dawn puts them out.
+	scene.transition_time("night", 0.0)
+	assert_true(scene.lantern_lights.size() > 6, "lanterns across the archipelago")
+	scene.transition_time("dawn", 0.0)
+	assert_eq(scene.lantern_lights.size(), 0)
+	world.save_position()
+	assert_near(float(Game.record("world", "clock", 0.0)), world.clock, 0.01, "the time is saved")
+
+
+func test_the_map_charts_the_islands_and_travel_needs_a_visit() -> void:
+	await _load()
+	var tex := WorldMap.chart(world.archipelago)
+	var img := tex.get_image()
+	var b := WorldMap.bounds()
+	for id: String in Archipelago.LAYOUT:
+		var c: Vector2 = (Archipelago.LAYOUT[id] - b.position) / WorldMap.METRES_PER_PIXEL
+		assert_true(img.get_pixelv(Vector2i(c)).a > 0.5, "%s is drawn on the chart" % id)
+	assert_true(img.get_pixelv(Vector2i(((Vector2(220, -90)) - b.position) / WorldMap.METRES_PER_PIXEL)).a < 0.1,
+		"open sea is left as paper")
+	assert_true(world.discovered("emberwood"))
+	assert_false(world.discovered("autumn_wood"))
+	assert_false(await world.fast_travel("autumn_wood"), "not before you've been there")
+	await _stand_at(world.archipelago.on_island("autumn_wood", Vector2(0, 10)))
+	await physics_frames(2)
+	assert_true(world.discovered("autumn_wood"), "setting foot there finds it")
+	await _stand_at(world.archipelago.on_island("emberwood", Vector2(0, 14)))
+	assert_true(await world.fast_travel("autumn_wood"))
+	assert_eq(world.archipelago.island_near(player.global_position), "autumn_wood", "and travel takes you there")
+	var menu: PauseMenu = scene.pause_menu
+	menu.open()
+	menu._select_tab(PauseMenu.TAB_MAP)
+	await physics_frames(2)
+	assert_true(menu._map != null and menu._map.is_visible_in_tree(), "the Map tab shows the chart")
+	menu.close()
