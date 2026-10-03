@@ -9,6 +9,8 @@ extends Control
 const METRES_PER_PIXEL := 4.0
 ## How far past the outermost islands the chart reaches.
 const MARGIN := 110.0
+## More below: names are written under the islands, Emberwood's included.
+const LABEL_ROOM := 110.0
 
 var world: OpenWorld
 
@@ -35,7 +37,7 @@ static func bounds() -> Rect2:
 			first = false
 		else:
 			r = r.expand(at)
-	return r.grow(MARGIN)
+	return r.grow_individual(MARGIN, MARGIN, MARGIN, MARGIN + LABEL_ROOM)
 
 
 func bind(w: OpenWorld) -> void:
