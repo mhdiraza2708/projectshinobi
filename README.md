@@ -37,6 +37,8 @@ controls can be remapped.
 
 ![Trial of the Five Natures: locked on to a Lightning chunin weaving a jutsu, its seals shown above its head; the wave, weakness and timer at the top](docs/images/trial.jpg)
 
+![Customize, Gear tab: a hachigane, face mask and scarf fitted to the character, and the sword worn at the hip (or none, to fight with fists)](docs/images/customize.jpg)
+
 ## What you can do right now
 
 - **An open world of islands.** Continue a save (or start one) and you're
