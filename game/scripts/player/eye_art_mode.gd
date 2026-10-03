@@ -12,6 +12,13 @@ extends Node
 
 signal changed
 
+## Abilities an open form can have (data/eye_arts.json "ability").
+## mirror_return: guarding absorbs enemy jutsu (up to MIRROR_HOLD); the
+## open-eye chord throws them all back at MIRROR_POWER times their power.
+const ABILITIES := {"mirror_return": "Guard to absorb enemy jutsu, then %s + %s to throw them back"}
+const MIRROR_HOLD := 3
+const MIRROR_POWER := 1.5
+
 enum Phase { READY, ACTIVE, RECOVERING }
 
 ## The open form's perks, which Perks adds to the clan's and eye art's.
@@ -27,6 +34,8 @@ var time_left := 0.0
 var awakened := false
 ## The pattern on the player's irises (null if the model has none).
 var pattern: ShaderMaterial
+## Jutsu the Mirror Eye has absorbed: {element, power, speed, radius, style}.
+var held: Array[Dictionary] = []
 
 var _glow: OmniLight3D
 var _fade: Tween
@@ -108,10 +117,69 @@ func try_open() -> bool:
 	return true
 
 
+## The open form's ability ("" for none).
+func ability() -> String:
+	return str(form().get("ability", "")) if phase == Phase.ACTIVE and awakened else ""
+
+
+## A projectile is about to hit the player: the awakened Mirror Eye takes it
+## in if the player is guarding. Returns whether it was absorbed.
+func try_absorb(p: JutsuProjectile) -> bool:
+	if ability() != "mirror_return" or player.state != Player.State.GUARDING or p.style == &"kunai":
+		return false
+	if held.size() >= MIRROR_HOLD:
+		return false
+	held.append({"element": p.element, "power": p.power, "speed": p.speed, "radius": p.radius, "style": p.style})
+	var c := Color(str(art()["color"]))
+	var facing := (p.global_position - player.global_position)
+	facing.y = 0.0
+	Vfx.shockwave(player.get_parent(), p.global_position, c, 1.2, 0.35, facing.normalized() if facing.length() > 0.01 else Vector3.FORWARD)
+	Vfx.flash(player.get_parent(), p.global_position, c, 1.3, 0.2)
+	Sfx.play(&"guard", 0.0, 0.1)
+	player.feedback.emit("Absorbed (%d/%d)" % [held.size(), MIRROR_HOLD], &"info")
+	changed.emit()
+	return true
+
+
+## Throws everything the Mirror Eye holds back at the player's target.
+## Returns whether anything was thrown.
+func release() -> bool:
+	if ability() != "mirror_return" or held.is_empty():
+		return false
+	var target := player.aim_target()
+	var world := player.get_parent()
+	var aim := player.caster.aim_direction(target)
+	var origin := player.global_position + Vector3.UP * 1.2 + aim * 0.8
+	for i in held.size():
+		var h: Dictionary = held[i]
+		var p := JutsuProjectile.new()
+		p.element = int(h["element"])
+		p.power = float(h["power"]) * MIRROR_POWER * Perks.damage_multiplier(p.element)
+		p.speed = float(h["speed"]) * 1.2
+		p.radius = float(h["radius"])
+		p.style = h["style"]
+		p.max_range = 40.0
+		p.caster = player
+		p.target = target
+		p.homing_rate = 6.0
+		p.direction = aim.rotated(Vector3.UP, (i - (held.size() - 1) * 0.5) * JutsuCaster.FAN_SPREAD).normalized()
+		world.add_child(p)
+		p.global_position = origin
+	Vfx.shockwave(world, origin, Color(str(art()["color"])), 1.6, 0.4, aim)
+	Sfx.play(&"cast_" + Element.NAMES[int(held[0]["element"])], 2.0)
+	if player.animator:
+		player.animator.cast()
+	player.feedback.emit("Returned %d jutsu" % held.size(), &"info")
+	held.clear()
+	changed.emit()
+	return true
+
+
 ## Closes the eye now (time ran out, or the player went down).
 func close() -> void:
 	if phase != Phase.ACTIVE:
 		return
+	held.clear()
 	phase = Phase.RECOVERING
 	time_left = Perks.eye_cooldown()
 	boost = {}

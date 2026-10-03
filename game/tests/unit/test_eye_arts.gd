@@ -20,7 +20,7 @@ func before_each() -> void:
 
 # Not a coroutine: the runner starts the next test without waiting.
 func after_each() -> void:
-	for action: StringName in [&"quick_shift", &"charge_chakra"]:
+	for action: StringName in [&"quick_shift", &"charge_chakra", &"guard"]:
 		Input.action_release(action)
 	if is_instance_valid(scene):
 		scene.queue_free()
@@ -159,3 +159,57 @@ func test_the_pattern_finds_a_vroid_models_irises() -> void:
 	EyePattern.detach(model)
 	assert_true(irises[0].next_pass == null, "and taken off again")
 	model.queue_free()
+
+
+## A fire jutsu from `foe` flying at the player from a couple of metres.
+func _incoming(foe: Node3D) -> JutsuProjectile:
+	var p := JutsuProjectile.new()
+	p.element = Element.FIRE
+	p.power = 20.0
+	p.caster = foe
+	var from := player.global_position + Vector3(0, 1.1, -2.5)
+	p.direction = (player.global_position + Vector3.UP * 1.1 - from).normalized()
+	scene.add_child(p)
+	p.global_position = from
+	return p
+
+
+func test_awakened_mirror_eye_absorbs_and_returns_jutsu() -> void:
+	await _load("mirror_eye")
+	Game.mark_chapter_done(Perks.awaken_after())
+	var foe := _foe()
+	assert_true(player.eye_mode.try_open())
+	EyeSequence.active.skip()
+	await physics_frames(3)
+	assert_eq(player.eye_mode.ability(), "mirror_return")
+	Input.action_press(&"guard")
+	await physics_frames(3)
+	var health := player.stats.health
+	_incoming(foe)
+	await physics_frames(12)
+	assert_eq(player.eye_mode.held.size(), 1, "the guard swallowed the jutsu")
+	assert_near(player.stats.health, health, 0.01, "and it did no harm")
+	Input.action_release(&"guard")
+	await physics_frames(2)
+	assert_true(player.eye_mode.release(), "the chord throws it back")
+	assert_true(player.eye_mode.held.is_empty())
+	var mine := scene.find_children("*", "JutsuProjectile", true, false).filter(
+		func(n: Node) -> bool: return (n as JutsuProjectile).caster == player)
+	assert_eq(mine.size(), 1, "one returned jutsu, the player's now")
+	assert_near((mine[0] as JutsuProjectile).power, 20.0 * EyeArtMode.MIRROR_POWER * Perks.damage_multiplier(Element.FIRE), 0.01,
+		"and stronger")
+
+
+func test_only_the_awakened_mirror_eye_absorbs() -> void:
+	await _load("mirror_eye")
+	var foe := _foe()
+	assert_true(player.eye_mode.try_open())
+	EyeSequence.active.skip()
+	await physics_frames(3)
+	assert_eq(player.eye_mode.ability(), "", "its first form has no ability")
+	Input.action_press(&"guard")
+	await physics_frames(3)
+	_incoming(foe)
+	await physics_frames(12)
+	assert_true(player.eye_mode.held.is_empty(), "nothing absorbed before awakening")
+

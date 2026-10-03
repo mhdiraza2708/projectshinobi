@@ -563,6 +563,8 @@ func _refresh_eye() -> void:
 	match mode.phase:
 		EyeArtMode.Phase.ACTIVE:
 			_eye_text.text = "%s  %ds" % [EyeArtMode.form().get("name", art["name"]), ceili(mode.time_left)]
+			if mode.ability() == "mirror_return":
+				_eye_text.text += "  ·  %s" % ("◆".repeat(mode.held.size()) + "◇".repeat(EyeArtMode.MIRROR_HOLD - mode.held.size()))
 			_eye_bar.modulate = Color(1, 1, 1).lerp(Color(1.4, 1.4, 1.4), 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.01))
 		EyeArtMode.Phase.RECOVERING:
 			_eye_text.text = "resting %ds" % ceili(mode.time_left)

@@ -18,7 +18,8 @@
 			"active": {"name": "Still Surface", "seconds": 12, "cost": 25,
 				"perks": {"dash_cooldown": -0.4, "chakra_regen": 0.5, "move_speed": 0.15}},
 			"awakened": {"name": "Twin Mirror Eye", "kanji": "鑑", "seconds": 15, "cost": 35,
-				"perks": {"dash_cooldown": -0.6, "chakra_regen": 1.0, "move_speed": 0.25, "damage": 0.15}}
+				"perks": {"dash_cooldown": -0.6, "chakra_regen": 1.0, "move_speed": 0.25, "damage": 0.15},
+				"ability": "mirror_return"}
 		},
 		{
 			"id": "seal_eye", "name": "Seal Eye", "kanji": "印", "color": "#9a6fe0", "pattern": "seal",

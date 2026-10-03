@@ -113,6 +113,9 @@ controls can be remapped.
   it just flashes. Clearing Part One **awakens** it: a second pattern
   (Sky Roc Eye, Twin Mirror Eye, Star Seal Eye, Lotus Eye), stronger perks
   and its own awakening cinematic. All four patterns are original.
+  The awakened **Mirror Eye** also gains **Mirror Return**: while it's open,
+  guarding swallows enemy jutsu (up to three) instead of blocking them, and
+  LB + Y throws them all back at your target, half again as strong.
 - **The ultimate meter keeps its charge** from one fight to the next.
 - **Character customization** (Pause → Customize): pick from your
   VRoid roster, tint hair/eyes/skin/outfit, add ninja gear fitted to the

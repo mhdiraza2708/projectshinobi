@@ -29,6 +29,8 @@ const T_JUTSU := 6
 ## The order the tabs sit in during creation (what you decide first, first).
 const CREATION_ORDER := [T_CLAN, T_EYES, T_IDENTITY, T_LOOK, T_COLOURS, T_GEAR, T_JUTSU]
 ## What "Reset look" leaves alone: who you are, not how you look.
+## A clan or eye art card's height before its text asks for more.
+const CARD_HEIGHT := 138.0
 const KEPT_ON_RESET: Array[StringName] = [&"created", &"clan", &"eye_art", &"loadouts", &"loadout", &"affinity", &"name"]
 ## Multiplied onto the model's own colours, so each reads as a tint.
 const PALETTE := [
@@ -486,6 +488,9 @@ func _build_eyes() -> Control:
 			InputDevice.glyph(&"charge_chakra"), art["active"]["name"]])
 		lines.append(("Awakened: %s" if EyeArtMode.awakening_unlocked() else "Awakens after Part One: %s")
 			% art["awakened"]["name"])
+		var ability := str(art["awakened"].get("ability", ""))
+		if ability != "":
+			lines.append(EyeArtMode.ABILITIES[ability] % [InputDevice.glyph(&"quick_shift"), InputDevice.glyph(&"charge_chakra")])
 		list.add_child(_card(art["kanji"], Color(art["color"]), art["name"], "Eye art", art["blurb"],
 			lines, art["id"] == current, _pick_eye.bind(art["id"])))
 	list.add_child(_hint("Your eyes change colour with your eye art. Eye arts are original to this game: they sharpen how you aim, dodge, guard or read seals."))
@@ -512,7 +517,7 @@ func _build_jutsu() -> Control:
 func _card(kanji: String, color: Color, title: String, tag: String, blurb: String, perks: PackedStringArray,
 		is_selected: bool, on_pick: Callable) -> Button:
 	var b := Button.new()
-	b.custom_minimum_size = Vector2(0, 138)
+	b.custom_minimum_size = Vector2(0, CARD_HEIGHT)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.pressed.connect(on_pick)
 	var focus := StyleBoxFlat.new()
@@ -558,6 +563,9 @@ func _card(kanji: String, color: Color, title: String, tag: String, blurb: Strin
 		text.add_child(perk_label)
 	for child in text.find_children("*", "Control", true, false):
 		(child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# The card grows with its text (wrapped lines would spill out of it).
+	text.minimum_size_changed.connect(func() -> void:
+		b.custom_minimum_size.y = maxf(CARD_HEIGHT, text.get_combined_minimum_size().y + 20.0))
 	return b
 
 

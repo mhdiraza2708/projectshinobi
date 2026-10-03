@@ -251,7 +251,7 @@ func _state_free(delta: float) -> void:
 		_sprinting = false
 	# Page shift + Charge opens the eye art instead of charging.
 	if Input.is_action_pressed(&"quick_shift"):
-		if Input.is_action_just_pressed(&"charge_chakra"):
+		if Input.is_action_just_pressed(&"charge_chakra") and not eye_mode.release():
 			eye_mode.try_open()
 	elif Input.is_action_pressed(&"charge_chakra") and is_on_floor():
 		_enter(State.CHARGING)
@@ -308,6 +308,9 @@ func _state_charging(delta: float) -> void:
 
 
 func _state_guarding(delta: float) -> void:
+	# Mirror Eye: release what the guard absorbed without letting go of it.
+	if Input.is_action_pressed(&"quick_shift") and Input.is_action_just_pressed(&"charge_chakra"):
+		eye_mode.release()
 	stats.guard_multiplier = guard_damage_multiplier
 	# Still Eye: a guard raised just before a blow takes none of it.
 	if Perks.has(&"perfect_guard") and _state_time < Perks.PERFECT_GUARD_WINDOW:
@@ -684,6 +687,11 @@ func _update_animator() -> void:
 
 
 # --- Clan and eye art perks ----------------------------------------------------
+
+## An enemy jutsu is about to hit: the eye art may absorb it.
+func try_absorb(p: JutsuProjectile) -> bool:
+	return eye_mode != null and eye_mode.try_absorb(p)
+
 
 ## Re-reads the perks (after the eye art opens or closes).
 func refresh_perks() -> void:

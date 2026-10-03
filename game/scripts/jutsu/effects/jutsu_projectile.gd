@@ -85,6 +85,11 @@ func _impact(collider: Node) -> void:
 	var victim := Combat.find_hittable(collider)
 	if not is_instance_valid(caster):
 		caster = null
+	# Something that can swallow jutsu (the awakened Mirror Eye) may take it.
+	if victim and victim.has_method(&"try_absorb") and victim.try_absorb(self):
+		Vfx.linger(_visual, get_parent())
+		queue_free()
+		return
 	if victim and Combat.apply_hit(victim, power, element, caster) > 0.0 \
 			and is_instance_valid(caster) and caster.has_method(&"notify_hit"):
 		caster.notify_hit(victim, &"kunai" if style == &"kunai" else &"jutsu")

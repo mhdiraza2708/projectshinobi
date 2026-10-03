@@ -70,6 +70,10 @@ static func reload() -> void:
 			for key: String in f["perks"]:
 				if not PERK_TEXT.has(key) and not key.begins_with("damage_"):
 					errors.append("eye art %s: %s has unknown perk '%s'" % [art["id"], form_key, key])
+		for form_key: String in ["active", "awakened"]:
+			var ability := str((art[form_key] as Dictionary).get("ability", ""))
+			if ability != "" and not EyeArtMode.ABILITIES.has(ability):
+				errors.append("eye art %s: %s has unknown ability '%s'" % [art["id"], form_key, ability])
 		if not (art["awakened"] as Dictionary).has("kanji"):
 			errors.append("eye art %s: the awakened form needs a kanji" % art["id"])
 	var art_ids := _arts.map(func(a: Dictionary) -> String: return a["id"])
