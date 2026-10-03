@@ -661,6 +661,9 @@ func _pick_grid(options: Array, current: Variant, on_pick: Callable) -> GridCont
 		var b := _choice(opt[0], value == current, func() -> void: on_pick.call(value))
 		b.custom_minimum_size.x = 220
 		b.clip_text = true
+		# A name too long for the button ends in an ellipsis, not mid-word.
+		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		b.tooltip_text = str(opt[0])
 		grid.add_child(b)
 	return grid
 

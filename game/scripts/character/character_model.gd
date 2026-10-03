@@ -154,7 +154,7 @@ static func roster() -> Array[Dictionary]:
 		for file: String in files:
 			if file.get_extension().to_lower() in ["vrm", "glb"]:
 				out.append({"path": ROSTER_DIR.path_join(file), "name": display_name(file)})
-	out.append({"path": PLACEHOLDER_MODEL, "name": "Godette (low-poly)"})
+	out.append({"path": PLACEHOLDER_MODEL, "name": "Godette"})
 	return out
 
 
