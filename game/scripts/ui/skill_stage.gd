@@ -244,7 +244,7 @@ func _process(delta: float) -> void:
 ## One cut of a three-cut combo in the air, with the blade's arc.
 func _swing() -> void:
 	if model.animator:
-		model.animator.strike()
+		model.animator.strike(_cut)
 	var facing := model.global_basis.z
 	facing.y = 0.0
 	var origin := Transform3D(Basis.looking_at(-facing.normalized(), Vector3.UP), model.global_position + Vector3.UP * 1.1)

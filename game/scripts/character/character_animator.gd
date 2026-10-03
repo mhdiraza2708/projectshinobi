@@ -71,6 +71,11 @@ var airborne := false:
 var run_speed := 7.0
 ## Plays the talking idle while standing (story characters speaking).
 var talking := false
+## The character's gear: with a sword at the hip, strikes draw it and cut,
+## and it goes home again after a quiet moment or to weave seals.
+var gear: CharacterGear
+## Seconds without a cut before the sword is sheathed.
+const SHEATHE_AFTER := 4.0
 
 var poser: HumanoidPoser
 var clips: AnimationPlayer
@@ -79,6 +84,12 @@ var library: AnimationLibrary
 var _action := &""
 var _action_left := 0.0
 var _strike_flip := false
+var _since_cut := INF
+var _combo := -1
+## Seconds until the sword changes hands mid-draw or mid-sheathe (-1: none),
+## and which way (true: into the hand).
+var _swap_left := -1.0
+var _swap_to := false
 
 static var _library_cache: Dictionary = {}
 
@@ -123,7 +134,36 @@ func current_clip() -> StringName:
 	return StringName(clips.current_animation) if clips else &""
 
 
-func strike() -> void:
+func has_sword() -> bool:
+	return gear != null and gear.has_sword() and poser != null and poser.active
+
+
+## The sword is in the hand (or on its way there).
+func sword_drawn() -> bool:
+	return has_sword() and (gear.is_drawn() or (_swap_left >= 0.0 and _swap_to))
+
+
+## A blow: with a sword, the first draws it from the hip in a cut and the
+## next are cuts (`cut`: which of the combo, or the next one); without, a
+## jab or cross.
+func strike(cut := -1) -> void:
+	if has_sword():
+		_since_cut = 0.0
+		if not sword_drawn():
+			_combo = -1
+			poser.hilt = gear.hilt_grip
+			poser.draw()
+			_swap_left = HumanoidPoser.DRAW_TIME * HumanoidPoser.DRAW_REACH
+			_swap_to = true
+			return
+		if poser.is_drawing():
+			# The draw is this cut.
+			return
+		# Struck again while putting it away: it stays out.
+		_swap_left = -1.0
+		_combo = cut if cut >= 0 else (_combo + 1) % 3
+		poser.cut(_combo)
+		return
 	if _can_act(&"strike_1"):
 		_strike_flip = not _strike_flip
 		_play_action(&"strike_2" if _strike_flip else &"strike_1", STRIKE_SPEED, 0.06)
@@ -197,6 +237,8 @@ func _landed() -> void:
 
 
 func _process(delta: float) -> void:
+	if has_sword():
+		_update_sword(delta)
 	if clips == null:
 		return
 	if _action != &"":
@@ -210,6 +252,25 @@ func _process(delta: float) -> void:
 	clips.speed_scale = _speed_for(want)
 	if clips.current_animation != want:
 		clips.play(want, BLEND_TIME)
+
+
+func _update_sword(delta: float) -> void:
+	_since_cut += delta
+	poser.hilt = gear.hilt_grip
+	if _swap_left >= 0.0:
+		_swap_left -= delta
+		if _swap_left < 0.0:
+			gear.set_drawn(_swap_to)
+	elif gear.is_drawn():
+		if pose == HumanoidPoser.Pose.WEAVE or pose == HumanoidPoser.Pose.CHARGE:
+			# Seals and charging need both hands: home at once.
+			gear.set_drawn(false)
+		elif _since_cut > SHEATHE_AFTER and pose == HumanoidPoser.Pose.LOCOMOTION and not airborne \
+				and _action != &"death":
+			poser.sheathe()
+			_swap_left = HumanoidPoser.SHEATHE_TIME * HumanoidPoser.SHEATHE_HOME
+			_swap_to = false
+	poser.sword_drawn = gear.is_drawn()
 
 
 ## Leg lengths per second the character is covering.

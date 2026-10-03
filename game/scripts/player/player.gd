@@ -525,15 +525,17 @@ func _strike() -> void:
 	_strike_combo = (_strike_combo + 1) % 3
 	if is_instance_valid(lock_target):
 		_face_now(lock_target.global_position - global_position)
+	# With a sword at the hip the first blow draws it in a level cut.
+	var drawing := animator != null and animator.has_sword() and not animator.sword_drawn()
 	if animator:
-		animator.strike()
+		animator.strike(_strike_combo)
 	Sfx.play(&"strike_whoosh", -2.0, 0.1)
 	var forward := -global_basis.z
 	velocity += forward * 3.0
 	var reach := 1.0 + Perks.value(&"strike_reach")
 	var center := global_position + forward * strike_reach * reach + Vector3.UP * 1.1
 	# The blade's arc: each blow of the combo cuts at a different angle.
-	var tilt: float = [0.7, -0.7, 1.35][_strike_combo]
+	var tilt: float = 0.05 if drawing else [0.7, -0.7, 1.35][_strike_combo]
 	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1), Color(0.3, 0.55, 1.0), 2.2, tilt)
 	var damage := strike_damage * (1.0 + 0.25 * _strike_combo) * (1.0 + stats.modifier(&"attack_power")) \
 		* (1.0 + Perks.value(&"strike_damage"))

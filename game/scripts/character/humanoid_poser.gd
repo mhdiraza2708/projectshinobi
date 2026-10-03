@@ -49,6 +49,16 @@ var _flick_t := 0.0
 var _cast_t := 0.0
 var _flinch_t := 0.0
 var _cur: Dictionary = {}               # smoothed pose parameters
+## A sword in the right hand: the arm holds it while moving and strikes are
+## cuts (set by CharacterAnimator from the gear).
+var sword_drawn := false
+## The sheathed sword's grip (CharacterGear.hilt_grip), where the hand goes
+## to draw and to sheathe.
+var hilt: Node3D
+var _cut_t := 0.0
+var _cut := 0
+var _draw_t := 0.0
+var _sheathe_t := 0.0
 var _ready_for_pose := false
 
 
@@ -95,6 +105,47 @@ func canonical_frame() -> Basis:
 func strike() -> void:
 	_strike_t = 0.24
 	_strike_side = -_strike_side
+
+
+const CUT_TIME := 0.26
+## Drawing: the hand reaches the hilt (DRAW_REACH of the way), then the
+## blade comes out in a cut across the front.
+const DRAW_TIME := 0.36
+const DRAW_REACH := 0.35
+## Sheathing: the blade slides home (SHEATHE_HOME of the way), the hand lets go.
+const SHEATHE_TIME := 0.34
+const SHEATHE_HOME := 0.7
+
+
+## A cut with the drawn sword: 0 down across from the right shoulder, 1
+## rising back, 2 straight down from overhead.
+func cut(index: int) -> void:
+	_cut = posmod(index, 3)
+	_cut_t = CUT_TIME
+	_draw_t = 0.0
+	_sheathe_t = 0.0
+
+
+## The right hand goes to the hilt at the hip and draws in a cut.
+func draw() -> void:
+	_draw_t = DRAW_TIME
+	_cut_t = 0.0
+	_sheathe_t = 0.0
+
+
+## The blade goes home into the scabbard.
+func sheathe() -> void:
+	_sheathe_t = SHEATHE_TIME
+	_draw_t = 0.0
+	_cut_t = 0.0
+
+
+func is_drawing() -> bool:
+	return _draw_t > 0.0
+
+
+func is_sheathing() -> bool:
+	return _sheathe_t > 0.0
 
 
 ## Overhand right-handed throw (kunai).
@@ -247,13 +298,16 @@ func _target_params() -> Dictionary:
 		p["use_legs"] = false
 
 	if _throw_t > 0.0:
-		# Wind up behind the head, then whip forward.
+		# Wind up behind the head, then whip forward (with the left hand
+		# while the right holds a sword).
 		var t := 1.0 - _throw_t / THROW_TIME
-		var arm := Vector3(0.18, 0.5, 0.35).lerp(Vector3(0.05, 0.02, -0.97), smoothstep(0.25, 0.75, t))
-		p["arm_R"] = arm
-		p["pole_R"] = Vector3(1, -0.4, 0.6)
-		p["hand_R"] = Vector3(0, 0.3, -1)
-		p["twist"] += lerpf(-0.3, 0.35, t)
+		var sx := -1.0 if sword_drawn else 1.0
+		var side := "L" if sword_drawn else "R"
+		var arm := Vector3(0.18 * sx, 0.5, 0.35).lerp(Vector3(0.05 * sx, 0.02, -0.97), smoothstep(0.25, 0.75, t))
+		p["arm_" + side] = arm
+		p["pole_" + side] = Vector3(sx, -0.4, 0.6)
+		p["hand_" + side] = Vector3(0, 0.3, -1)
+		p["twist"] += lerpf(-0.3, 0.35, t) * sx
 		p["curl"] = maxf(p["curl"], 1.1)
 		p["use_arms"] = true
 		p["use_spine"] = true
@@ -289,7 +343,151 @@ func _target_params() -> Dictionary:
 		p["twist"] += 0.4 * sx * punch
 		p["curl"] = maxf(p["curl"], 1.3 * punch)
 		p["use_arms"] = true
+	if sword_drawn or _draw_t > 0.0 or _sheathe_t > 0.0:
+		_sword(p)
 	return p
+
+
+# --- The sword -------------------------------------------------------------------
+# Each key: the right arm's goal (arm lengths from the shoulder), the blade's
+# direction (out of the thumb side of the fist) and the spine's twist, in
+# the canonical frame (facing -Z, right +X). The edge (the knuckles) always
+# leads the blade's motion, so it's worked out, never keyed.
+
+## Down across from above the right shoulder to the left hip (kesa-giri).
+const CUT_DOWN := [
+	[Vector3(0.42, 0.38, -0.3), Vector3(0.35, 0.85, 0.4), -0.3],
+	[Vector3(0.05, -0.08, -0.88), Vector3(-0.45, -0.1, -0.9), 0.1],
+	[Vector3(-0.42, -0.58, -0.48), Vector3(-0.55, -0.7, 0.45), 0.45],
+]
+## Rising back from the left hip to above the right shoulder.
+const CUT_UP := [
+	[Vector3(-0.4, -0.58, -0.48), Vector3(-0.55, -0.7, 0.45), 0.45],
+	[Vector3(0.1, -0.1, -0.9), Vector3(0.45, 0.1, -0.9), 0.0],
+	[Vector3(0.5, 0.38, -0.3), Vector3(0.35, 0.85, 0.4), -0.35],
+]
+## Straight down from overhead (shomen), the finisher.
+const CUT_OVERHEAD := [
+	[Vector3(0.12, 0.78, -0.12), Vector3(0.0, 0.5, 0.85), 0.0],
+	[Vector3(0.06, 0.05, -0.96), Vector3(0.0, 0.15, -1.0), 0.05],
+	[Vector3(0.02, -0.55, -0.72), Vector3(0.0, -0.75, -0.65), 0.05],
+]
+## Along the worn scabbard, hilt end first (CharacterGear.SCABBARD_ALONG).
+const SCABBARD := Vector3(0.2, 0.5, -1.0)
+## The draw (nukitsuke): out of the scabbard with the blade still pointing
+## back along it, the tip swinging out past the left, then level across the
+## front to the right.
+const DRAW_CUT := [
+	[Vector3(-0.3, -0.62, -0.55), -SCABBARD, 0.45],
+	[Vector3(-0.22, -0.42, -0.78), Vector3(-0.9, -0.1, -0.45), 0.35],
+	[Vector3(0.18, -0.3, -0.92), Vector3(0.3, -0.05, -0.95), 0.0],
+	[Vector3(0.62, -0.2, -0.55), Vector3(0.95, 0.0, 0.3), -0.35],
+]
+## Home again: across the front, the tip to the scabbard's mouth, and in.
+const SHEATHE_KEYS := [
+	[Vector3(0.25, -0.5, -0.6), Vector3(-0.2, -0.3, -0.95), 0.0],
+	[Vector3(-0.22, -0.48, -0.72), Vector3(-0.95, -0.2, -0.25), 0.3],
+	[Vector3(-0.3, -0.62, -0.55), -SCABBARD, 0.4],
+]
+
+
+func _sword(p: Dictionary) -> void:
+	_sword_hold(p)
+	if _draw_t > 0.0:
+		var t := 1.0 - _draw_t / DRAW_TIME
+		if t < DRAW_REACH:
+			# Across to the hilt at the left hip; the blade's edge is up, as
+			# it's worn.
+			var k := smoothstep(0.0, DRAW_REACH, t)
+			_sword_key(p, DRAW_CUT[0][0], DRAW_CUT[0][1], Vector3.UP, DRAW_CUT[0][2] * k)
+			p["hilt_w"] = k
+			p["snap_R"] = true
+		else:
+			_sword_keys(p, DRAW_CUT, smoothstep(DRAW_REACH, 1.0, t))
+			p["hilt_w"] = 1.0 - smoothstep(DRAW_REACH, DRAW_REACH + 0.2, t)
+	elif _sheathe_t > 0.0:
+		var t := 1.0 - _sheathe_t / SHEATHE_TIME
+		if t < SHEATHE_HOME:
+			var k := smoothstep(0.0, SHEATHE_HOME, t)
+			_sword_keys(p, SHEATHE_KEYS, k)
+			p["hilt_w"] = smoothstep(0.5, 1.0, k)
+		else:
+			# Let go: the hand falls back to the side.
+			p["use_arm_R"] = true
+			p["hilt_w"] = 1.0 - smoothstep(SHEATHE_HOME, 1.0, t)
+			p["curl_R"] = lerpf(1.25, 0.35, smoothstep(SHEATHE_HOME, 1.0, t))
+	elif _cut_t > 0.0:
+		var keys: Array = [CUT_DOWN, CUT_UP, CUT_OVERHEAD][_cut]
+		var t := 1.0 - _cut_t / CUT_TIME
+		# A quick start, all the speed through the middle, a held finish.
+		_sword_keys(p, keys, ease(t, 0.6))
+		if _cut == 2:
+			p["lean"] = float(p["lean"]) + lerpf(-0.1, 0.32, t)
+			p["hips_drop"] = float(p["hips_drop"]) + 0.06 * sin(t * PI)
+
+
+## Holding the drawn sword: low and forward standing still, trailing back
+## while running (the shinobi run), swept behind in a sprint.
+func _sword_hold(p: Dictionary) -> void:
+	if not sword_drawn and _draw_t <= 0.0:
+		p["use_arm_R"] = p["use_arms"]
+		return
+	var arm := Vector3(0.32, -0.62, -0.42)
+	var blade := Vector3(-0.1, -0.45, -1.0)
+	var edge := Vector3(0.0, -1.0, 0.45)
+	if pose == Pose.GUARD:
+		# A blade block: held level across in front of the head.
+		arm = Vector3(0.12, 0.3, -0.58)
+		blade = Vector3(-1.0, 0.18, -0.12)
+		edge = Vector3(0.0, 0.6, -0.8)
+	elif airborne:
+		arm = Vector3(0.6, -0.45, 0.1)
+		blade = Vector3(0.2, -0.4, 1.0)
+		edge = Vector3(0.0, -1.0, -0.4)
+	elif speed_ratio > 1.05:
+		arm = Vector3(0.2, -0.45, 0.82)
+		blade = Vector3(0.1, 0.1, 1.0)
+		edge = Vector3(0.0, -1.0, 0.1)
+	elif speed_ratio > 0.05:
+		arm = Vector3(0.28, -0.75, 0.15)
+		blade = Vector3(0.15, -0.45, 1.0)
+		edge = Vector3(0.0, -1.0, -0.45)
+	_sword_key(p, arm, blade, edge, 0.0)
+
+
+func _sword_key(p: Dictionary, arm: Vector3, blade: Vector3, edge: Vector3, twist: float) -> void:
+	var b := blade.normalized()
+	var e := edge - b * edge.dot(b)
+	p["arm_R"] = arm
+	p["thumb_R"] = b
+	p["hand_R"] = e.normalized() if e.length_squared() > 1e-6 else Vector3.DOWN
+	p["pole_R"] = Vector3(1.0, -0.6, 0.4)
+	p["curl_R"] = 1.25
+	p["use_arm_R"] = true
+	p["twist"] = float(p["twist"]) + twist
+	p["use_spine"] = true
+	# Only the sword arm: the other keeps what the clip or pose gives it.
+	if not p.has("use_arm_L"):
+		p["use_arm_L"] = p["use_arms"]
+
+
+## Through evenly spaced keys at `t` (0-1), the edge leading the way the
+## blade is turning.
+func _sword_keys(p: Dictionary, keys: Array, t: float) -> void:
+	var span := float(keys.size() - 1)
+	var i := mini(int(t * span), keys.size() - 2)
+	var u := clampf(t * span - i, 0.0, 1.0)
+	var a: Array = keys[i]
+	var b: Array = keys[i + 1]
+	var from := (a[1] as Vector3).normalized()
+	var to := (b[1] as Vector3).normalized()
+	var blade := from.slerp(to, u)
+	# Toward where the blade is going (or on from where it came, at the end).
+	var edge := to - blade * to.dot(blade)
+	if edge.length_squared() < 1e-4:
+		edge = blade * blade.dot(from) - from
+	_sword_key(p, (a[0] as Vector3).lerp(b[0], u), blade, edge, lerpf(a[2], b[2], u))
+	p["snap_R"] = true
 
 
 # --- Solve ---------------------------------------------------------------------
@@ -303,21 +501,33 @@ func _process_modification_with_delta(delta: float) -> void:
 	_flick_t = maxf(0.0, _flick_t - delta)
 	_cast_t = maxf(0.0, _cast_t - delta)
 	_flinch_t = maxf(0.0, _flinch_t - delta)
+	_cut_t = maxf(0.0, _cut_t - delta)
+	_draw_t = maxf(0.0, _draw_t - delta)
+	_sheathe_t = maxf(0.0, _sheathe_t - delta)
 	if speed_ratio > 0.05 and not airborne:
 		_phase += delta * lerpf(6.0, 12.5, clampf(speed_ratio, 0.0, 1.6) / 1.6)
 
 	var target := _target_params()
 	var w := 1.0 - exp(-BLEND_RATE * delta)
+	# A cut is too quick for the usual smoothing: the sword arm follows it
+	# within a couple of frames.
+	var snap: bool = target.get("snap_R", false)
+	var fast := 1.0 - exp(-60.0 * delta)
 	for key: String in target:
 		var v: Variant = target[key]
-		if v is Vector3:
+		if snap and (key.ends_with("_R") or key in ["twist", "hilt_w"]) and (v is Vector3 or v is float) \
+				and typeof(_cur.get(key)) == typeof(v):
+			_cur[key] = (_cur[key] as Vector3).lerp(v, fast) if v is Vector3 else lerpf(_cur[key], v, fast)
+		elif v is Vector3:
 			_cur[key] = (_cur[key] as Vector3).lerp(v, w) if _cur.get(key) is Vector3 else v
 		elif v is float:
 			_cur[key] = lerpf(_cur[key], v, w) if _cur.get(key) is float else v
 		else:
 			_cur[key] = v
-	if not target.has("seal"):
-		_cur.erase("seal")
+	# Optional keys (the seal, one arm only, the hilt) end when not asked for.
+	for key: String in _cur.keys():
+		if not target.has(key):
+			_cur.erase(key)
 	var p := _cur
 
 	if p["use_legs"]:
@@ -341,20 +551,26 @@ func _process_modification_with_delta(delta: float) -> void:
 			_two_bone(StringName(pre + "UpperLeg"), StringName(pre + "LowerLeg"), StringName(pre + "Foot"),
 				foot, _frame * Vector3(0, 0, -1))
 
-	if p["use_arms"]:
-		var shoulder_mid := (_pos(&"LeftUpperArm") + _pos(&"RightUpperArm")) * 0.5
-		for side in ["L", "R"]:
-			var pre := "Left" if side == "L" else "Right"
-			var goal: Vector3
-			if p.has("seal"):
-				var sx := -0.035 if side == "L" else 0.035
-				goal = shoulder_mid + _frame * ((p["seal"] + Vector3(sx, 0, 0)) * _arm_len)
-			else:
-				goal = _pos(StringName(pre + "UpperArm")) + _frame * (p["arm_" + side] * _arm_len)
-			_two_bone(StringName(pre + "UpperArm"), StringName(pre + "LowerArm"), StringName(pre + "Hand"),
-				goal, _frame * p["pole_" + side])
-			_aim_hand(pre, _frame * p["hand_" + side], _frame * p["thumb_" + side])
-			_curl_fingers(pre, p["curl"])
+	var shoulder_mid := (_pos(&"LeftUpperArm") + _pos(&"RightUpperArm")) * 0.5
+	for side in ["L", "R"]:
+		if not p.get("use_arm_" + side, p["use_arms"]):
+			continue
+		var pre := "Left" if side == "L" else "Right"
+		var goal: Vector3
+		if p.has("seal"):
+			var sx := -0.035 if side == "L" else 0.035
+			goal = shoulder_mid + _frame * ((p["seal"] + Vector3(sx, 0, 0)) * _arm_len)
+		else:
+			goal = _pos(StringName(pre + "UpperArm")) + _frame * (p["arm_" + side] * _arm_len)
+		if side == "R" and float(p.get("hilt_w", 0.0)) > 0.001 and is_instance_valid(hilt):
+			# The wrist sits a hand's breadth short of the grip it holds.
+			var grip := _skel.global_transform.affine_inverse() * hilt.global_position
+			grip -= (_frame * (p["hand_R"] as Vector3)).normalized() * _arm_len * 0.12
+			goal = goal.lerp(grip, p["hilt_w"])
+		_two_bone(StringName(pre + "UpperArm"), StringName(pre + "LowerArm"), StringName(pre + "Hand"),
+			goal, _frame * p["pole_" + side])
+		_aim_hand(pre, _frame * p["hand_" + side], _frame * p["thumb_" + side])
+		_curl_fingers(pre, p.get("curl_" + side, p["curl"]))
 
 
 func _rest(bone: StringName) -> Transform3D:
@@ -422,7 +638,11 @@ func _aim_hand(pre: String, fingers: Vector3, thumb: Vector3) -> void:
 		return
 	var t := _skel.get_bone_global_pose(hand)
 	var axis := (_pos(mid) - t.origin).normalized()
-	var cur := _pos(thumb_bone) - t.origin
+	# The thumb side as the hand itself carries it (from the rest pose), not
+	# where a clip has bent the thumb: steady, and the same side a drawn
+	# sword is fitted to (CharacterGear._grip_in_hand).
+	var rest := _skel.get_bone_global_rest(hand)
+	var cur := t.basis * (rest.basis.inverse() * (_skel.get_bone_global_rest(_b[thumb_bone]).origin - rest.origin))
 	cur = (cur - axis * cur.dot(axis)).normalized()
 	var want := (thumb - axis * thumb.dot(axis)).normalized()
 	if cur.length_squared() < 0.5 or want.length_squared() < 0.5:

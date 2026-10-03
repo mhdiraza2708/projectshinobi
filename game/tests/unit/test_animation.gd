@@ -15,6 +15,16 @@ func _model(path := CharacterModel.DEFAULT_MODEL) -> CharacterModel:
 	return model
 
 
+## A model in its own look (not the Profile's), with or without a sword.
+func _armed(back: String) -> CharacterModel:
+	model = CharacterModel.new()
+	model.model_path = CharacterModel.DEFAULT_MODEL
+	model.use_profile = false
+	model.style = {"back": back}
+	root.add_child(model)
+	return model
+
+
 func after_each() -> void:
 	if is_instance_valid(model):
 		model.queue_free()
@@ -66,8 +76,8 @@ func test_walking_feet_keep_pace_with_the_ground() -> void:
 	assert_near(anim.clips.speed_scale, 1.0, 0.05)
 
 
-func test_standing_strikes_are_punches_and_moving_ones_are_arm_swings() -> void:
-	_model()
+func test_unarmed_standing_strikes_are_punches_and_moving_ones_are_arm_swings() -> void:
+	_armed("none")
 	await _frames(2)
 	var anim := model.animator
 	anim.strike()
@@ -81,6 +91,58 @@ func test_standing_strikes_are_punches_and_moving_ones_are_arm_swings() -> void:
 	anim.strike()
 	assert_eq(anim.current_clip(), &"sprint", "running legs keep running")
 	assert_true(model.poser._strike_t > 0.0, "the arms punch on their own")
+
+
+func test_a_sword_at_the_hip_is_drawn_to_strike_and_put_away_after() -> void:
+	_armed("ninjato")
+	await _frames(2)
+	var anim := model.animator
+	var gear := model.gear
+	assert_true(anim.has_sword())
+	var on := gear.attachments().map(func(n: BoneAttachment3D) -> StringName: return StringName(n.bone_name))
+	assert_true(on.has(&"Hips"), "worn at the hip")
+	assert_true(on.has(&"RightHand"), "and fitted to the right hand")
+	assert_false(gear.sword.visible, "sheathed to begin with")
+	assert_true(gear.sheathed_hilt.visible, "its hilt showing at the hip")
+	anim.strike()
+	assert_true(model.poser.is_drawing(), "the first blow draws it")
+	assert_true(anim.sword_drawn())
+	assert_eq(anim.current_clip(), &"idle", "a cut, not a punch")
+	await seconds(HumanoidPoser.DRAW_TIME)
+	assert_true(gear.sword.visible and not gear.sheathed_hilt.visible, "out in the hand")
+	anim.strike(2)
+	assert_true(model.poser._cut_t > 0.0 and model.poser._cut == 2, "the next blow is a cut")
+	anim.speed_ratio = 1.0
+	await _frames(2)
+	anim.strike()
+	assert_eq(anim.current_clip(), &"sprint", "running legs keep running through a cut")
+	assert_true(model.poser._cut_t > 0.0)
+	anim.speed_ratio = 0.0
+	await seconds(CharacterAnimator.SHEATHE_AFTER + HumanoidPoser.SHEATHE_TIME + 0.3)
+	assert_false(gear.is_drawn(), "home again after a quiet moment")
+	assert_true(gear.sheathed_hilt.visible)
+
+
+func test_the_sword_follows_the_hand_and_seals_put_it_away() -> void:
+	_armed("ninjato")
+	await _frames(2)
+	var anim := model.animator
+	var gear := model.gear
+	# The hand as it's finally posed (after the procedural layer).
+	var wrist := BoneAttachment3D.new()
+	wrist.bone_name = &"RightHand"
+	model.skeleton.add_child(wrist)
+	anim.strike()
+	await seconds(HumanoidPoser.DRAW_TIME + 0.1)
+	var grip := gear.sword.to_global(Vector3(0, CharacterGear.GRIP_Y, 0))
+	var hand := wrist.global_position
+	assert_true(grip.distance_to(hand) < 0.15, "the grip is in the hand (%.2f m from the wrist)" % grip.distance_to(hand))
+	anim.pose = HumanoidPoser.Pose.WEAVE
+	await _frames(2)
+	assert_false(gear.is_drawn(), "both hands for the seals")
+	anim.pose = HumanoidPoser.Pose.LOCOMOTION
+	anim.strike()
+	assert_true(model.poser.is_drawing(), "and it's drawn again for the next blow")
 
 
 func test_casting_and_flinching() -> void:

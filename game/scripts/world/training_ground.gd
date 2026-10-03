@@ -861,6 +861,18 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			# projectiles land before the shot is taken.
 			for i in 12:
 				await get_tree().physics_frame
+		"strike":
+			# Mid-cut at a dummy: the draw, then the next cut a few frames in.
+			# Take it with --fixed-fps 30 so frames are game time.
+			player.toggle_lock()
+			await _frames(30)
+			player._strike()
+			await _frames(14)
+			player._strike()
+			if _user_args().has("front"):
+				# From in front, to see the blade (--front=<frame offset>).
+				player.camera_rig.begin_showcase(float(_user_args()["front"]))
+			await _frames(int(_user_args().get("into", "3")))
 		"kunai":
 			for i in 3:
 				player.throw_kunai()
@@ -970,6 +982,71 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.look_at(Vector3(0.0, 0.85, -3.0))
 			cam.current = true
 			await _frames(20)
+		_ when demo.begins_with("sword"):
+			# Your shinobi five times over, the sword frozen at five moments:
+			# --demo=sword[:<state>,...] with states hold, sheathed, run, guard,
+			# throw@<0-1>, draw@<0-1>, sheathe@<0-1> and cut<0-2>@<0-1>.
+			var spec := demo.trim_prefix("sword").trim_prefix(":")
+			if spec == "":
+				spec = "sheathed,draw@0.3,draw@0.75,cut0@0.45,cut2@0.1"
+			hud.visible = false
+			player.visible = false
+			var states := spec.split(",")
+			var models: Array[CharacterModel] = []
+			for i in states.size():
+				var m := CharacterModel.new()
+				add_child(m)
+				m.position = Vector3((i - (states.size() - 1) * 0.5) * 1.15, 0.0, -3.0)
+				m.rotation.y = float(_user_args().get("yaw", "2.6"))
+				models.append(m)
+			await _frames(3)
+			var cam := Camera3D.new()
+			add_child(cam)
+			cam.position = Vector3(0.0, 1.15, float(_user_args().get("cam_z", "1.6")))
+			cam.look_at(Vector3(0.0, 0.95, -3.0))
+			cam.current = true
+			for f in 24:
+				for i in models.size():
+					var a := models[i].animator
+					var poser := a.poser
+					a.set_process(false)
+					var st := states[i].split("@")
+					var t := float(st[1]) if st.size() > 1 else 0.0
+					poser.hilt = a.gear.hilt_grip
+					match st[0]:
+						"sheathed":
+							a.gear.set_drawn(false)
+						"hold", "run", "guard", "throw":
+							a.gear.set_drawn(true)
+							if st[0] == "run":
+								a.speed_ratio = 0.8
+							if st[0] == "guard":
+								poser.pose = HumanoidPoser.Pose.GUARD
+							if st[0] == "throw":
+								poser._throw_t = HumanoidPoser.THROW_TIME * (1.0 - t)
+						"draw":
+							a.gear.set_drawn(t >= HumanoidPoser.DRAW_REACH)
+							poser._draw_t = HumanoidPoser.DRAW_TIME * (1.0 - t)
+						"sheathe":
+							a.gear.set_drawn(t < HumanoidPoser.SHEATHE_HOME)
+							poser._sheathe_t = HumanoidPoser.SHEATHE_TIME * (1.0 - t)
+						_:
+							a.gear.set_drawn(true)
+							poser._cut = int(st[0].trim_prefix("cut"))
+							poser._cut_t = HumanoidPoser.CUT_TIME * (1.0 - t)
+					poser.sword_drawn = a.gear.is_drawn()
+				await get_tree().process_frame
+			if _user_args().has("debug"):
+				for i in models.size():
+					var a := models[i].animator
+					var sw := a.gear.sword
+					var body := models[i].global_basis.orthonormalized().inverse()
+					var blade := (body * (sw.global_basis * Vector3.DOWN)).normalized()
+					var edge := (body * (sw.global_basis * Vector3.LEFT)).normalized()
+					var p: Dictionary = a.poser._cur
+					print("SWORD %s blade=%s edge=%s want_blade=%s want_edge=%s" % [states[i],
+						blade.snappedf(0.01), edge.snappedf(0.01), (p.get("thumb_R", Vector3.ZERO) as Vector3).snappedf(0.01),
+						(p.get("hand_R", Vector3.ZERO) as Vector3).snappedf(0.01)])
 		_ when demo.begins_with("ult:"):
 			# An ultimate partway through: --demo=ult:hearthfall:0.6,2.2 (seconds
 			# after it starts; earlier times also saved as <path>_<t>.png).

@@ -118,7 +118,7 @@ current save slot (`user://saves/slot_N/profile.cfg`).
 |---|---|
 | 姿 **Look** | Which character (roster), height (90–110%), default facial expression |
 | 色 **Colours** | A tint per material slot the model has: hair (brows follow), eyes, skin, outfit, lower, shoes, accessories |
-| 装 **Gear** | Headband (cloth or metal-plated hachigane), face mask, scarf, ninjato on the back, kunai pouch, each with colours where it makes sense. Gear size and headband height sliders help with unusual heads. |
+| 装 **Gear** | Headband (cloth or metal-plated hachigane), face mask, scarf, a ninjato worn at the left hip (drawn into the right hand to fight), kunai pouch, each with colours where it makes sense. Gear size and headband height sliders help with unusual heads. |
 | 名 **Identity** | Name (or **Random** for a generated ninja name, handy on a controller) and chakra nature (fixed by your clan unless you are a Wayfarer) |
 | 族 **Clan** | Your clan: its nature and its perks (see `data/clans.json`) |
 | 眼 **Eyes** | Your eye art, from the ones your clan allows (see `data/eye_arts.json`); your eyes take its colour |
@@ -160,7 +160,12 @@ a spell cast, two hit reactions, a fall and a talking idle. Gaits play at
 the speed the character really moves (strides measured on all nine roster
 rigs by `tools/measure_strides.gd`). The procedural IK poser runs after the
 clips: hand seals, guard, chakra charge, the dash lean, the kunai throw, the
-arms-back sprint, and punches or casts made on the move.
+arms-back sprint, punches or casts made on the move, and the sword: drawn
+from the hip in a cut, three cuts (down across, rising, overhead), held low
+or trailing while running, and sheathed after a quiet moment. The drawn
+blade is fitted to each rig's own resting hand (grip through the fingers,
+blade out of the thumb side, edge toward the knuckles), so the poser aims
+the hand by those same two directions and the blade lands where it's keyed.
 
 ### Adding Mixamo clips (optional)
 

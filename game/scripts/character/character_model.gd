@@ -197,6 +197,7 @@ func load_model(path: String) -> void:
 	animator.name = "CharacterAnimator"
 	add_child(animator)
 	animator.setup(instance, poser, clip_dir)
+	animator.gear = gear
 
 	styler.bind(instance)
 	_find_mouth()

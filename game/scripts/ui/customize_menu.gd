@@ -377,8 +377,8 @@ func _build_gear() -> Control:
 	list.add_child(_choices([["Off", false], ["On", true]], &"scarf"))
 	list.add_child(_swatches(Profile.get_value(&"scarf_color"), func(c: Color) -> void: Profile.set_value(&"scarf_color", c), false))
 
-	list.add_child(_section("Back"))
-	list.add_child(_choices([["Nothing", "none"], ["Ninjato", "ninjato"]], &"back"))
+	list.add_child(_section("Sword"))
+	list.add_child(_choices([["None (fight with fists)", "none"], ["Ninjato at the hip", "ninjato"]], &"back"))
 	list.add_child(_section("Kunai pouch"))
 	list.add_child(_choices([["Off", false], ["On", true]], &"pouch"))
 

@@ -76,7 +76,8 @@ func test_default_gear_is_fitted_to_measured_body() -> void:
 	var bones := _gear_bones()
 	for bone in [&"Head", &"Neck", &"RightUpperLeg"]:
 		assert_true(bones.has(bone), "gear on %s" % bone)
-	assert_true(bones.has(&"UpperChest") or bones.has(&"Chest") or bones.has(&"Spine"), "ninjato on the back")
+	assert_true(bones.has(&"Hips"), "the ninjato worn at the hip")
+	assert_true(bones.has(&"RightHand"), "and fitted to the right hand, to be drawn")
 	var head := model.gear.region(&"Head")
 	assert_true(head.size.x > 0.05 and head.size.y > 0.05, "head measured from skinned mesh")
 	var band_att: BoneAttachment3D = model.gear.attachments().filter(

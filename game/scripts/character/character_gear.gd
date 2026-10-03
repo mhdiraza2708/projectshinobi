@@ -1,7 +1,8 @@
 class_name CharacterGear
 extends RefCounted
 ## Ninja gear that fits any humanoid: headband / hachigane, face mask, scarf,
-## ninjato on the back and a kunai pouch.
+## a ninjato worn at the left hip (drawn into the right hand to fight) and a
+## kunai pouch.
 ##
 ## Fitting is measured, not guessed: every skinned vertex is assigned to its
 ## dominant bone, giving the real extents of the head, torso and thigh in the
@@ -27,6 +28,14 @@ var _attachments: Array[Node] = []
 var _head_points := PackedVector3Array()
 ## The last headband's fitted shape (null when none is worn).
 var headband: HeadbandShape
+## The ninjato's parts (null when none is worn): the scabbard at the hip,
+## the hilt showing from it while sheathed, the drawn blade in the right
+## hand, and a marker on the sheathed grip (where the hand goes to draw).
+var scabbard: Node3D
+var sheathed_hilt: Node3D
+var sword: Node3D
+var hilt_grip: Node3D
+var _drawn := false
 
 
 func bind(skeleton: Skeleton3D, canonical_to_skeleton: Basis) -> void:
@@ -194,14 +203,8 @@ func rebuild(settings: Dictionary) -> void:
 			scarf.add_child(tail)
 		_attach(&"Neck", scarf)
 
-	var torso := _merged([&"UpperChest", &"Chest", &"Spine"])
-	if settings.get("back", "none") == "ninjato" and torso.size != Vector3.ZERO:
-		var sword: Node3D = NINJATO.instantiate()
-		Toon.apply(sword, 0.004)
-		# Diagonal across the back, hilt over the right shoulder.
-		sword.transform = Transform3D(Basis(Vector3.BACK, deg_to_rad(-32.0)).scaled(Vector3.ONE * 0.86 * k),
-			Vector3(torso.get_center().x, torso.get_center().y + 0.04 * k, torso.end.z + 0.04 * k))
-		_attach(_first_bone([&"UpperChest", &"Chest", &"Spine"]), sword)
+	if settings.get("back", "none") == "ninjato":
+		_build_ninjato(k)
 
 	var thigh := region(&"RightUpperLeg")
 	if settings.get("pouch", false) and thigh.size != Vector3.ZERO:
@@ -307,6 +310,174 @@ func clear() -> void:
 		if is_instance_valid(n):
 			n.queue_free()
 	_attachments.clear()
+	scabbard = null
+	sheathed_hilt = null
+	sword = null
+	hilt_grip = null
+
+
+# --- The ninjato -----------------------------------------------------------------
+
+## Surfaces of the ninjato model (art/blender/build_assets.py): the lacquered
+## scabbard, the steel guard, the wrapped grip, the leather cord.
+const SCABBARD_SURFACES := [0, 3]
+const HILT_SURFACES := [1, 2]
+## Model units (hilt up, +Y): the guard's face and the middle of the grip.
+const GUARD_Y := 0.157
+const GRIP_Y := 0.29
+## The blade the scabbard hides, in model units below the guard.
+const BLADE_LENGTH := 0.6
+const BLADE_COLOR := Color("cdd3db")
+
+
+func has_sword() -> bool:
+	return sword != null and is_instance_valid(sword)
+
+
+func is_drawn() -> bool:
+	return _drawn and has_sword()
+
+
+## Out in the right hand, or home in the scabbard.
+func set_drawn(drawn: bool) -> void:
+	_drawn = drawn
+	if not has_sword():
+		return
+	sword.visible = drawn
+	sheathed_hilt.visible = not drawn
+
+
+## Scabbard through the belt at the left hip (hilt forward, edge up, the way
+## a katana is worn), and the drawn blade fitted to the right hand's grip.
+func _build_ninjato(k: float) -> void:
+	var hips := _merged([&"Hips"])
+	var hand := _skel.find_bone(&"RightHand")
+	if hips.size == Vector3.ZERO or hand < 0:
+		return
+	var source := (NINJATO.instantiate() as Node3D)
+	var mesh := (source.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
+	source.free()
+	var scale := 0.86 * k
+
+	# Worn: the hilt just in front of the left hip at the belt, the scabbard
+	# running back, down and out past the hip.
+	var along := HumanoidPoser.SCABBARD.normalized()
+	var side := (Vector3(-0.3, -1.0, 0.0) - along * Vector3(-0.3, -1.0, 0.0).dot(along)).normalized()
+	var worn := Basis(side, along, side.cross(along)).scaled(Vector3.ONE * scale)
+	var guard := Vector3(hips.position.x + 0.03 * k, hips.end.y - hips.size.y * 0.3, hips.position.z + 0.01 * k)
+	var at := Transform3D(worn, guard - worn * Vector3(0, GUARD_Y, 0))
+	scabbard = _part(mesh, SCABBARD_SURFACES)
+	scabbard.name = "Scabbard"
+	scabbard.transform = at
+	sheathed_hilt = _part(mesh, HILT_SURFACES)
+	sheathed_hilt.name = "SheathedHilt"
+	sheathed_hilt.transform = at
+	hilt_grip = Marker3D.new()
+	hilt_grip.name = "HiltGrip"
+	hilt_grip.position = Vector3(0, GRIP_Y, 0)
+	sheathed_hilt.add_child(hilt_grip)
+	_attach(&"Hips", scabbard)
+	_attach(&"Hips", sheathed_hilt)
+
+	# Drawn: the grip through the curled fingers, the blade out past the
+	# thumb, the edge facing the knuckles. Measured on this rig's resting
+	# hand, so it holds on any rig.
+	sword = _part(mesh, HILT_SURFACES)
+	sword.name = "Katana"
+	var blade := _mesh(_blade_mesh(), BLADE_COLOR, true, true)
+	blade.name = "Blade"
+	sword.add_child(blade)
+	sword.transform = _grip_in_hand(scale)
+	_attach(&"RightHand", sword)
+	set_drawn(_drawn)
+
+
+## The drawn sword's place in canonical space with the right hand at rest.
+func _grip_in_hand(scale: float) -> Transform3D:
+	var to_canon := _frame.inverse()
+	var hand := _skel.get_bone_global_rest(_skel.find_bone(&"RightHand")).origin
+	# T-posed right hand: fingers out to the right, thumb forward.
+	var fingers := Vector3.RIGHT
+	var thumb := Vector3(0, 0, -1)
+	var mid := _skel.find_bone(&"RightMiddleProximal")
+	var thumb_bone := _skel.find_bone(&"RightThumbProximal")
+	if mid >= 0:
+		fingers = (to_canon * (_skel.get_bone_global_rest(mid).origin - hand)).normalized()
+	if thumb_bone >= 0:
+		var t := to_canon * (_skel.get_bone_global_rest(thumb_bone).origin - hand)
+		t -= fingers * t.dot(fingers)
+		if t.length_squared() > 1e-8:
+			thumb = t.normalized()
+	var reach := 0.09 * scale / 0.86
+	if mid >= 0:
+		reach = (_skel.get_bone_global_rest(mid).origin - hand).length()
+	# Resting palms face down; the grip lies just under the palm.
+	var palm := Vector3.DOWN - fingers * Vector3.DOWN.dot(fingers)
+	palm = palm.normalized() if palm.length_squared() > 1e-6 else Vector3.DOWN
+	var grip := to_canon * hand + fingers * reach * 0.85 + palm * reach * 0.35
+	# Exactly the thumb side and the knuckles: the poser aims the hand by
+	# the same two directions (HumanoidPoser._aim_hand).
+	var blade_dir := thumb
+	var edge := fingers
+	# Model: blade toward -Y, edge toward -X.
+	var y := -blade_dir
+	var x := -edge
+	var basis := Basis(x, y, x.cross(y)).scaled(Vector3.ONE * scale)
+	return Transform3D(basis, grip - basis * Vector3(0, GRIP_Y, 0))
+
+
+## A piece of the ninjato model made of some of its surfaces.
+func _part(mesh: Mesh, surfaces: Array) -> MeshInstance3D:
+	var part := ArrayMesh.new()
+	for i: int in surfaces:
+		if i >= mesh.get_surface_count():
+			continue
+		part.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh.surface_get_arrays(i))
+		part.surface_set_material(part.get_surface_count() - 1, mesh.surface_get_material(i))
+	var mi := MeshInstance3D.new()
+	mi.mesh = part
+	var holder := Node3D.new()
+	holder.add_child(mi)
+	Toon.apply(holder, 0.004)
+	holder.remove_child(mi)
+	holder.free()
+	return mi
+
+
+## A slightly curved single-edged blade with a ridged back, from the guard
+## (y = GUARD_Y) down to its point: edge toward -X, back toward +X.
+static func _blade_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	const STEPS := 14
+	var rings: Array = []
+	for i in STEPS + 1:
+		var t := float(i) / STEPS
+		var y := GUARD_Y - t * BLADE_LENGTH
+		# Curve (sori): the back bows out toward +X along the length.
+		var bow := 0.018 * sin(t * PI * 0.9)
+		var width := lerpf(0.03, 0.022, t)
+		var thick := lerpf(0.0065, 0.004, t)
+		if t > 0.86:
+			# The point (kissaki): the edge sweeps up to meet the back.
+			var k := (t - 0.86) / 0.14
+			width *= 1.0 - k * 0.97
+			thick *= 1.0 - k * 0.9
+		var back := bow + width * 0.5
+		var edge := bow - width * 0.5
+		rings.append([Vector3(edge, y, 0.0), Vector3(back, y, thick), Vector3(back, y, -thick)])
+	for i in STEPS:
+		var a: Array = rings[i]
+		var b: Array = rings[i + 1]
+		for f in [[0, 1], [1, 2], [2, 0]]:
+			_quad(st, a[f[0]], a[f[1]], b[f[1]], b[f[0]])
+	st.generate_normals()
+	return st.commit()
+
+
+static func _quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3) -> void:
+	for v in [a, b, c, a, c, d]:
+		st.add_vertex(v)
 
 
 func _merged(bones: Array) -> AABB:
