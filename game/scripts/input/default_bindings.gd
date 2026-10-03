@@ -72,8 +72,9 @@ static func table() -> Dictionary:
 		&"quick_cast_4": _a("Quick Cast 4", "Jutsu", [
 			Binding.key(KEY_4), Binding.joy_button(JOY_BUTTON_DPAD_LEFT)]),
 		# Slots 5-8: direct keys on a keyboard. On a gamepad the D-pad works the
-		# slots of the current page (Back flips the page); pads with back
-		# paddles can also reach 5-8 directly.
+		# slots of the current page; holding LB (free outside weaving, where
+		# it's a seal) switches it to the other page, Back flips the page for
+		# good, and pads with back paddles can also reach 5-8 directly.
 		&"quick_cast_5": _a("Quick Cast 5", "Jutsu", [
 			Binding.key(KEY_5), Binding.joy_button(JOY_BUTTON_PADDLE1)]),
 		&"quick_cast_6": _a("Quick Cast 6", "Jutsu", [
@@ -82,6 +83,8 @@ static func table() -> Dictionary:
 			Binding.key(KEY_7), Binding.joy_button(JOY_BUTTON_PADDLE3)]),
 		&"quick_cast_8": _a("Quick Cast 8", "Jutsu", [
 			Binding.key(KEY_8), Binding.joy_button(JOY_BUTTON_PADDLE4)]),
+		&"quick_shift": _a("Other Quick-Cast Page (hold)", "Jutsu", [
+			Binding.key(KEY_CTRL), Binding.joy_button(JOY_BUTTON_LEFT_SHOULDER)]),
 		&"quick_page": _a("Quick-Cast Page (gamepad)", "Jutsu", [
 			Binding.key(KEY_G), Binding.joy_button(JOY_BUTTON_BACK)]),
 		&"preset_prev": _a("Previous Jutsu Loadout", "Jutsu", [

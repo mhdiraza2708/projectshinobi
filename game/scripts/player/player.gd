@@ -217,9 +217,10 @@ func _state_free(delta: float) -> void:
 	for i in quick_slots.size():
 		if Input.is_action_just_pressed(StringName("quick_cast_%d" % (i + 1))):
 			var slot := i
-			# A gamepad's D-pad works the current page's four slots.
-			if i < Loadouts.PAGE and InputDevice.current == Binding.Device.GAMEPAD:
-				slot += quick_page * Loadouts.PAGE
+			# The D-pad (or 1-4) works the current page's four slots: the
+			# first page unless flipped, or the other one while Shift is held.
+			if i < Loadouts.PAGE:
+				slot += dpad_page() * Loadouts.PAGE
 			start_quick_cast(slot)
 			if state != State.FREE:
 				return
@@ -357,6 +358,13 @@ func _release_weave() -> void:
 
 
 ## Casts the jutsu in `slot` by weaving its seals automatically.
+## The page of quick-cast slots the D-pad (and keys 1-4) cast right now: the
+## gamepad's flipped page, swapped while the page shift is held.
+func dpad_page() -> int:
+	var page := quick_page if InputDevice.current == Binding.Device.GAMEPAD else 0
+	return 1 - page if input_enabled and Input.is_action_pressed(&"quick_shift") else page
+
+
 func start_quick_cast(slot: int) -> void:
 	if slot < 0 or slot >= quick_slots.size():
 		return

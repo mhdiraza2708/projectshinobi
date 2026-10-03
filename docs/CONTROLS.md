@@ -25,7 +25,7 @@ automatically. Prompts switch the moment you touch the other device.
 | Lock on | Tab or middle mouse | R3 |
 | **Weave seals** | **Right mouse (or F)** | **LT** |
 | Quick-cast slots 1–4 | 1 2 3 4 | D-pad ↑ → ↓ ← |
-| Quick-cast slots 5–8 | 5 6 7 8 | D-pad on page 2 (flip pages with Back / G), or the back paddles |
+| Quick-cast slots 5–8 | 5 6 7 8 (or hold Ctrl + 1 2 3 4) | **Hold LB + D-pad**, or the D-pad on page 2 (flip pages with Back / G), or the back paddles |
 | Previous / next jutsu loadout | Z / X | Touchpad / Misc button (rebindable) |
 | Pause / settings / customize | Esc | Start |
 
@@ -137,8 +137,10 @@ are using, and the loadout editor above them:
   slower than a fast manual weave); *Instant* skips the seals for 35% more
   chakra.
 
-On a gamepad the D-pad casts the four slots of the current page; Back (View /
-Select) flips pages and the HUD dims the other page. Both devices can switch
+On a gamepad the D-pad casts slots 1–4, and **holding LB** turns it to slots
+5–8 for as long as you hold it (LB is only a seal while weaving, so it's free
+in the field). Back (View / Select) flips the pages for good instead; either
+way the HUD dims the page the D-pad isn't on. Both devices can switch
 loadouts mid-fight with the previous / next loadout actions.
 
 ## Customize screen

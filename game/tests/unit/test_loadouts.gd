@@ -140,6 +140,23 @@ func test_on_a_gamepad_the_dpad_works_the_current_page() -> void:
 	assert_eq(player.quick_page, 0)
 
 
+func test_holding_lb_turns_the_dpad_to_slots_five_to_eight() -> void:
+	await _load()
+	Loadouts.equip(1)
+	InputDevice.current = Binding.Device.GAMEPAD
+	player.stats.chakra = 100.0
+	assert_eq(player.dpad_page(), 0)
+	Input.action_press(&"quick_shift")
+	await physics_frames(2)
+	assert_eq(player.dpad_page(), 1, "held: the other page")
+	await _tap(&"quick_cast_4")  # D-pad left with LB held: slot 8
+	Input.action_release(&"quick_shift")
+	await seconds(1.2)
+	assert_true(player.caster.cooldown_left(&"shade_clones") > 0.0, "LB + D-pad left cast slot 8")
+	assert_eq(player.quick_page, 0, "holding doesn't flip the page for good")
+	assert_eq(player.dpad_page(), 0, "let go: back to slots 1-4")
+
+
 func test_the_preset_keys_cycle_loadouts() -> void:
 	await _load()
 	await _tap(&"preset_next")

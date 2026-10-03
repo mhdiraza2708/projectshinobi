@@ -514,7 +514,8 @@ func _refresh_jutsu() -> void:
 	if _jutsu_list == null or player == null:
 		return
 	(_jutsu_list.get_child(0) as Label).text = \
-		"Quick-cast with %s – %s. On a controller the D-pad casts the four slots of the current page and %s flips the page. %s / %s switch loadout. Seals are shown for the device you're using." % [
-			InputDevice.glyph(&"quick_cast_1"), InputDevice.glyph(&"quick_cast_8"), InputDevice.glyph(&"quick_page"),
+		"Quick-cast with %s – %s. On a controller the D-pad casts slots 1–4; hold %s and it casts 5–8 (%s flips the pages for good). %s / %s switch loadout. Seals are shown for the device you're using." % [
+			InputDevice.glyph(&"quick_cast_1"), InputDevice.glyph(&"quick_cast_8"),
+			InputDevice.glyph_for_device(&"quick_shift", Binding.Device.GAMEPAD), InputDevice.glyph(&"quick_page"),
 			InputDevice.glyph(&"preset_prev"), InputDevice.glyph(&"preset_next")]
 	_jutsu_panel.refresh()

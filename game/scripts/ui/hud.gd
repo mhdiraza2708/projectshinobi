@@ -541,8 +541,9 @@ func _refresh_slots() -> void:
 		var id: StringName = player.quick_slots[i] if i < player.quick_slots.size() else &""
 		var j := JutsuRegistry.get_jutsu(id)
 		var instant: bool = i < player.quick_styles.size() and player.quick_styles[i] == Loadouts.INSTANT
-		# On a pad the D-pad works one page at a time: dim the other.
-		var off_page := on_pad and i / Loadouts.PAGE != player.quick_page
+		# On a pad the D-pad works one page at a time (the other while LB is
+		# held): dim the other.
+		var off_page := on_pad and i / Loadouts.PAGE != player.dpad_page()
 		if j == null:
 			r["name"].text = "—"
 			r["status"].text = ""
