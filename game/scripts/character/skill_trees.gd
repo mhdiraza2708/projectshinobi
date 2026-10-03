@@ -17,6 +17,13 @@ const COLUMNS := 3
 const SECOND_WIND_HEALTH := 0.3
 const SECOND_WIND_RECHARGE := 30.0
 const SECOND_WIND_SHIELD := 1.5
+## Opening Flash: foes this close stagger when the eye opens.
+const EYE_FLASH_RADIUS := 10.0
+## Second Look: seconds added per hit, and the most one opening can gain.
+const EYE_EXTEND_PER_HIT := 0.5
+const EYE_EXTEND_MAX := 5.0
+## Unclosing Eye: chakra a second to hold the eye open past its time.
+const EYE_SUSTAIN_DRAIN := 6.0
 ## Twin Weave: each projectile jutsu fires an echo this much later, at this
 ## fraction of its power.
 const TWIN_WEAVE_DELAY := 0.18
@@ -32,6 +39,7 @@ const MAXED := "maxed"
 const NO_POINTS := "no_points"
 const NEEDS_NODE := "needs_node"
 const NEEDS_POINTS := "needs_points"
+const NEEDS_EYE := "needs_eye"
 
 static var errors: Array[String] = []
 static var _trees: Array[Dictionary] = []
@@ -207,6 +215,8 @@ static func can_learn(id: String) -> String:
 	var n := node(id)
 	if n.is_empty() or rank(id) >= int(n["ranks"]):
 		return MAXED
+	if bool(tree(str(n["tree"])).get("needs_eye_art", false)) and Perks.active_eye_art().is_empty():
+		return NEEDS_EYE
 	var reqs: Array = n["requires"]
 	if not reqs.is_empty() and not reqs.any(func(r: String) -> bool: return rank(r) > 0):
 		return NEEDS_NODE

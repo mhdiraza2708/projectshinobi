@@ -1,7 +1,8 @@
 class_name SkillTreePanel
 extends VBoxContainer
-## The pause menu's Skills tab: your level and XP, points to spend, and one
-## skill tree at a time drawn as ink seals joined by brush lines. Press a
+## The skill screen's paper (SkillScreen): your level and XP, points to
+## spend, and one skill tree at a time drawn as ink seals joined by brush
+## lines. Press a
 ## node (A / click) to learn a rank; the card on the right says what it does
 ## now and next, and what it still needs. Points can be taken back for free.
 ## Fully navigable with a controller: the D-pad walks the tree, up from the
@@ -13,7 +14,14 @@ const COL_STEP := 168.0
 const TIER_STEP := 76.0
 const GUTTER := 92.0
 
+signal tree_changed(id: String)
+
 var tree_id := ""
+## The tree tabs on the paper (the skill screen draws its own above it).
+var show_tabs := true
+## The full screen's layout: the tree larger, with its card beneath it.
+var screen_mode := false
+const SCREEN_SCALE := 1.22
 
 var _level: Label
 var _xp_bar: InkBar
@@ -57,6 +65,7 @@ func _build() -> void:
 		var b := Button.new()
 		b.add_theme_font_size_override(&"font_size", 22)
 		b.pressed.connect(_show_tree.bind(str(t["id"])))
+		b.visible = show_tabs
 		head.add_child(b)
 		_tree_buttons[t["id"]] = b
 	var gap := Control.new()
@@ -104,21 +113,34 @@ func _build() -> void:
 		refresh())
 	resets.add_child(_reset_all)
 
-	var body := HBoxContainer.new()
-	body.add_theme_constant_override(&"separation", 28)
+	var body: BoxContainer = VBoxContainer.new() if screen_mode else HBoxContainer.new()
+	body.add_theme_constant_override(&"separation", 12 if screen_mode else 28)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(body)
 	_canvas = TreeCanvas.new()
-	_canvas.custom_minimum_size = Vector2(GUTTER + COL_STEP * (SkillTrees.COLUMNS - 1) + CAPSTONE_SIZE + 24,
+	var canvas_size := Vector2(GUTTER + COL_STEP * (SkillTrees.COLUMNS - 1) + CAPSTONE_SIZE + 24,
 		TIER_STEP * 4 + CAPSTONE_SIZE + 14)
-	body.add_child(_canvas)
+	_canvas.custom_minimum_size = canvas_size
+	if screen_mode:
+		# Scaled up on the big screen; the holder reserves the scaled size.
+		var holder := Control.new()
+		holder.custom_minimum_size = canvas_size * SCREEN_SCALE
+		holder.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_canvas.scale = Vector2.ONE * SCREEN_SCALE
+		holder.add_child(_canvas)
+		body.add_child(holder)
+	else:
+		body.add_child(_canvas)
 
 	var card := VBoxContainer.new()
 	card.add_theme_constant_override(&"separation", 6)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if screen_mode:
+		card.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_child(card)
 	_blurb = UiKit.label("", 17, UiKit.INK_SOFT, &"bold")
 	_blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_blurb.custom_minimum_size.x = 520
+	_blurb.custom_minimum_size.x = 900 if screen_mode else 520
 	card.add_child(_blurb)
 	var title := HBoxContainer.new()
 	title.add_theme_constant_override(&"separation", 14)
@@ -136,7 +158,7 @@ func _build() -> void:
 	for l: Label in [UiKit.label("", 20, UiKit.INK, &"bold"), UiKit.label("", 18, UiKit.CRIMSON_DARK, &"bold"),
 			UiKit.label("", 17, UiKit.INK_SOFT, &"bold")]:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size.x = 520
+		l.custom_minimum_size.x = 900 if screen_mode else 520
 		card.add_child(l)
 	_card_lines = card.get_child(2)
 	_card_need = card.get_child(3)
@@ -149,7 +171,12 @@ func _build() -> void:
 
 
 ## Switches the tree shown (and builds its nodes).
+func show_tree(id: String, focus := true) -> void:
+	_show_tree(id, focus)
+
+
 func _show_tree(id: String, focus := true) -> void:
+	var changed := id != tree_id
 	tree_id = id
 	for c in _canvas.get_children():
 		_canvas.remove_child(c)
@@ -191,6 +218,8 @@ func _show_tree(id: String, focus := true) -> void:
 	refresh()
 	if focus:
 		(_nodes[_shown] as Control).grab_focus()
+	if changed:
+		tree_changed.emit(id)
 
 
 func _row_y(tier: int) -> float:
@@ -206,13 +235,13 @@ func _center(n: Dictionary) -> Vector2:
 ## The D-pad walks the tree: up and down to the nearest node a tier away,
 ## left and right along the tier; up from the top reaches the tree tabs.
 func _wire_focus() -> void:
-	var tab: Button = _tree_buttons[tree_id]
+	var tab: Button = _tree_buttons[tree_id] if show_tabs else null
 	for id: String in _nodes:
 		var b: SkillNodeButton = _nodes[id]
 		var n := SkillTrees.node(id)
 		var up := _nearest(n, -1)
 		var down := _nearest(n, 1)
-		b.focus_neighbor_top = b.get_path_to(_nodes[up] if up != "" else tab)
+		b.focus_neighbor_top = b.get_path_to(_nodes[up] if up != "" else (tab if tab else b))
 		b.focus_neighbor_bottom = b.get_path_to(_nodes[down] if down != "" else b)
 		var left := _beside(n, -1)
 		var right := _beside(n, 1)
@@ -332,6 +361,8 @@ func _show_node(id: String) -> void:
 				SkillTrees.tier_points(int(n["tier"])), SkillTrees.points_spent(str(n["tree"]))]
 		SkillTrees.NO_POINTS:
 			need = "No skill points left: fights, chapters and trials give XP, and every level gives a point."
+		SkillTrees.NEEDS_EYE:
+			need = "Only a shinobi born with an eye art can walk this way (choose one in Customize → Eyes)."
 	_card_need.text = need
 	var hint := ""
 	if SkillTrees.can_learn(id) == SkillTrees.OK:

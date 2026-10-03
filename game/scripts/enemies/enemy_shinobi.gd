@@ -712,6 +712,16 @@ func _interrupted() -> void:
 	_stagger()
 
 
+## Knocked off balance by something other than a hit (Opening Flash).
+func stagger() -> void:
+	if state in [State.SPAWNING, State.DEFEATED]:
+		return
+	if state == State.WEAVING:
+		_interrupted()
+	else:
+		_stagger()
+
+
 func _stagger() -> void:
 	_rush = 0.0
 	_enter(State.STAGGERED)

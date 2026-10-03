@@ -131,7 +131,7 @@ func _ready() -> void:
 	caster.use_perks = true
 	_base = {"run": run_speed, "sprint": sprint_speed, "dash_cooldown": dash_cooldown, "lock": lock_range,
 		"guard": guard_damage_multiplier, "health": stats.max_health, "chakra_regen": stats.chakra_regen,
-		"chakra": stats.max_chakra}
+		"chakra": stats.max_chakra, "charge": stats.charge_regen}
 	_apply_perks()
 	Game.skills_changed.connect(_apply_perks)
 	_load_loadout()
@@ -262,7 +262,11 @@ func _state_free(delta: float) -> void:
 	# Page shift + Charge opens the eye art instead of charging.
 	if Input.is_action_pressed(&"quick_shift"):
 		if Input.is_action_just_pressed(&"charge_chakra") and not eye_mode.release():
-			eye_mode.try_open()
+			# A sustained eye (Unclosing Eye) closes on the same chord.
+			if eye_mode.sustaining():
+				eye_mode.close()
+			else:
+				eye_mode.try_open()
 	elif Input.is_action_pressed(&"charge_chakra") and is_on_floor():
 		_enter(State.CHARGING)
 		return
@@ -720,6 +724,7 @@ func _apply_perks() -> void:
 	stats.max_health = _base["health"] * (1.0 + Perks.value(&"max_health"))
 	stats.health = clampf(ratio * stats.max_health, 0.0, stats.max_health)
 	stats.chakra_regen = _base["chakra_regen"] * (1.0 + Perks.value(&"chakra_regen"))
+	stats.charge_regen = _base["charge"] * (1.0 + Perks.value(&"charge_speed"))
 	var chakra_ratio := stats.chakra / stats.max_chakra if stats.max_chakra > 0.0 else 1.0
 	stats.max_chakra = _base["chakra"] * (1.0 + Perks.value(&"max_chakra"))
 	stats.chakra = clampf(chakra_ratio * stats.max_chakra, 0.0, stats.max_chakra)
@@ -866,6 +871,8 @@ func try_ultimate() -> bool:
 ## Called by projectiles and blasts this player made when they deal damage.
 func notify_hit(victim: Node, kind: StringName) -> void:
 	hit_landed.emit(victim, kind)
+	if eye_mode:
+		eye_mode.on_hit_landed()
 
 
 func is_down() -> bool:

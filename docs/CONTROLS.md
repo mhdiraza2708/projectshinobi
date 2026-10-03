@@ -118,14 +118,18 @@ keep weaving and can start the sequence again without letting go.
 | Ambient occlusion, bloom | Contact shadows and glow on/off. |
 | Ray-traced shadows (RTAO) | Hardware ray-traced ambient occlusion, on GPUs that have it. |
 
-## Skills (Pause → Skills)
+## Skills (Pause → Skills → Open skill trees)
 
 | Input | Keyboard / mouse | Controller |
 |---|---|---|
 | Walk the tree | Arrow keys or mouse | D-pad / left stick |
 | Learn a rank of the selected node | Enter or click | A |
-| Switch tree | Up from the top node, then left/right | Up from the top node, then left/right |
+| Switch tree | Q / E | LB / RB |
 | Take points back | Reset (this tree) / Reset all (press twice) | same |
+| Back to the pause menu | Esc | B |
+
+With **Unclosing Eye** learned, the open-eye chord (LB + Y / Ctrl + R)
+also closes an eye that is being held open on chakra.
 
 Every level gives one point. A node needs one of the nodes linked above it,
 and deeper tiers open once you've spent enough points in that tree (shown

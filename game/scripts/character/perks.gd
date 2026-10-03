@@ -28,6 +28,10 @@ const PERK_TEXT := {
 	"ult_gain": "+%d%% ultimate charge",
 	"eye_time": "+%d%% eye art open time",
 	"nature_damage": "+%d%% damage with your clan's nature",
+	"charge_speed": "+%d%% chakra charging speed",
+	"eye_cost": "%d%% chakra to open your eye art",
+	"eye_cooldown": "%d%% eye art rest",
+	"eye_power": "+%d%% to your eye art's open-form perks",
 }
 const FLAG_TEXT := {
 	"clones": "+%d Shade Clone",
@@ -37,6 +41,9 @@ const FLAG_TEXT := {
 	"second_wind": "Once a fight, a blow that would defeat you leaves you standing (back after 30 s unhurt)",
 	"twin_weave": "Every projectile jutsu fires a second, echoing shot",
 	"shadow_bloom": "Shade Clones burst when they fade or fall, striking every foe nearby",
+	"eye_flash": "Opening your eye art staggers every foe close by",
+	"eye_extend": "Each hit you land while the eye is open keeps it open half a second longer (up to 5 s)",
+	"eye_sustain": "When its time runs out the eye stays open on chakra until you close it (the open chord again) or run dry",
 }
 const FOCUS_TIME_SCALE := 0.35
 const FOCUS_SECONDS := 0.5

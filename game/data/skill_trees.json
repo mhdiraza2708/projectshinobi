@@ -10,7 +10,7 @@
 		"trial": 120,
 		"trial_record": 50
 	},
-	"levels": {"first": 100, "step": 30, "max": 50},
+	"levels": {"first": 100, "step": 20, "max": 65},
 	"tier_points": [0, 1, 3, 5, 8],
 	"trees": [
 		{
@@ -68,7 +68,7 @@
 			"name": "Way of the Mind",
 			"kanji": "心",
 			"color": "#9a6fc4",
-			"blurb": "Reading the fight: lock-on, shadows, the eye and the ultimate. Ends in clones that bloom.",
+			"blurb": "Reading the fight: lock-on, shadows, breath and the ultimate. Ends in clones that bloom.",
 			"nodes": [
 				{"id": "keen_eye", "name": "Keen Eye", "kanji": "視", "tier": 1, "col": 1, "ranks": 3,
 					"perks": {"lock_range": 0.1}, "requires": []},
@@ -78,14 +78,40 @@
 					"perks": {"ult_gain": 0.1}, "requires": ["keen_eye"]},
 				{"id": "patient_hunter", "name": "Patient Hunter", "kanji": "待", "tier": 3, "col": 0, "ranks": 2,
 					"perks": {"enemy_seal_slow": 0.08}, "requires": ["long_shadow"]},
-				{"id": "open_gaze", "name": "Open Gaze", "kanji": "眼", "tier": 3, "col": 2, "ranks": 2,
-					"perks": {"eye_time": 0.15}, "requires": ["gathering_storm"]},
+				{"id": "still_breath", "name": "Still Breath", "kanji": "息", "tier": 3, "col": 2, "ranks": 2,
+					"perks": {"charge_speed": 0.15}, "requires": ["gathering_storm"]},
 				{"id": "many_shadows", "name": "Many Shadows", "kanji": "分", "tier": 4, "col": 0, "ranks": 1,
 					"perks": {"clones": 1}, "requires": ["patient_hunter"]},
 				{"id": "nature_reader", "name": "Nature Reader", "kanji": "読", "tier": 4, "col": 2, "ranks": 1,
-					"perks": {"reads_natures": 1}, "requires": ["open_gaze"]},
+					"perks": {"reads_natures": 1}, "requires": ["still_breath"]},
 				{"id": "shadow_bloom", "name": "Shadow Bloom", "kanji": "咲", "tier": 5, "col": 1, "ranks": 1,
 					"perks": {"shadow_bloom": 1}, "requires": ["many_shadows", "nature_reader"]}
+			]
+		},
+		{
+			"id": "eye",
+			"name": "Way of the Eye",
+			"kanji": "眼",
+			"color": "#d29a2a",
+			"blurb": "For those born with an eye art: open it longer, cheaper, harder. Ends in an eye that never has to close.",
+			"needs_eye_art": true,
+			"nodes": [
+				{"id": "steady_gaze", "name": "Steady Gaze", "kanji": "凝", "tier": 1, "col": 1, "ranks": 3,
+					"perks": {"eye_time": 0.1}, "requires": []},
+				{"id": "light_lids", "name": "Light Lids", "kanji": "瞬", "tier": 2, "col": 0, "ranks": 2,
+					"perks": {"eye_cost": -0.12}, "requires": ["steady_gaze"]},
+				{"id": "quick_return", "name": "Quick Return", "kanji": "復", "tier": 2, "col": 2, "ranks": 3,
+					"perks": {"eye_cooldown": -0.12}, "requires": ["steady_gaze"]},
+				{"id": "inner_light", "name": "Inner Light", "kanji": "灯", "tier": 3, "col": 0, "ranks": 2,
+					"perks": {"eye_power": 0.2}, "requires": ["light_lids"]},
+				{"id": "far_sight", "name": "Far Sight", "kanji": "遠", "tier": 3, "col": 2, "ranks": 2,
+					"perks": {"homing": 0.12}, "requires": ["quick_return"]},
+				{"id": "opening_flash", "name": "Opening Flash", "kanji": "閃", "tier": 4, "col": 0, "ranks": 1,
+					"perks": {"eye_flash": 1}, "requires": ["inner_light"]},
+				{"id": "second_look", "name": "Second Look", "kanji": "再", "tier": 4, "col": 2, "ranks": 1,
+					"perks": {"eye_extend": 1}, "requires": ["far_sight"]},
+				{"id": "unclosing_eye", "name": "Unclosing Eye", "kanji": "醒", "tier": 5, "col": 1, "ranks": 1,
+					"perks": {"eye_sustain": 1}, "requires": ["opening_flash", "second_look"]}
 			]
 		}
 	]

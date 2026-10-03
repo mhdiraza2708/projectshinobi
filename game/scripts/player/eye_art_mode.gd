@@ -42,6 +42,8 @@ var _fade: Tween
 ## The irises' centres in the Head bone's rest frame, [between, one eye]
 ## (empty until measured; [ZERO, ZERO] if the model has no iris mesh).
 var _irises_in_head: Array[Vector3] = []
+## Seconds Second Look has added to this opening.
+var _extended := 0.0
 
 
 func _ready() -> void:
@@ -80,7 +82,17 @@ func seconds() -> float:
 
 
 func cost() -> float:
-	return float(form().get("cost", 25.0))
+	return float(form().get("cost", 25.0)) * maxf(0.2, 1.0 + Perks.value(&"eye_cost"))
+
+
+## Seconds the eye rests after closing.
+static func cooldown() -> float:
+	return Perks.eye_cooldown() * maxf(0.2, 1.0 + Perks.value(&"eye_cooldown"))
+
+
+## Whether the eye is being held open past its time on chakra (Unclosing Eye).
+func sustaining() -> bool:
+	return phase == Phase.ACTIVE and time_left <= 0.0
 
 
 ## Opens the eye if it can: returns whether it did.
@@ -103,7 +115,14 @@ func try_open() -> bool:
 	phase = Phase.ACTIVE
 	time_left = seconds()
 	boost = (form().get("perks", {}) as Dictionary).duplicate()
+	# Inner Light: the open form's perks run stronger.
+	var power := 1.0 + Perks.value(&"eye_power")
+	for key: String in boost:
+		boost[key] = float(boost[key]) * power
+	_extended = 0.0
 	player.refresh_perks()
+	if Perks.has(&"eye_flash"):
+		_flash()
 	pattern = EyePattern.attach(player.model, a)
 	_set_pattern(0.0, 1.0 if awakened else 0.0, 0.0)
 	_add_glow(Color(str(a["color"])))
@@ -175,13 +194,36 @@ func release() -> bool:
 	return true
 
 
+## Opening Flash: every foe close by is knocked off balance.
+func _flash() -> void:
+	var c := Color(str(art()["color"]))
+	var world := player.get_parent()
+	Vfx.shockwave(world, player.global_position + Vector3.UP * 0.3, c, SkillTrees.EYE_FLASH_RADIUS, 0.45)
+	Vfx.flash(world, player.global_position + Vector3.UP * 1.5, c, 3.0, 0.25)
+	for foe in player.get_tree().get_nodes_in_group(&"enemies"):
+		if foe is EnemyShinobi and not foe.is_defeated() \
+				and foe.global_position.distance_to(player.global_position) <= SkillTrees.EYE_FLASH_RADIUS:
+			foe.stagger()
+
+
+## Second Look: a landed hit keeps the eye open a little longer.
+func on_hit_landed() -> void:
+	if phase != Phase.ACTIVE or sustaining() or not Perks.has(&"eye_extend"):
+		return
+	var add := minf(SkillTrees.EYE_EXTEND_PER_HIT, SkillTrees.EYE_EXTEND_MAX - _extended)
+	if add > 0.0:
+		_extended += add
+		time_left += add
+		changed.emit()
+
+
 ## Closes the eye now (time ran out, or the player went down).
 func close() -> void:
 	if phase != Phase.ACTIVE:
 		return
 	held.clear()
 	phase = Phase.RECOVERING
-	time_left = Perks.eye_cooldown()
+	time_left = cooldown()
 	boost = {}
 	player.refresh_perks()
 	if pattern:
@@ -202,7 +244,14 @@ func _process(delta: float) -> void:
 		if player.stats.is_dead() or player.is_down():
 			close()
 		elif time_left <= 0.0:
-			close()
+			# Unclosing Eye: past its time the eye burns chakra to stay open.
+			var drain := SkillTrees.EYE_SUSTAIN_DRAIN * delta
+			if Perks.has(&"eye_sustain") and player.stats.chakra >= drain:
+				time_left = 0.0
+				player.stats.chakra -= drain
+				player.stats.chakra_changed.emit(player.stats.chakra, player.stats.max_chakra)
+			else:
+				close()
 		elif is_instance_valid(_glow):
 			_glow.light_energy = 0.5 + 0.2 * sin(Time.get_ticks_msec() * 0.006)
 	elif time_left <= 0.0:
@@ -216,9 +265,9 @@ func _process(delta: float) -> void:
 func ratio() -> float:
 	match phase:
 		Phase.ACTIVE:
-			return clampf(time_left / maxf(seconds(), 0.01), 0.0, 1.0)
+			return 1.0 if sustaining() else clampf(time_left / maxf(seconds(), 0.01), 0.0, 1.0)
 		Phase.RECOVERING:
-			return clampf(1.0 - time_left / maxf(Perks.eye_cooldown(), 0.01), 0.0, 1.0)
+			return clampf(1.0 - time_left / maxf(cooldown(), 0.01), 0.0, 1.0)
 	return 1.0
 
 

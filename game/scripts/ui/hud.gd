@@ -565,10 +565,12 @@ func _refresh_eye() -> void:
 	_eye_bar.set_ratio_instant(mode.ratio())
 	match mode.phase:
 		EyeArtMode.Phase.ACTIVE:
-			_eye_text.text = "%s  %ds" % [EyeArtMode.form().get("name", art["name"]), ceili(mode.time_left)]
+			# Held open on chakra (Unclosing Eye): no clock, just the drain.
+			var clock := "∞" if mode.sustaining() else "%ds" % ceili(mode.time_left)
+			_eye_text.text = "%s  %s" % [EyeArtMode.form().get("name", art["name"]), clock]
 			if mode.ability() == "mirror_return":
 				# What the mirror holds instead of the (long) form name.
-				_eye_text.text = "%ds  %s" % [ceili(mode.time_left),
+				_eye_text.text = "%s  %s" % [clock,
 					"◆".repeat(mode.held.size()) + "◇".repeat(EyeArtMode.MIRROR_HOLD - mode.held.size())]
 			_eye_bar.modulate = Color(1, 1, 1).lerp(Color(1.4, 1.4, 1.4), 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.01))
 		EyeArtMode.Phase.RECOVERING:

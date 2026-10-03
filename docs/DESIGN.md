@@ -129,12 +129,18 @@ wrong trade.
   `SkillTreePanel`): XP (`Game.add_xp`) comes from defeated enemies (by rank,
   bosses more; not clones, allies or dismissed foes), story chapters (a first
   clear is worth 5x a replay) and trial wins (plus a bonus for a record).
-  Level L needs `first + step * (L - 1)` XP to reach L+1, to a cap of 50;
-  each level is one point. Each tree is 8 nodes on a 3-column, 5-tier grid:
+  Level L needs `first + step * (L - 1)` XP to reach L+1, to a cap of 65;
+  each level is one point. A tree with `needs_eye_art` (Way of the Eye) only
+  takes points from a character with an eye art. The screen (`SkillScreen`)
+  is the tree on paper (`SkillTreePanel`) over a SubViewport stage
+  (`SkillStage`) with the player's model in a per-tree pose and camera.
+  Each tree is 8 nodes on a 3-column, 5-tier grid:
   `requires` is any one of the listed nodes, and a tier also needs
   `tier_points` already spent in that tree. A node's `perks` (the same keys
-  as clans, plus `max_chakra`, `ult_gain`, `eye_time`, `nature_damage` and
-  the flags `second_wind`, `twin_weave`, `shadow_bloom`) are multiplied by its
+  as clans, plus `max_chakra`, `charge_speed`, `ult_gain`, `nature_damage`,
+  the eye's `eye_time`, `eye_cost`, `eye_cooldown`, `eye_power` and the flags
+  `second_wind`, `twin_weave`, `shadow_bloom`, `eye_flash`, `eye_extend`,
+  `eye_sustain`) are multiplied by its
   rank and added in `Perks.value()`, so they apply wherever perks already do;
   the player re-reads them the moment a rank is learned. XP and ranks live in
   the slot's `records.cfg`; a reset refunds everything. All names original.

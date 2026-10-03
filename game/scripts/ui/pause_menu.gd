@@ -27,7 +27,10 @@ var _tab_hint: HBoxContainer
 var _controls_list: VBoxContainer
 var _jutsu_list: VBoxContainer
 var _jutsu_panel: LoadoutPanel
-var _skills: SkillTreePanel
+## The full-screen skill trees (opened from the Skills tab).
+var skill_screen: SkillScreen
+var _skills_summary: VBoxContainer
+var _skills_open: Button
 var _notice: Label
 var _resume: Button
 ## {action, device, button} while waiting for a new input.
@@ -68,7 +71,7 @@ func open() -> void:
 	_tab_hint.visible = InputDevice.current == Binding.Device.GAMEPAD
 	_refresh_controls()
 	_refresh_jutsu()
-	_skills.refresh()
+	_refresh_skills()
 	_resume.grab_focus()
 
 
@@ -195,8 +198,7 @@ func _build() -> void:
 	_tabs.add_child(_scroll("Accessibility", _build_accessibility()))
 	_tabs.add_child(_scroll("Graphics", _build_graphics()))
 	_tabs.add_child(_scroll("Jutsu Scroll", _build_jutsu()))
-	_skills = SkillTreePanel.new()
-	_tabs.add_child(_scroll("Skills", _skills))
+	_tabs.add_child(_scroll("Skills", _build_skills()))
 	_select_tab(0)
 
 	vbox.add_child(_rule())
@@ -608,6 +610,67 @@ func _build_jutsu() -> Control:
 	_jutsu_panel = LoadoutPanel.new(true)
 	_jutsu_list.add_child(_jutsu_panel)
 	return _jutsu_list
+
+
+# --- Skills tab ------------------------------------------------------------------
+
+func _build_skills() -> Control:
+	_skills_summary = VBoxContainer.new()
+	_skills_summary.add_theme_constant_override(&"separation", 14)
+	_skills_open = _button("Open skill trees", open_skills)
+	_skills_open.add_theme_font_size_override(&"font_size", 28)
+	_refresh_skills()
+	return _skills_summary
+
+
+## Level, points and what each tree holds, above the button into the trees.
+func _refresh_skills() -> void:
+	if _skills_summary == null:
+		return
+	for c in _skills_summary.get_children():
+		if c != _skills_open:
+			_skills_summary.remove_child(c)
+			c.queue_free()
+	if _skills_open.get_parent() == _skills_summary:
+		_skills_summary.remove_child(_skills_open)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override(&"separation", 18)
+	head.add_child(UiKit.label("Lv %d" % SkillTrees.level(), 44, UiKit.CRIMSON, &"display"))
+	var free := SkillTrees.points_free()
+	var pts := UiKit.label("%d skill point%s to spend" % [free, "" if free == 1 else "s"], 26,
+		UiKit.CRIMSON if free > 0 else UiKit.INK_SOFT, &"bold")
+	pts.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(pts)
+	_skills_summary.add_child(head)
+	for t in SkillTrees.trees():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override(&"separation", 12)
+		row.add_child(UiKit.label(str(t["kanji"]), 30, Color(str(t["color"])), &"brush"))
+		var total := 0
+		for n: Dictionary in t["nodes"]:
+			total += int(n["ranks"])
+		var line := UiKit.label("%s  ·  %d / %d" % [t["name"], SkillTrees.points_spent(str(t["id"])), total], 22, UiKit.INK, &"bold")
+		line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(line)
+		_skills_summary.add_child(row)
+	_skills_summary.add_child(_skills_open)
+	var hint := _hint_label()
+	hint.text = "Fights, story chapters, quests and trials give XP; every level is a skill point."
+	_skills_summary.add_child(hint)
+
+
+## Opens the full-screen skill trees over the paused game.
+func open_skills(tree := "") -> void:
+	if skill_screen == null:
+		skill_screen = SkillScreen.new()
+		add_child(skill_screen)
+		skill_screen.closed.connect(func() -> void:
+			_root.visible = true
+			_refresh_skills()
+			_select_tab(TAB_SKILLS)
+			_skills_open.grab_focus())
+	_root.visible = false
+	skill_screen.open(tree)
 
 
 func _hint_label() -> Label:

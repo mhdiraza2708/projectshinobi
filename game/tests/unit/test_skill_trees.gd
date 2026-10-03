@@ -48,7 +48,7 @@ func _give_levels(levels: int) -> void:
 
 func test_the_data_is_valid_and_original() -> void:
 	assert_eq(SkillTrees.errors, [] as Array[String])
-	assert_eq(SkillTrees.trees().size(), 3)
+	assert_eq(SkillTrees.trees().size(), 4)
 	var total := 0
 	var banned := ["sharingan", "rasengan", "chidori", "kage bunshin", "byakugan", "rinnegan", "sage mode"]
 	for t in SkillTrees.trees():
@@ -217,14 +217,20 @@ func test_shadow_bloom_clones_burst_when_they_go() -> void:
 	assert_eq(Game.xp(), 0, "a clone going away isn't a defeat")
 
 
-func test_the_skills_tab_learns_with_a_press() -> void:
+func test_the_skill_screen_poses_you_and_learns_with_a_press() -> void:
 	await _load()
 	_give_levels(2)
 	var menu: PauseMenu = scene.pause_menu
 	menu.open()
 	menu._select_tab(PauseMenu.TAB_SKILLS)
 	await physics_frames(2)
-	var panel: SkillTreePanel = menu._skills
+	assert_true(menu._skills_open.is_visible_in_tree(), "the tab offers the trees")
+	menu._skills_open.pressed.emit()
+	var screen := menu.skill_screen
+	assert_true(screen.visible and not menu._root.visible, "the screen replaces the pause scroll")
+	await physics_frames(3)
+	assert_true(is_instance_valid(screen.stage.model), "your shinobi stands on the stage")
+	var panel := screen.panel
 	assert_true(panel._level.text.contains(str(SkillTrees.level())), "it shows the level")
 	assert_true(panel._points.text.begins_with("2 skill points"))
 	var root_node: SkillNodeButton = panel._nodes["iron_hide"]
@@ -232,10 +238,100 @@ func test_the_skills_tab_learns_with_a_press() -> void:
 	assert_eq(SkillTrees.rank("iron_hide"), 1)
 	assert_true(panel._points.text.begins_with("1 skill point"))
 	assert_eq(root_node.rank, 1, "the seal shows its rank")
-	(panel._tree_buttons["mind"] as Button).pressed.emit()
-	assert_eq(panel.tree_id, "mind")
+	# RB moves to the next tree, and the stage follows.
+	var rb := InputEventJoypadButton.new()
+	rb.button_index = JOY_BUTTON_RIGHT_SHOULDER
+	rb.pressed = true
+	screen._input(rb)
+	assert_eq(panel.tree_id, "chakra")
+	assert_eq(screen.stage.tree_id, "chakra")
+	screen._switch("mind")
 	assert_true(panel._nodes.has("shadow_bloom"))
 	(panel._nodes["long_shadow"] as SkillNodeButton).pressed.emit()
 	assert_eq(SkillTrees.rank("long_shadow"), 0, "a locked node stays locked")
 	assert_true(panel._card_need.text.contains("Keen Eye"), "and says what it needs")
+	var back := InputEventAction.new()
+	back.action = &"ui_cancel"
+	back.pressed = true
+	screen._input(back)
+	assert_false(screen.visible)
+	assert_true(menu.is_open(), "back to the pause menu")
 	menu.close()
+
+
+# --- Way of the Eye ---------------------------------------------------------------
+
+func _with_eye_art() -> void:
+	Profile.set_value(&"clan", "hearth")
+	Profile.set_value(&"eye_art", str(Perks.clan("hearth")["eye_arts"][0]))
+
+
+func test_the_eye_tree_needs_an_eye_art() -> void:
+	_give_levels(5)
+	Profile.set_value(&"clan", "wayfarer")
+	Profile.set_value(&"eye_art", "")
+	assert_eq(SkillTrees.can_learn("steady_gaze"), SkillTrees.NEEDS_EYE)
+	_with_eye_art()
+	assert_eq(SkillTrees.can_learn("steady_gaze"), SkillTrees.OK)
+
+
+func test_eye_ranks_make_it_cheaper_quicker_and_stronger() -> void:
+	_with_eye_art()
+	await _load()
+	var mode := player.eye_mode
+	var cost := mode.cost()
+	var rest := EyeArtMode.cooldown()
+	var open := mode.seconds()
+	Game.set_skill_ranks({"steady_gaze": 3, "light_lids": 2, "quick_return": 3, "inner_light": 2})
+	assert_near(mode.cost(), cost * 0.76, 0.01, "Light Lids")
+	assert_near(EyeArtMode.cooldown(), rest * 0.64, 0.01, "Quick Return")
+	assert_near(mode.seconds(), open * 1.3, 0.01, "Steady Gaze")
+	player.stats.chakra = player.stats.max_chakra
+	assert_true(mode.try_open())
+	var key: String = EyeArtMode.boost.keys()[0]
+	assert_near(float(EyeArtMode.boost[key]), float(EyeArtMode.form()["perks"][key]) * 1.4, 0.001, "Inner Light")
+	mode.close()
+
+
+func test_opening_flash_staggers_foes_close_by() -> void:
+	_with_eye_art()
+	await _load()
+	EyeArtMode.reset_seen()
+	var near := _foe(&"genin", 4.0)
+	var far := _foe(&"genin", 20.0)
+	await seconds(EnemyShinobi.SPAWN_TIME + 0.1)
+	Game.set_skill_ranks({"opening_flash": 1})
+	# Not the first opening here: skip the close-up.
+	EyeArtMode._seen["%d:%s" % [player.eye_mode._area_id(), "active"]] = true
+	player.stats.chakra = player.stats.max_chakra
+	# Foes keep their distance; put them where the test means them.
+	near.global_position = player.global_position + Vector3(0, 0.1, -SkillTrees.EYE_FLASH_RADIUS * 0.6)
+	far.global_position = player.global_position + Vector3(0, 0.1, -SkillTrees.EYE_FLASH_RADIUS * 2.5)
+	assert_true(player.eye_mode.try_open())
+	assert_eq(near.state, EnemyShinobi.State.STAGGERED, "the near foe reels")
+	assert_true(far.state != EnemyShinobi.State.STAGGERED, "the far one doesn't")
+	player.eye_mode.close()
+
+
+func test_second_look_and_the_unclosing_eye() -> void:
+	_with_eye_art()
+	await _load()
+	var mode := player.eye_mode
+	EyeArtMode._seen["%d:%s" % [mode._area_id(), "active"]] = true
+	Game.set_skill_ranks({"second_look": 1, "unclosing_eye": 1})
+	player.stats.chakra = player.stats.max_chakra
+	assert_true(mode.try_open())
+	var left := mode.time_left
+	for i in 20:
+		player.notify_hit(null, &"jutsu")
+	assert_near(mode.time_left, left + SkillTrees.EYE_EXTEND_MAX, 0.01, "hits buy time, up to a limit")
+	mode.time_left = 0.01
+	# The eye's clock runs on idle frames: wait in time, not physics steps.
+	await seconds(0.2)
+	assert_eq(mode.phase, EyeArtMode.Phase.ACTIVE, "past its time the eye stays open")
+	assert_true(mode.sustaining(), "held open")
+	assert_true(player.stats.chakra < player.stats.max_chakra, "on chakra")
+	player.stats.chakra = 0.0
+	player.stats.chakra_regen = 0.0
+	await seconds(0.2)
+	assert_eq(mode.phase, EyeArtMode.Phase.RECOVERING, "until the chakra runs out")

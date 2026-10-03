@@ -10,7 +10,7 @@ extends Node3D
 ## story_boss, story_menu, chapter_card, night, chapter:<id>, island:<id> (from
 ## the air), title_saves, slots_load, slots_new, confirm_overwrite (the title with
 ## fake saves), creation, creation_eyes, creation_identity, creation_jutsu,
-## menu_jutsu, menu_skills[:<tree>], scene:<id>:<beat>:<seconds> (a cutscene partway through, best
+## menu_jutsu, menu_skills[:<tree>|:tab], scene:<id>:<beat>:<seconds> (a cutscene partway through, best
 ## with --fixed-fps 60), teleport, teleport_night, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
@@ -840,8 +840,15 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			pause_menu.open()
 			pause_menu._select_tab(PauseMenu.TAB_SKILLS)
 			var tree := demo.trim_prefix("menu_skills").trim_prefix(":")
-			pause_menu._skills._show_tree(tree if tree != "" else "body")
-			await _frames(10)
+			if tree == "eye":
+				# A shinobi with an eye art, a few ranks in.
+				Profile.set_value(&"clan", "hearth")
+				Profile.set_value(&"eye_art", str(Perks.clan("hearth")["eye_arts"][0]))
+				for id: String in ["steady_gaze", "steady_gaze", "quick_return"]:
+					SkillTrees.learn(id)
+			if tree != "tab":
+				pause_menu.open_skills(tree if tree != "" else "body")
+			await _frames(40)
 		"chapter_card":
 			start_story("ch3_vault")
 			await _frames(12)
