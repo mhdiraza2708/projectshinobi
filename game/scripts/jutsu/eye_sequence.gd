@@ -142,7 +142,7 @@ func _open() -> void:
 			Sfx.play(&"buff", 2.0)
 		if t >= CUT_AT + 0.12 and not carded and not mode.awakened:
 			carded = true
-			_card = CinematicKit.title_card(self, "開眼  EYE ART", str(art["kanji"]), str(form.get("name", art["name"])),
+			_card = CinematicKit.title_card(self, "開眼  DOJUTSU", str(art["kanji"]), str(form.get("name", art["name"])),
 				color, OPEN_TIME - CUT_AT)
 		await get_tree().process_frame
 		t += get_process_delta_time()

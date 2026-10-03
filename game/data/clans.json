@@ -32,7 +32,7 @@
 		},
 		{
 			"id": "wayfarer", "name": "Wayfarer", "kanji": "旅", "element": "none", "color": "#c9a45c",
-			"blurb": "No clan name and no clan limits. Choose your own nature and any eye art, and share your chakra a little thinner: one more Shade Clone.",
+			"blurb": "No clan name and no clan limits. Choose your own nature and any dojutsu, and share your chakra a little thinner: one more Shade Clone.",
 			"perks": {"cost": -0.08, "clones": 1},
 			"eye_arts": ["hawk_eye", "mirror_eye", "seal_eye", "still_eye"]
 		}

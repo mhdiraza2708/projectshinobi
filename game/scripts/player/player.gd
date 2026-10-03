@@ -105,6 +105,8 @@ var _dash_trail: VfxTrail
 var _dash_cooldown_left := 0.0
 var _sprinting := false
 var _strike_cooldown := 0.0
+## Seconds since the guard last took a blow (Counter Edge).
+var _since_blocked := INF
 var _strike_combo := 0
 var _auto_jutsu: JutsuDefinition
 var _auto_queue: Array[int] = []
@@ -196,6 +198,7 @@ func _physics_process(delta: float) -> void:
 			feedback.emit("Second Wind ready", &"info")
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_strike_cooldown = maxf(0.0, _strike_cooldown - delta)
+	_since_blocked += delta
 	weaver.tick(delta)
 	_validate_lock()
 
@@ -517,7 +520,8 @@ func _start_dash() -> void:
 func _strike() -> void:
 	if _strike_cooldown > 0.0:
 		return
-	_strike_cooldown = strike_interval
+	# Kenjutsu (skill tree) makes the cuts faster, longer and harder.
+	_strike_cooldown = strike_interval * maxf(0.4, 1.0 - Perks.value(&"strike_speed"))
 	_strike_combo = (_strike_combo + 1) % 3
 	if is_instance_valid(lock_target):
 		_face_now(lock_target.global_position - global_position)
@@ -526,13 +530,27 @@ func _strike() -> void:
 	Sfx.play(&"strike_whoosh", -2.0, 0.1)
 	var forward := -global_basis.z
 	velocity += forward * 3.0
-	var center := global_position + forward * strike_reach + Vector3.UP * 1.1
+	var reach := 1.0 + Perks.value(&"strike_reach")
+	var center := global_position + forward * strike_reach * reach + Vector3.UP * 1.1
 	# The blade's arc: each blow of the combo cuts at a different angle.
 	var tilt: float = [0.7, -0.7, 1.35][_strike_combo]
 	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1), Color(0.3, 0.55, 1.0), 2.2, tilt)
-	var damage := strike_damage * (1.0 + 0.25 * _strike_combo) * (1.0 + stats.modifier(&"attack_power"))
+	var damage := strike_damage * (1.0 + 0.25 * _strike_combo) * (1.0 + stats.modifier(&"attack_power")) \
+		* (1.0 + Perks.value(&"strike_damage"))
+	if _strike_combo == 2:
+		damage *= 1.0 + Perks.value(&"finisher")
+	# Counter Edge: answering a blocked blow.
+	var counter := Perks.has(&"counter_strike") and _since_blocked < SkillTrees.COUNTER_WINDOW
+	if counter:
+		damage *= 2.0
+		_since_blocked = INF
+		feedback.emit("Counter!", &"info")
 	var landed := false
-	for victim in Combat.hittables_in_sphere(get_world_3d(), center, 0.9, [get_rid()]):
+	for victim in Combat.hittables_in_sphere(get_world_3d(), center, 0.9 * reach, [get_rid()]):
+		# Guard Breaker (or a counter) knocks a raised guard aside first.
+		if victim is EnemyShinobi and (counter or (Perks.has(&"guard_break") \
+				and (victim as EnemyShinobi).state == EnemyShinobi.State.GUARDING)):
+			(victim as EnemyShinobi).stagger()
 		if Combat.apply_hit(victim, damage, Element.NONE, self) > 0.0:
 			landed = true
 			notify_hit(victim, &"strike")
@@ -543,6 +561,33 @@ func _strike() -> void:
 		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
 		camera_rig.add_shake(0.25)
 		InputDevice.rumble(0.3, 0.2, 0.08)
+		# Drinking Steel: a landed cut feeds the chakra.
+		var drink := Perks.value(&"strike_chakra")
+		if drink > 0.0:
+			stats.chakra = minf(stats.max_chakra, stats.chakra + stats.max_chakra * drink)
+			stats.chakra_changed.emit(stats.chakra, stats.max_chakra)
+	# Crescent Moon: the third cut flies on.
+	if _strike_combo == 2 and Perks.has(&"blade_wave"):
+		_blade_wave(forward, damage)
+
+
+## A crescent of chakra cut loose from the blade (Crescent Moon).
+func _blade_wave(forward: Vector3, cut: float) -> void:
+	var p := JutsuProjectile.new()
+	p.element = Element.NONE
+	p.style = &"crescent"
+	p.power = cut * SkillTrees.BLADE_WAVE_POWER
+	p.speed = SkillTrees.BLADE_WAVE_SPEED
+	p.max_range = SkillTrees.BLADE_WAVE_RANGE
+	p.radius = 0.6
+	p.caster = self
+	var target := aim_target()
+	p.target = target
+	p.homing_rate = 2.0
+	p.direction = caster.aim_direction(target) if target else forward
+	get_parent().add_child(p)
+	p.global_position = global_position + Vector3.UP * 1.1 + forward * 0.8
+	Sfx.play(&"strike_whoosh", 1.0, 0.05)
 
 
 func throw_kunai() -> void:
@@ -826,6 +871,8 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 
 
 func take_hit(amount: float, element: int, _source: Node) -> float:
+	if state == State.GUARDING:
+		_since_blocked = 0.0
 	stats.cheat_death = second_wind_ready and Perks.has(&"second_wind")
 	var dealt := stats.take_damage(amount, element)
 	stats.cheat_death = false

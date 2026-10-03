@@ -39,6 +39,10 @@ This project is therefore an **original shinobi setting**:
 - Every jutsu name, description and seal sequence here is original. Canon seal
   sequences are deliberately not copied.
 - Characters, villages and story must be original too.
+- Generic Japanese terms are fine as categories: the eye techniques are
+  called *dojutsu* (瞳術, "eye technique") and sword work *kenjutsu* (剣術).
+  What stays off-limits is canon *named* abilities (no Sharingan, Byakugan,
+  Rinnegan and so on); every dojutsu here has its own original name.
 
 If you ever get an official licence, the data-driven design means a reskin is
 mostly a data and art swap.
@@ -129,8 +133,8 @@ wrong trade.
   `SkillTreePanel`): XP (`Game.add_xp`) comes from defeated enemies (by rank,
   bosses more; not clones, allies or dismissed foes), story chapters (a first
   clear is worth 5x a replay) and trial wins (plus a bonus for a record).
-  Level L needs `first + step * (L - 1)` XP to reach L+1, to a cap of 65;
-  each level is one point. A tree with `needs_eye_art` (Way of the Eye) only
+  Level L needs `first + step * (L - 1)` XP to reach L+1, to a cap of 80;
+  each level is one point. A tree with `needs_eye_art` (Dojutsu) only
   takes points from a character with an eye art. The screen (`SkillScreen`)
   is the tree on paper (`SkillTreePanel`) over a SubViewport stage
   (`SkillStage`) with the player's model in a per-tree pose and camera.
@@ -138,7 +142,10 @@ wrong trade.
   `requires` is any one of the listed nodes, and a tier also needs
   `tier_points` already spent in that tree. A node's `perks` (the same keys
   as clans, plus `max_chakra`, `charge_speed`, `ult_gain`, `nature_damage`,
-  the eye's `eye_time`, `eye_cost`, `eye_cooldown`, `eye_power` and the flags
+  the eye's `eye_time`, `eye_cost`, `eye_cooldown`, `eye_power`, the
+  blade's `strike_damage`, `strike_speed`, `strike_reach`, `finisher`,
+  `strike_chakra`, and the flags `counter_strike`, `guard_break`,
+  `blade_wave`,
   `second_wind`, `twin_weave`, `shadow_bloom`, `eye_flash`, `eye_extend`,
   `eye_sustain`) are multiplied by its
   rank and added in `Perks.value()`, so they apply wherever perks already do;

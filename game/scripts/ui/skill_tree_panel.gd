@@ -362,7 +362,7 @@ func _show_node(id: String) -> void:
 		SkillTrees.NO_POINTS:
 			need = "No skill points left: fights, chapters and trials give XP, and every level gives a point."
 		SkillTrees.NEEDS_EYE:
-			need = "Only a shinobi born with an eye art can walk this way (choose one in Customize → Eyes)."
+			need = "Only a shinobi born with a dojutsu can walk this way (choose one in Customize → Dojutsu)."
 	_card_need.text = need
 	var hint := ""
 	if SkillTrees.can_learn(id) == SkillTrees.OK:
@@ -370,7 +370,7 @@ func _show_node(id: String) -> void:
 			else "Click or Enter: learn a rank"
 	for key: String in n["perks"]:
 		if Perks.FLAG_TEXT.has(key) and Perks.base_value(StringName(key)) > 0.0:
-			hint += ("\n" if hint != "" else "") + "Your clan or eye art already gives you this."
+			hint += ("\n" if hint != "" else "") + "Your clan or dojutsu already gives you this."
 	_card_hint.text = hint
 
 

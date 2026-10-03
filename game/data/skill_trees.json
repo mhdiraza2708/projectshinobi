@@ -10,7 +10,7 @@
 		"trial": 120,
 		"trial_record": 50
 	},
-	"levels": {"first": 100, "step": 20, "max": 65},
+	"levels": {"first": 100, "step": 20, "max": 80},
 	"tier_points": [0, 1, 3, 5, 8],
 	"trees": [
 		{
@@ -89,11 +89,36 @@
 			]
 		},
 		{
+			"id": "kenjutsu",
+			"name": "Kenjutsu",
+			"kanji": "剣",
+			"color": "#8fa7bf",
+			"blurb": "The blade in your strikes: harder, faster, longer cuts that break guards and drink chakra. Ends in a cut that flies.",
+			"nodes": [
+				{"id": "keen_edge", "name": "Keen Edge", "kanji": "刃", "tier": 1, "col": 1, "ranks": 3,
+					"perks": {"strike_damage": 0.12}, "requires": []},
+				{"id": "swift_draw", "name": "Swift Draw", "kanji": "抜", "tier": 2, "col": 0, "ranks": 3,
+					"perks": {"strike_speed": 0.08}, "requires": ["keen_edge"]},
+				{"id": "long_reach", "name": "Long Reach", "kanji": "間", "tier": 2, "col": 2, "ranks": 2,
+					"perks": {"strike_reach": 0.18}, "requires": ["keen_edge"]},
+				{"id": "linked_cuts", "name": "Linked Cuts", "kanji": "連", "tier": 3, "col": 0, "ranks": 2,
+					"perks": {"finisher": 0.3}, "requires": ["swift_draw"]},
+				{"id": "drinking_steel", "name": "Drinking Steel", "kanji": "吸", "tier": 3, "col": 2, "ranks": 2,
+					"perks": {"strike_chakra": 0.02}, "requires": ["long_reach"]},
+				{"id": "counter_edge", "name": "Counter Edge", "kanji": "返", "tier": 4, "col": 0, "ranks": 1,
+					"perks": {"counter_strike": 1}, "requires": ["linked_cuts"]},
+				{"id": "guard_breaker", "name": "Guard Breaker", "kanji": "破", "tier": 4, "col": 2, "ranks": 1,
+					"perks": {"guard_break": 1}, "requires": ["drinking_steel"]},
+				{"id": "crescent_moon", "name": "Crescent Moon", "kanji": "月", "tier": 5, "col": 1, "ranks": 1,
+					"perks": {"blade_wave": 1}, "requires": ["counter_edge", "guard_breaker"]}
+			]
+		},
+		{
 			"id": "eye",
-			"name": "Way of the Eye",
-			"kanji": "眼",
+			"name": "Dojutsu",
+			"kanji": "瞳",
 			"color": "#d29a2a",
-			"blurb": "For those born with an eye art: open it longer, cheaper, harder. Ends in an eye that never has to close.",
+			"blurb": "For those born with a dojutsu: open it longer, cheaper, harder. Ends in an eye that never has to close.",
 			"needs_eye_art": true,
 			"nodes": [
 				{"id": "steady_gaze", "name": "Steady Gaze", "kanji": "凝", "tier": 1, "col": 1, "ranks": 3,

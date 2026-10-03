@@ -3,8 +3,8 @@ extends SubViewport
 ## The 3D half of the skill screen: your own shinobi on a dark stage, a
 ## brushed enso glowing behind them in the tree's colour, embers drifting up.
 ## Each tree has its stance (guard for the Body, gathering chakra for Chakra,
-## a seal for the Mind) and its camera; the Eye tree pushes in on the face
-## and opens your eye art's pattern in the irises.
+## a seal for the Mind, cutting the air for Kenjutsu) and its camera; the
+## Dojutsu tree pushes in on the face and opens your dojutsu in the irises.
 
 const ENSO := preload("res://assets/shaders/skill_enso.gdshader")
 
@@ -13,6 +13,7 @@ const SHOTS := {
 	"body": {"pose": HumanoidPoser.Pose.GUARD, "cam": Vector3(0.0, 1.05, 3.5), "look": Vector3(0.0, 0.95, 0.0), "fov": 34.0},
 	"chakra": {"pose": HumanoidPoser.Pose.CHARGE, "cam": Vector3(0.35, 0.95, 3.4), "look": Vector3(0.0, 0.9, 0.0), "fov": 36.0},
 	"mind": {"pose": HumanoidPoser.Pose.WEAVE, "cam": Vector3(-0.3, 1.2, 3.0), "look": Vector3(0.0, 1.05, 0.0), "fov": 34.0},
+	"kenjutsu": {"pose": HumanoidPoser.Pose.LOCOMOTION, "cam": Vector3(0.7, 0.85, 3.1), "look": Vector3(0.0, 1.0, 0.0), "fov": 38.0},
 	"eye": {"pose": HumanoidPoser.Pose.LOCOMOTION, "cam": Vector3(0.0, 1.5, 1.15), "look": Vector3(0.0, 1.47, 0.0), "fov": 30.0},
 }
 ## Where the character stands in frame: the camera is shifted right so they
@@ -31,6 +32,9 @@ var _floor_ring: MeshInstance3D
 var _move: Tween
 var _time := 0.0
 var _eye: ShaderMaterial
+## Kenjutsu: seconds to the next cut, and which cut of the combo it is.
+var _cut_left := 0.6
+var _cut := 0
 ## Where a camera move starts.
 var _from := Transform3D.IDENTITY
 
@@ -229,3 +233,22 @@ func _process(delta: float) -> void:
 		camera.look_at(shot["look"])
 	if model:
 		model.rotation.y = PI + deg_to_rad(12.0 + sin(_time * 0.25) * 4.0)
+		if tree_id == "kenjutsu":
+			_cut_left -= delta
+			if _cut_left <= 0.0:
+				_cut_left = 0.45 if _cut < 2 else 1.6
+				_cut = (_cut + 1) % 3
+				_swing()
+
+
+## One cut of a three-cut combo in the air, with the blade's arc.
+func _swing() -> void:
+	if model.animator:
+		model.animator.strike()
+	var facing := model.global_basis.z
+	facing.y = 0.0
+	var origin := Transform3D(Basis.looking_at(-facing.normalized(), Vector3.UP), model.global_position + Vector3.UP * 1.1)
+	var c := Color(str(SkillTrees.tree("kenjutsu").get("color", "#8fa7bf"))).lightened(0.3)
+	Vfx.slash(self, origin, c, 2.0, [0.7, -0.7, 1.35][_cut])
+	if _cut == 2:
+		Vfx.slash(self, origin, Color(1, 1, 1), 2.6, 1.35, 0.3)

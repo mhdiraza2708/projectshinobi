@@ -24,6 +24,12 @@ const EYE_EXTEND_PER_HIT := 0.5
 const EYE_EXTEND_MAX := 5.0
 ## Unclosing Eye: chakra a second to hold the eye open past its time.
 const EYE_SUSTAIN_DRAIN := 6.0
+## Counter Edge: a strike this soon after the guard takes a blow.
+const COUNTER_WINDOW := 1.0
+## Crescent Moon: the third cut's flying crescent, as a multiple of the cut.
+const BLADE_WAVE_POWER := 2.2
+const BLADE_WAVE_SPEED := 26.0
+const BLADE_WAVE_RANGE := 18.0
 ## Twin Weave: each projectile jutsu fires an echo this much later, at this
 ## fraction of its power.
 const TWIN_WEAVE_DELAY := 0.18

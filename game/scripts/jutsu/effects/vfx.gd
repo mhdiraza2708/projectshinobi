@@ -408,6 +408,28 @@ static func slash(parent: Node, origin: Transform3D, color: Color, size := 1.6, 
 		tw.tween_property(m, "albedo_color:a", 0.0, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 
 
+## A flying crescent cut (Kenjutsu's Crescent Moon): the slash arc lying flat
+## across the flight, with a white core. Points along -Z like other
+## projectile visuals.
+static func crescent(color: Color, size := 2.0) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Crescent"
+	for layer in 2:
+		var quad := QuadMesh.new()
+		quad.size = Vector2(2.0, 1.0) * size * (1.0 if layer == 0 else 0.8)
+		var m := surface_material(tex(&"slash"), layer == 1)
+		m.albedo_color = color if layer == 0 else Color(1, 1, 1, 0.95)
+		var mi := MeshInstance3D.new()
+		mi.mesh = quad
+		mi.material_override = m
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# Flat, its arc bowing forward along the flight.
+		mi.basis = Basis(Vector3.RIGHT, -PI * 0.5)
+		root.add_child(mi)
+	root.add_child(trail(Color(color, 0.5), size * 0.35, 0.18, true))
+	return root
+
+
 ## Old API: a flash and a ring (kept for callers that just want "a pop").
 static func burst(parent: Node, position: Vector3, color: Color, radius: float, duration := 0.4) -> void:
 	flash(parent, position, color, radius * 1.4, duration * 0.6, &"glow")

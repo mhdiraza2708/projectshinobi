@@ -82,15 +82,18 @@ controls can be remapped.
   in the Jutsu tab. Hold Pause to skip the cinematic.
 - **Skill trees** (Pause → Skills → Open skill trees): a full screen with
   your own shinobi posed on a lit stage beside the tree, each tree with its
-  own stance and colour (the Eye tree pushes in on your face with your eye
-  art open). Fights, story chapters and trials give XP, and every level (up
-  to 65) is a skill point. Four original trees, each a branching path of
+  own stance and colour (the Dojutsu tree pushes in on your face with your
+  dojutsu open; Kenjutsu cuts the air). Fights, story chapters, quests and
+  trials give XP, and every level (up to 80) is a skill point. Five
+  original trees, each a branching path of
   ranked nodes that ends in a final skill: Way of the Body 体 (**Second
   Wind**: a blow that would defeat you leaves you standing, once a fight),
   Way of Chakra 気 (**Twin Weave**: every projectile jutsu fires an echo),
-  Way of the Mind 心 (**Shadow Bloom**: Shade Clones burst when they go) and
-  Way of the Eye 眼, for eye art users (**Unclosing Eye**: past its time the
-  eye stays open on chakra). Deeper tiers open as you spend points in a tree,
+  Way of the Mind 心 (**Shadow Bloom**: Shade Clones burst when they go),
+  Kenjutsu 剣 (faster, longer, harder cuts, a counter after a blocked blow,
+  guard breaking; **Crescent Moon**: a combo's third cut flies on as a blade
+  of chakra) and Dojutsu 瞳, for dojutsu users (**Unclosing Eye**: past its
+  time the eye stays open on chakra). Deeper tiers open as you spend points in a tree,
   and points can be taken back for free. Saved per save slot.
 - **Shade Clones** (a summon): two chakra doubles step out of your shadow,
   wearing your own look, and fight at your side for 14 seconds. They are
@@ -116,7 +119,7 @@ controls can be remapped.
   asks before overwriting anything. Each slot holds its own shinobi, jutsu
   loadouts, story progress and records, and saves as you play. A save from
   an older version becomes slot 1.
-- **Character creation** (New Game): pick a **clan**, an **eye art**, your
+- **Character creation** (New Game): pick a **clan**, a **dojutsu**, your
   name and nature, your look and gear, and your jutsu loadout, then begin
   chapter one. All of it can be changed later from Pause → Customize.
 - **Clans** (original to this game): Hearth (fire), Gale (wind), Stormvein
@@ -130,8 +133,8 @@ controls can be remapped.
   slower, your own seals fly faster) and **Still Eye** (a guard raised at the
   last instant blocks a blow completely). Each clan can awaken only some of
   them, and your eyes change colour with the one you pick.
-- **Opening your eye art in battle** (hold LB, press Y / Ctrl + R): for
-  25 chakra your eye art opens for 12 seconds, drawing its own animated
+- **Opening your dojutsu in battle** (hold LB, press Y / Ctrl + R): for
+  25 chakra your dojutsu opens for 12 seconds, drawing its own animated
   pattern in your irises (a slit pupil and feather marks, two facing
   crescents, a ring of twelve seal marks or a lotus) and strengthening its
   perks. The first time in each area plays a close-up cinematic; after that

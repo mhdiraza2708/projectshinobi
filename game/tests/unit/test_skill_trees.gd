@@ -48,7 +48,7 @@ func _give_levels(levels: int) -> void:
 
 func test_the_data_is_valid_and_original() -> void:
 	assert_eq(SkillTrees.errors, [] as Array[String])
-	assert_eq(SkillTrees.trees().size(), 4)
+	assert_eq(SkillTrees.trees().size(), 5)
 	var total := 0
 	var banned := ["sharingan", "rasengan", "chidori", "kage bunshin", "byakugan", "rinnegan", "sage mode"]
 	for t in SkillTrees.trees():
@@ -259,7 +259,7 @@ func test_the_skill_screen_poses_you_and_learns_with_a_press() -> void:
 	menu.close()
 
 
-# --- Way of the Eye ---------------------------------------------------------------
+# --- Dojutsu ---------------------------------------------------------------------
 
 func _with_eye_art() -> void:
 	Profile.set_value(&"clan", "hearth")
@@ -335,3 +335,70 @@ func test_second_look_and_the_unclosing_eye() -> void:
 	player.stats.chakra_regen = 0.0
 	await seconds(0.2)
 	assert_eq(mode.phase, EyeArtMode.Phase.RECOVERING, "until the chakra runs out")
+
+
+# --- Kenjutsu --------------------------------------------------------------------
+
+func _strike_once() -> void:
+	player._strike_cooldown = 0.0
+	player._strike()
+
+
+func test_kenjutsu_cuts_harder_faster_and_further() -> void:
+	await _load()
+	var foe := _foe(&"jonin", 1.4)
+	await seconds(EnemyShinobi.SPAWN_TIME + 0.1)
+	foe.global_position = player.global_position + Vector3(0, 0.1, -1.4)
+	player._face_now(foe.global_position - player.global_position)
+	foe.stats.health = foe.stats.max_health
+	player._strike_combo = 2
+	_strike_once()
+	var plain := foe.stats.max_health - foe.stats.health
+	assert_true(plain > 0.0, "the first cut lands")
+	var interval := player._strike_cooldown
+	Game.set_skill_ranks({"keen_edge": 3, "swift_draw": 3})
+	foe.stats.health = foe.stats.max_health
+	player._strike_combo = 2
+	_strike_once()
+	assert_near(foe.stats.max_health - foe.stats.health, plain * 1.36, 0.6, "Keen Edge")
+	assert_near(player._strike_cooldown, interval * 0.76, 0.01, "Swift Draw")
+
+
+func test_counter_edge_and_guard_breaker() -> void:
+	await _load()
+	var foe := _foe(&"jonin", 1.4)
+	await seconds(EnemyShinobi.SPAWN_TIME + 0.1)
+	foe.global_position = player.global_position + Vector3(0, 0.1, -1.4)
+	player._face_now(foe.global_position - player.global_position)
+	Game.set_skill_ranks({"counter_edge": 1, "guard_breaker": 1})
+	# A guard raised by the foe is broken.
+	foe._enter(EnemyShinobi.State.GUARDING)
+	_strike_once()
+	assert_eq(foe.state, EnemyShinobi.State.STAGGERED, "Guard Breaker knocks the guard aside")
+	# A blow on your guard, then a cut: double, and they reel.
+	foe._enter(EnemyShinobi.State.FIGHT)
+	player._enter(Player.State.GUARDING)
+	player.take_hit(5.0, Element.NONE, foe)
+	player._enter(Player.State.FREE)
+	foe.stats.health = foe.stats.max_health
+	player._strike_combo = 2
+	_strike_once()
+	var countered := foe.stats.max_health - foe.stats.health
+	foe.stats.health = foe.stats.max_health
+	player._strike_combo = 2
+	_strike_once()
+	var plain := foe.stats.max_health - foe.stats.health
+	assert_near(countered, plain * 2.0, 0.6, "the counter cuts twice as hard, once")
+
+
+func test_crescent_moon_flies_from_the_third_cut() -> void:
+	await _load()
+	Game.set_skill_ranks({"crescent_moon": 1})
+	var flying := func() -> Array: return scene.find_children("*", "JutsuProjectile", true, false).filter(
+		func(p: JutsuProjectile) -> bool: return p.style == &"crescent")
+	player._strike_combo = 0
+	_strike_once()
+	assert_eq(flying.call().size(), 0, "not from the first cut")
+	player._strike_combo = 1
+	_strike_once()
+	assert_eq(flying.call().size(), 1, "the third cut of the combo flies")

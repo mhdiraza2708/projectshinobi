@@ -99,7 +99,7 @@ func sustaining() -> bool:
 func try_open() -> bool:
 	var a := art()
 	if a.is_empty():
-		player.feedback.emit("You have no eye art", &"info")
+		player.feedback.emit("You have no dojutsu", &"info")
 		return false
 	if phase == Phase.ACTIVE:
 		return false

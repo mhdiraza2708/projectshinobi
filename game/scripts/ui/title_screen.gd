@@ -75,7 +75,7 @@ func show_main() -> void:
 	var slot := SaveSlots.active
 	if slot > 0:
 		_first = _entry("続", "Continue", _slot_summary(slot), continue_chosen.emit.bind(slot))
-	_entry("新", "New Game", "" if slot > 0 else "Choose your clan, eye art, look and jutsu, then begin the story.",
+	_entry("新", "New Game", "" if slot > 0 else "Choose your clan, dojutsu, look and jutsu, then begin the story.",
 		show_slots.bind(true))
 	if _first == null or slot == 0:
 		_first = _menu.get_child(0) as Button

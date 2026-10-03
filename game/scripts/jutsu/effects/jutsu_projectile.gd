@@ -50,6 +50,8 @@ func _ready() -> void:
 		_visual = Node3D.new()
 		_visual.add_child(Vfx.kunai())
 		_visual.add_child(Vfx.trail(Color(1, 1, 1, 0.55), 0.06, 0.12, true))
+	elif style == &"crescent":
+		_visual = Vfx.crescent(Color(0.75, 0.88, 1.0), radius * 3.2)
 	else:
 		_visual = Vfx.projectile_visual(element, radius)
 	add_child(_visual)

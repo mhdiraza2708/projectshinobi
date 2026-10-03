@@ -131,7 +131,7 @@ func _build() -> void:
 	_eye_bar = InkBar.new()
 	_eye_bar.seed = 19.0
 	_eye_text = UiKit.label("", 20, UiKit.INK, &"bold")
-	_eye_row = _vital_row("眼", "EYE ART", _eye_text)
+	_eye_row = _vital_row("瞳", "DOJUTSU", _eye_text)
 	bars.add_child(_eye_row)
 	bars.add_child(_eye_bar)
 	_buffs = UiKit.label("", 17, UiKit.CRIMSON_DARK, &"bold")

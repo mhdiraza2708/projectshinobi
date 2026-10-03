@@ -18,7 +18,7 @@ signal begun
 signal cancelled
 
 const TABS := [["姿", "Look"], ["色", "Colours"], ["装", "Gear"], ["名", "Identity"],
-	["族", "Clan"], ["眼", "Eyes"], ["術", "Jutsu"]]
+	["族", "Clan"], ["瞳", "Dojutsu"], ["術", "Jutsu"]]
 const T_LOOK := 0
 const T_COLOURS := 1
 const T_GEAR := 2
@@ -243,7 +243,7 @@ func _build() -> void:
 	_done = _button("Done", close)
 	footer.add_child(_done)
 	_reset = _button("Reset look", _reset_look)
-	_reset.tooltip_text = "Back to the default look. Your clan, eye art, name and jutsu stay."
+	_reset.tooltip_text = "Back to the default look. Your clan, dojutsu, name and jutsu stay."
 	footer.add_child(_reset)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -262,7 +262,7 @@ func _rebuild_tabs() -> void:
 	_tabs.add_child(_scroll("Gear", _build_gear()))
 	_tabs.add_child(_scroll("Identity", _build_identity()))
 	_tabs.add_child(_scroll("Clan", _build_clan()))
-	_tabs.add_child(_scroll("Eyes", _build_eyes()))
+	_tabs.add_child(_scroll("Dojutsu", _build_eyes()))
 	_tabs.add_child(_scroll("Jutsu", _build_jutsu()))
 	_select_tab(clampi(current, 0, TABS.size() - 1))
 	_update_footer()
@@ -456,7 +456,7 @@ func _build_clan() -> Control:
 		var tag := "%s nature" % Element.display_name(element) if element != Element.NONE else "Any nature"
 		list.add_child(_card(clan["kanji"], Color(clan["color"]), clan["name"], tag, clan["blurb"],
 			Perks.describe(clan["perks"]), clan["id"] == current, _pick_clan.bind(clan["id"])))
-	list.add_child(_hint("Your clan sets your chakra nature and which eye arts you may take. Every clan here is original to this game. You can change it later from Customize."))
+	list.add_child(_hint("Your clan sets your chakra nature and which dojutsu you may take. Every clan here is original to this game. You can change it later from Customize."))
 	return list
 
 
@@ -473,13 +473,13 @@ func _pick_clan(id: String) -> void:
 
 func _build_eyes() -> Control:
 	var list := _list()
-	list.add_child(_section("Eye art"))
+	list.add_child(_section("Dojutsu"))
 	var clan_id: String = Profile.get_value(&"clan")
 	if clan_id == "":
-		list.add_child(_hint("Choose a clan first: each clan can awaken only some eye arts."))
+		list.add_child(_hint("Choose a clan first: each clan can awaken only some dojutsu."))
 		return list
 	var current: String = Profile.get_value(&"eye_art")
-	list.add_child(_card("無", UiKit.INK_SOFT, "No eye art", "Plain eyes", "Nothing awakened: you rely on your clan and your hands.",
+	list.add_child(_card("無", UiKit.INK_SOFT, "No dojutsu", "Plain eyes", "Nothing awakened: you rely on your clan and your hands.",
 		PackedStringArray(), current == "", _pick_eye.bind("")))
 	for art in Perks.arts_for(clan_id):
 		var lines := Perks.describe(art["perks"])
@@ -491,9 +491,9 @@ func _build_eyes() -> Control:
 		var ability := str(art["awakened"].get("ability", ""))
 		if ability != "":
 			lines.append(EyeArtMode.ABILITIES[ability] % [InputDevice.glyph(&"quick_shift"), InputDevice.glyph(&"charge_chakra")])
-		list.add_child(_card(art["kanji"], Color(art["color"]), art["name"], "Eye art", art["blurb"],
+		list.add_child(_card(art["kanji"], Color(art["color"]), art["name"], "Dojutsu", art["blurb"],
 			lines, art["id"] == current, _pick_eye.bind(art["id"])))
-	list.add_child(_hint("Your eyes change colour with your eye art. Eye arts are original to this game: they sharpen how you aim, dodge, guard or read seals."))
+	list.add_child(_hint("Your eyes change colour with your dojutsu. Every dojutsu here is original to this game: they sharpen how you aim, dodge, guard or read seals."))
 	return list
 
 
