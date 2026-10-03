@@ -19,19 +19,17 @@ controls can be remapped.
 > polished indie/AA quality, not "AAA" (a budget no small team has). See
 > [docs/DESIGN.md](docs/DESIGN.md) for the reasoning.
 
-![Story mode, chapter 5: Kagerou confronts Hisame, Asahi and you at the lantern-lit shrine at night](docs/images/story_night.png)
+![Running on the sea toward Autumn Wood, its red maples ahead; the side quest Red Leaf Remedy tracked at the top right](docs/images/world_sea.jpg)
 
-![Trial of the Five Natures: two Lightning clones, one weaving a jutsu with its seals shown above its head; the wave, weakness and timer at the top right](docs/images/trial.png)
-
-![Weaving seals on a controller: each seal is stamped as a talisman with its zodiac kanji and the button that makes it; a fuse burns down the timing window and hints show what the sequence can still become](docs/images/weaving.png)
-
-![Casting Ember Volley and Sunfall Orb at a locked-on training dummy](docs/images/casting.png)
-
-| Hand-seal pose (IK, works on any VRoid rig) | Pause menu (controller mode) |
+| | |
 |---|---|
-| ![The placeholder VRM character pressing its palms together for a seal](docs/images/seal_pose.png) | ![Scroll-styled pause menu with drawn keyboard and controller glyphs](docs/images/pause_menu_controller.png) |
+| ![Emberwood's academy yard: lanterns, practice dummies and the pillar of light where the next mission waits](docs/images/world_emberwood.jpg) | ![Out at sea between islands, Autumn Wood and the Frozen Road on the horizon](docs/images/world_islands.jpg) |
+| ![Pause → Map: the islands charted, found ones named and travelled to](docs/images/world_map.jpg) | ![Pause → Quests: the story mission, a side quest under way, one on offer and two done](docs/images/world_quests.jpg) |
+| ![The Kenjutsu skill tree beside your shinobi on a lit stage](docs/images/skills_kenjutsu.jpg) | ![The Dojutsu skill tree: the camera pushes in on your face with your eyes open](docs/images/skills_dojutsu.jpg) |
 
-![Customize screen, Gear tab: the character wears a fitted hachigane, face mask and scarf, previewed live](docs/images/customize.png)
+![Story mode, chapter 2, The Ashen Trail: Kagerou wreathed in fire on a snowy night](docs/images/story_night.jpg)
+
+![Trial of the Five Natures: locked on to a Lightning chunin weaving a jutsu, its seals shown above its head; the wave, weakness and timer at the top](docs/images/trial.jpg)
 
 ## What you can do right now
 
