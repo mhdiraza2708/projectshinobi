@@ -6,6 +6,9 @@ extends RefCounted
 
 const DIR := "res://data/story"
 const CHARACTERS_FILE := "characters.json"
+## The story's chapters: each a numbered, titled group of missions (the
+## mission files say which chapter they belong to with "part").
+const PARTS_FILE := "parts.json"
 ## Beat kinds: required keys, optional keys.
 const BEATS := {
 	"enter": [["who", "at"], []],
@@ -62,7 +65,7 @@ const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_
 const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
 const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
 const CHAPTER_REQUIRED: PackedStringArray = ["id", "number", "title", "location", "time", "beats"]
-const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part", "island"]
+const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part", "island", "objective"]
 const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "voice", "style"]
 ## A character's recorded voice (see art/audio/make_voices.py): a Kokoro
 ## voice (or blend), a speed, and an optional effect.
@@ -71,13 +74,15 @@ const VOICE_EFFECTS: PackedStringArray = ["", "spirit"]
 const NUMERALS: PackedStringArray = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 ## The player speaks as "player".
 const PLAYER := "player"
-const PART_TITLES := {1: "The Stolen Scroll", 2: "The Last Seal"}
 
 ## id -> {name, title, kanji, element: int, style: Dictionary}
 var characters: Dictionary = {}
 ## Sorted by number. Each: {id, number, title, location, time, summary,
 ## dummies, player_at: Vector2, beats: Array[Dictionary]}.
 var chapters: Array[Dictionary] = []
+## The big chapters, in order: {number, title, kanji, summary}. Each holds the
+## missions (entries in `chapters`) whose "part" is its number.
+var parts: Array[Dictionary] = []
 var errors: Array[String] = []
 
 
@@ -139,7 +144,36 @@ func speaker_kanji(who: String) -> String:
 
 
 static func numeral(n: int) -> String:
-	return NUMERALS[n] if n >= 0 and n < NUMERALS.size() else str(n)
+	if n >= 0 and n < NUMERALS.size():
+		return NUMERALS[n]
+	if n < 100:
+		# 十一 ... 九十九.
+		var tens := n / 10
+		var ones := n % 10
+		return (NUMERALS[tens] if tens > 1 else "") + "十" + (NUMERALS[ones] if ones > 0 else "")
+	return str(n)
+
+
+## A big chapter by number ({} if none).
+func part(number: int) -> Dictionary:
+	for p in parts:
+		if p["number"] == number:
+			return p
+	return {}
+
+
+## The missions of a big chapter, in order.
+func missions_in(number: int) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for c in chapters:
+		if c["part"] == number:
+			out.append(c)
+	return out
+
+
+## Which mission of its chapter this is (1-based).
+func mission_index(c: Dictionary) -> int:
+	return missions_in(c["part"]).find_custom(func(m: Dictionary) -> bool: return m["id"] == c["id"]) + 1
 
 
 ## Fills {name}, {nature} and {action} placeholders: an input action name
@@ -166,7 +200,7 @@ func _load(dir: String) -> void:
 		errors.append("%s: top level must be an object of characters" % CHARACTERS_FILE)
 
 	var files := Array(DirAccess.get_files_at(dir)).filter(func(f: String) -> bool:
-		return f.get_extension() == "json" and f != CHARACTERS_FILE)
+		return f.get_extension() == "json" and f != CHARACTERS_FILE and f != PARTS_FILE)
 	files.sort()
 	for f: String in files:
 		var data: Variant = _read_json(dir.path_join(f))
@@ -181,6 +215,34 @@ func _load(dir: String) -> void:
 		if chapters[i]["number"] != i + 1:
 			errors.append("chapters must be numbered 1, 2, 3... without gaps (found %d)" % chapters[i]["number"])
 			break
+	_load_parts(dir)
+
+
+func _load_parts(dir: String) -> void:
+	var data: Variant = _read_json(dir.path_join(PARTS_FILE)) if FileAccess.file_exists(dir.path_join(PARTS_FILE)) else null
+	if data is Dictionary and (data as Dictionary).get("parts") is Array:
+		for raw: Variant in data["parts"]:
+			if not raw is Dictionary or not (raw as Dictionary).has("title"):
+				errors.append("%s: each part needs a title" % PARTS_FILE)
+				continue
+			parts.append({"number": parts.size() + 1, "title": str(raw["title"]), "kanji": str(raw.get("kanji", "")),
+				"summary": str(raw.get("summary", ""))})
+	# Older data with no parts file: one part per number in use.
+	if parts.is_empty():
+		var seen := {}
+		for c in chapters:
+			if not seen.has(c["part"]):
+				seen[c["part"]] = true
+				parts.append({"number": c["part"], "title": "Part %d" % c["part"], "kanji": "", "summary": ""})
+	# Missions run part by part: a mission can't sit in an earlier part than
+	# the one before it.
+	var last := 0
+	for c in chapters:
+		if part(c["part"]).is_empty():
+			errors.append("%s: no chapter %d in %s" % [c["id"], c["part"], PARTS_FILE])
+		if c["part"] < last:
+			errors.append("%s: chapter %d comes after chapter %d" % [c["id"], c["part"], last])
+		last = c["part"]
 
 
 func _read_json(path: String) -> Variant:
@@ -294,6 +356,7 @@ func _parse_chapter(file: String, data: Dictionary) -> Dictionary:
 		"weather": str(data.get("weather", "none")),
 		"island": str(data.get("island", "emberwood")),
 		"part": int(data.get("part", 1)),
+		"objective": str(data.get("objective", "")),
 		"player_at": _vec2(file, data.get("player_at", [0, 4])),
 		"beats": [],
 	}

@@ -1,7 +1,8 @@
 {
 	"id": "ch9_snow",
-	"number": 9,
-	"part": 2,
+	"number": 14,
+	"part": 5,
+	"objective": "Follow the tracks of fire to the shrine on the Frozen Road",
 	"title": "Kagerou's Reason",
 	"location": "The frozen shrine road",
 	"time": "dusk",

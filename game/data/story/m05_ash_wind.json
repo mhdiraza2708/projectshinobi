@@ -1,0 +1,56 @@
+{
+	"id": "m05_ash_wind",
+	"number": 5,
+	"part": 2,
+	"objective": "Follow the clones' trail west across the sea to the Ashen Pass",
+	"title": "Ash on the Wind",
+	"location": "Foot of the Ashen Pass",
+	"time": "dusk",
+	"island": "ashen_pass",
+	"summary": "Asahi catches up with you on the burned island, and the clones' trail turns into a patrol.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "Ashen Pass", "sub": "Where the old fires never quite went out", "seconds": 3},
+			{"enter": "asahi", "at": [10, 10], "puff": false},
+			{"leap": "asahi", "from": [10, 4, 10], "to": [2.5, 3], "height": 3, "seconds": 0.9},
+			{"cam": "mid", "on": "asahi", "seconds": 3},
+			{"say": [
+				["asahi", "You ran here on the water too? Good. I thought I was the only one stupid enough.", "happy"]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["player", "Where's Hisame?"],
+			["asahi", "Resealing the vault. She said she'd meet us at the shrine by midnight, and that we're not to do anything brave before then."],
+			["asahi", "So, obviously, we're going to do something brave before then."],
+			["player", "The trail?"],
+			["asahi", "Clone footprints in the ash. Fifty, maybe more. They don't sink like people do. Look, they barely touch it."]
+		]},
+		{"do": "scene", "steps": [
+			{"cam": "close", "on": "asahi", "seconds": 4},
+			{"say": [
+				["asahi", "My mother walked this pass once, when the fires were still burning. She said the ash remembers every footstep.", "sad"],
+				["player", "What happened to her?"],
+				["asahi", "She came home. She always came home. Until the one time she didn't.", "sad"],
+				["asahi", "Anyway. That's why I'm loud. If I'm loud, people remember I was here."]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["player", "Asahi. Something's moving above the road."],
+			["asahi", "A patrol. Fire and earth, the way the thief likes them. Let's make some footprints of our own.", "angry"]
+		]},
+		{"do": "ally", "who": "asahi", "rank": "chunin", "health": 220},
+		{"do": "fight", "text": "Break the clone patrol", "waves": [
+			{"element": "earth", "enemies": ["genin", "genin"]},
+			{"element": "fire", "enemies": ["genin", "chunin"]}
+		]},
+		{"do": "say", "lines": [
+			["asahi", "Not bad. You didn't even need me. I needed me, though. That was fun.", "happy"],
+			["player", "Look up the pass. The shrine."],
+			["asahi", "Lanterns. In a shrine nobody's prayed at for twenty years.", "angry"],
+			["asahi", "Someone's waiting for us. Let's not keep them."]
+		]},
+		{"do": "exit", "who": "asahi"}
+	]
+}

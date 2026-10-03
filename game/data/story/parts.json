@@ -1,0 +1,17 @@
+{
+	"_about": "The story's chapters, in order. Each mission file says which chapter it belongs to with \"part\" (1 = the first here). Every name and line in the story is original.",
+	"parts": [
+		{"title": "The Graduation", "kanji": "卒",
+			"summary": "A new genin, a loud rival, and an academy vault that should never have been opened."},
+		{"title": "The Ashen Trail", "kanji": "灰",
+			"summary": "The thief's clones lead west across the sea, to a burned valley and an old student."},
+		{"title": "The Windward Watch", "kanji": "風",
+			"summary": "A hunter from the Watch names what sleeps in the scroll's last seal."},
+		{"title": "The Old Dam", "kanji": "堰",
+			"summary": "Stone, water and a ritual circle the size of a valley."},
+		{"title": "Kagerou's Reason", "kanji": "炎",
+			"summary": "A road through the snow, a duel on the thief's terms, and the truth about an accident."},
+		{"title": "Nue", "kanji": "鵺",
+			"summary": "The new moon over the Five Winds, and the technique no one has used in a hundred years."}
+	]
+}

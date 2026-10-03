@@ -1,29 +1,35 @@
 # Story mode: writing chapters
 
-Story mode is chapter-based: each chapter is a JSON file in
-`game/data/story/` that lists **beats** (dialogue, tutorial tasks, fights,
-boss fights, characters entering and leaving) played in order. Adding or
-editing a chapter is a data change: no code, and no Godot editor needed.
+The story is six **chapters** of **missions**. Each mission is a JSON file
+in `game/data/story/` that lists **beats** (dialogue, tutorial tasks, fights,
+boss fights, characters entering and leaving) played in order; its `part`
+says which chapter it belongs to (`parts.json` names the chapters). In the
+open world each mission waits at a pillar of light on its island, the
+tracker tells you where to go (`objective`), and arriving starts it: no
+card, no teleport, and when it ends you're back in the world with the next
+objective. Adding or editing a mission is a data change: no code, and no
+Godot editor needed.
 
-Part One, *The Stolen Scroll*, has five chapters:
-
-| # | Chapter | Time | What happens |
-|---|---|---|---|
-| 一 | The Graduation Trial | dawn | Sensei Hisame's tutorial: kunai, seals, the element circle, guarding, a first clone. Asahi challenges you. |
-| 二 | Lightning at Noon | day | Boss duel with Asahi (lightning). The vault alarm rings. |
-| 三 | The Empty Vault | dusk | The Scroll of Five Natures is stolen. Hold the yard against two waves of clones. Enter Kagerou's name. |
-| 四 | The Ashen Pass | night | Ambush at the abandoned shrine. Boss: Iwao (earth), who summons stone clones. |
-| 五 | Kagerou | night | Final boss. Kagerou changes nature at 80/60/40/20% health, so answer each one with the nature that beats it. |
-
-Part Two, *The Last Seal*:
-
-| # | Chapter | Time / weather | What happens |
-|---|---|---|---|
-| 六 | Rain Lessons | day, rain | Interrupt drill: break a practice clone's weave three times. Tsumugi (wind hunter) arrives and duels you. |
-| 七 | The Autumn Wood | dusk, leaves | Fight clone waves beside Asahi. Plans for Iwao's dam. |
-| 八 | The Old Dam | night, storm | Survive 45 s beside Tsumugi while Hisame breaks the barrier, then Iwao (earth, then water). |
-| 九 | Kagerou's Reason | dusk, snow | Kagerou's story, and a duel on his terms. |
-| 十 | Nue | night, storm | A possessed, oversized Kagerou cycles all five natures while your allies hold the clones. Seal it with the Five-Nature Seal (Rat, Tiger, Dragon, Snake, Boar). |
+| Chapter | # | Mission | Island | What happens |
+|---|---|---|---|---|
+| 一 The Graduation | 1 | The Graduation Trial | Emberwood | Sensei Hisame's tutorial: kunai, seals, the element circle, guarding, a first clone. Asahi challenges you. |
+| | 2 | The Night Before | Emberwood | Tobi and Hisame tell you what the vault guards; Asahi, on the wall, about his mother. |
+| | 3 | Lightning at Noon | Emberwood | Boss duel with Asahi (lightning). The vault alarm rings. |
+| | 4 | The Empty Vault | Emberwood | The Scroll of Five Natures is stolen. Hold the yard. Kagerou's name. |
+| 二 The Ashen Trail | 5 | Ash on the Wind | Ashen Pass | Asahi meets you at the burned island; a clone patrol; lanterns at the shrine. |
+| | 6 | The Ashen Pass | Ashen Pass | Ambush at the shrine. Boss: Iwao (earth). |
+| | 7 | Kagerou | Ashen Pass | Kagerou changes nature at 80/60/40/20%; answer each. He keeps the last seal. |
+| 三 The Windward Watch | 8 | Rain Lessons | Emberwood | Interrupt drill; Tsumugi of the Windward Watch arrives and duels you. |
+| | 9 | The Hunter's Road | Autumn Wood | Tsumugi on the Watch and the Nue's making; break scouts' weaves; an ambush. |
+| | 10 | The Autumn Wood | Autumn Wood | Clone waves beside Asahi; plans for Iwao's dam. |
+| 四 The Old Dam | 11 | Below the Dam | Old Dam | Chiyo the dam keeper on Iwao; clear the spillway; Hisame's plan. |
+| | 12 | The Old Dam | Old Dam | Survive beside Tsumugi while Hisame breaks the barrier; Iwao (earth, then water). |
+| 五 Kagerou's Reason | 13 | The Frozen Road | Frozen Road | Renji saw a man who melted the snow; a fire-clone ambush. |
+| | 14 | Kagerou's Reason | Frozen Road | Kagerou's story, and a duel on his terms. |
+| | 15 | What the Scroll Remembers | Emberwood | Hisame teaches the Five-Nature Seal; Asahi admits he's scared. |
+| 六 Nue | 16 | The Climb | Five Winds | Up the leap stones; five pillar guardians, one per nature, with Asahi and Tsumugi. |
+| | 17 | Nue | Five Winds | The possessed giant; seal it with the Five-Nature Seal. |
+| | 18 | Noon, Again | Emberwood | What became of everyone, and Asahi's rematch (lightning, then wind). |
 
 The Nue is a spirit from Japanese folklore (public domain). All story content is original. Keep it that way: see the IP section in
 [DESIGN.md](DESIGN.md).
@@ -76,8 +82,12 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
 }
 ```
 
-- `number`: chapters play in order 1, 2, 3… and each unlocks when the one
+- `number`: missions play in order 1, 2, 3… and each unlocks when the one
   before it is cleared.
+- `part`: the chapter (in `parts.json`) the mission belongs to. Missions run
+  chapter by chapter.
+- `objective`: what the tracker says while the mission waits ("Follow the
+  clones' trail west across the sea to the Ashen Pass").
 - `time`: `dawn`, `day`, `dusk` or `night` (night lights the lanterns).
 - `weather`: `none`, `rain`, `storm` (rain with lightning and thunder),
   `snow` or `leaves`.

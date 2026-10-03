@@ -1,7 +1,8 @@
 {
 	"id": "ch7_wood",
-	"number": 7,
-	"part": 2,
+	"number": 10,
+	"part": 3,
+	"objective": "Meet Tsumugi and Asahi in the Autumn Wood at dusk",
 	"title": "The Autumn Wood",
 	"location": "Autumn Wood, north of Emberwood",
 	"time": "dusk",

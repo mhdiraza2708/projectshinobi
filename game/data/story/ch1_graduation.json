@@ -1,6 +1,8 @@
 {
 	"id": "ch1_graduation",
 	"number": 1,
+	"part": 1,
+	"objective": "Meet Sensei Hisame in the Academy yard",
 	"title": "The Graduation Trial",
 	"location": "Emberwood Academy yard",
 	"time": "dawn",

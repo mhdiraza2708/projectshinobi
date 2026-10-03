@@ -6,6 +6,9 @@ extends Node3D
 
 var chapter_id := ""
 var label := ""
+## Arriving starts the mission only once you've been away from it (so the
+## next mission doesn't begin the instant the last one ends).
+var armed := true
 
 var _seal: MeshInstance3D
 var _time := 0.0

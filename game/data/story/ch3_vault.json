@@ -1,6 +1,8 @@
 {
 	"id": "ch3_vault",
-	"number": 3,
+	"number": 4,
+	"part": 1,
+	"objective": "Answer the vault alarm in the Academy yard",
 	"title": "The Empty Vault",
 	"location": "Emberwood Academy yard",
 	"time": "dusk",

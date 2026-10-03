@@ -1,7 +1,8 @@
 {
 	"id": "ch10_nue",
-	"number": 10,
-	"part": 2,
+	"number": 17,
+	"part": 6,
+	"objective": "Stand on the Five Winds summit at the new moon",
 	"title": "Nue",
 	"location": "Shrine of the Five Winds",
 	"time": "night",

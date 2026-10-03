@@ -1,0 +1,60 @@
+{
+	"id": "m18_afterward",
+	"number": 18,
+	"part": 6,
+	"objective": "Go home to Emberwood: Asahi is waiting in the yard at noon",
+	"title": "Noon, Again",
+	"location": "Emberwood Academy yard",
+	"time": "day",
+	"island": "emberwood",
+	"summary": "What became of everyone, and the rematch Asahi has been promising since the first morning.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"enter": "hisame", "at": [-2.5, -1], "puff": false},
+			{"enter": "tobi", "at": [2.5, -1.5], "puff": false},
+			{"cam": "two", "on": ["hisame", "tobi"], "seconds": 4},
+			{"say": [
+				["tobi", "The hero of the Five Winds. The first-years have made a song about you. It's terrible.", "happy"]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["player", "What did the academy decide about Kagerou?"],
+			["hisame", "I spoke for him. For two hours. I've never talked that long in my life.", "relaxed"],
+			["hisame", "He stays, under watch. He'll teach the fire classes. Control, not strength. He asked for that himself."],
+			["tobi", "The Watch wanted him. The council told them the academy looks after its own. Even the ones it got wrong."],
+			["player", "And Iwao?"],
+			["hisame", "Back at the dam with Chiyo, scraping his own seals off the stone. He says it's the hardest work he's ever done.", "happy"],
+			["hisame", "Tsumugi left at dawn with the Watch. She said to tell you there's a place for you there, when you're tired of being loud."],
+			["player", "I'm not loud."],
+			["tobi", "She meant Asahi. Speaking of whom."]
+		]},
+		{"do": "enter", "who": "asahi", "at": [0, -5]},
+		{"do": "scene", "steps": [
+			{"cam": "low", "on": "asahi", "seconds": 4},
+			{"say": [
+				["asahi", "Noon. Exactly. I've been standing here since eleven.", "happy"],
+				["asahi", "No scroll, no thief, no spirit with five faces. Just you, me, and academy rules.", "happy"],
+				["hisame", "No real blades. No lasting harm. Stop when I say stop."],
+				["asahi", "And this time I've been practising. Lightning first, then something you haven't seen.", "angry"]
+			]}
+		]},
+		{"do": "boss", "who": "asahi", "rank": "jonin", "health": 340, "element": "lightning",
+			"taunt": "Try to keep up!",
+			"phases": [
+				{"at": 0.5, "element": "wind", "say": "My mother's second nature. Wind! Didn't see that coming, did you?"}
+			]},
+		{"do": "enter", "who": "asahi", "at": [0, -3]},
+		{"do": "say", "lines": [
+			["asahi", "...Best of three?", "happy"],
+			["player", "Tomorrow. Noon."],
+			["asahi", "Wear something you don't mind getting singed.", "happy"],
+			["hisame", "Graduation was the easy part, {name}. Everything after it is yours.", "relaxed"]
+		]},
+		{"do": "banner", "text": "The End  ·  The islands are yours"},
+		{"do": "exit", "who": "asahi"},
+		{"do": "exit", "who": "tobi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

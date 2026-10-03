@@ -1,18 +1,12 @@
 {
 	"_about": "Side quests in the open world (Quests). Every person and line here is original. 'at' is a point on the quest's island in that island's own metres (its clearing is the origin). 'requires' is a story chapter or another quest that must be done first. Types: gather (find 'count' of an item around the island), defeat (waves of foes at 'at'), duel (one named foe at 'at'), deliver (talk to 'to' on another island).",
 	"people": {
-		"tobi": {"name": "Tobi", "title": "Academy Instructor", "kanji": "教", "model": "darkness_shibu", "element": "fire",
-			"style": {"tints": {"outfit": "#3b3530", "lower": "#26232a"}, "headband": "cloth", "headband_color": "#b8321f", "scarf": false, "back": "none", "pouch": true}},
 		"mago": {"name": "Mago", "title": "Fisher", "kanji": "漁", "model": "hairsample_male", "element": "water",
 			"style": {"tints": {"outfit": "#4a5a66", "lower": "#2c3238", "hair": "#8a8a8a"}, "headband": "none", "scarf": true, "scarf_color": "#7a8f99", "back": "none", "pouch": false}},
 		"suzu": {"name": "Suzu", "title": "Healer", "kanji": "薬", "model": "vivi", "element": "earth",
 			"style": {"tints": {"outfit": "#5a6b3a", "lower": "#3a3528", "hair": "#3a2a22"}, "headband": "none", "scarf": false, "back": "none", "pouch": true}},
 		"kurogane": {"name": "Kurogane", "title": "The Ash Blade", "kanji": "鋼", "model": "sendagaya_shibu", "element": "fire",
-			"style": {"tints": {"outfit": "#1e1c20", "lower": "#151418", "hair": "#c9c4bd"}, "headband": "hachigane", "headband_color": "#8a8580", "scarf": true, "scarf_color": "#7a1e12", "back": "ninjato", "mask": true, "pouch": false}},
-		"chiyo": {"name": "Chiyo", "title": "Dam Keeper", "kanji": "守", "model": "hairsample_female", "element": "water",
-			"style": {"tints": {"outfit": "#2f4a5c", "lower": "#23303a", "hair": "#1c1c22"}, "headband": "cloth", "headband_color": "#3b82c4", "scarf": false, "back": "none", "pouch": true}},
-		"renji": {"name": "Renji", "title": "Traveller", "kanji": "旅", "model": "vita", "element": "wind",
-			"style": {"tints": {"outfit": "#6b5a44", "lower": "#3a3228", "hair": "#d8d0c4"}, "headband": "none", "scarf": true, "scarf_color": "#c9a45c", "back": "none", "pouch": true}}
+			"style": {"tints": {"outfit": "#1e1c20", "lower": "#151418", "hair": "#c9c4bd"}, "headband": "hachigane", "headband_color": "#8a8580", "scarf": true, "scarf_color": "#7a1e12", "back": "ninjato", "mask": true, "pouch": false}}
 	},
 	"quests": [
 		{

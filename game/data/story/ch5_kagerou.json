@@ -1,6 +1,8 @@
 {
 	"id": "ch5_kagerou",
-	"number": 5,
+	"number": 7,
+	"part": 2,
+	"objective": "Be at the Ashen Pass shrine at midnight",
 	"title": "Kagerou",
 	"location": "Abandoned shrine, Ashen Pass",
 	"time": "night",

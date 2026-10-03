@@ -81,12 +81,30 @@ func _jump_to(kind: String) -> void:
 func test_story_files_load_cleanly() -> void:
 	var story := Story.load_all()
 	assert_eq(story.errors, [] as Array[String], "story data errors")
-	assert_eq(story.chapters.size(), 10)
-	assert_eq(story.chapters.filter(func(c: Dictionary) -> bool: return c["part"] == 2).size(), 5, "Part Two")
+	assert_eq(story.chapters.size(), 18, "eighteen missions")
+	assert_eq(story.parts.size(), 6, "in six chapters")
+	for part in story.parts:
+		var missions := story.missions_in(part["number"])
+		assert_true(missions.size() >= 2, "chapter %d is more than one mission" % part["number"])
+		var islands := {}
+		var fights := false
+		for c in missions:
+			islands[c["island"]] = true
+			fights = fights or c["beats"].any(func(b: Dictionary) -> bool: return b["do"] in ["fight", "boss", "survive"])
+		assert_true(fights, "chapter %d has a fight" % part["number"])
+		assert_true(UiKit.font(&"brush").has_char(str(part["kanji"]).unicode_at(0)), "chapter %d's kanji is in the font" % part["number"])
+	# The story travels: consecutive missions keep moving you around the islands.
+	var moves := 0
+	for i in range(1, story.chapters.size()):
+		if story.chapters[i]["island"] != story.chapters[i - 1]["island"]:
+			moves += 1
+	assert_true(moves >= 8, "the story sends you across the sea (%d crossings)" % moves)
 	for c: Dictionary in story.chapters:
 		var kinds: Array = c["beats"].map(func(b: Dictionary) -> String: return b["do"])
 		assert_true(kinds.has("say"), "%s has dialogue" % c["id"])
-		assert_true(kinds.has("fight") or kinds.has("boss"), "%s has a fight" % c["id"])
+		assert_true(kinds.has("fight") or kinds.has("boss") or kinds.has("task") or kinds.has("survive"),
+			"%s gives you something to do" % c["id"])
+		assert_true(c["objective"] != "", "%s says where to go" % c["id"])
 	for id: String in story.characters:
 		assert_true(UiKit.font(&"brush").has_char(story.characters[id]["kanji"].unicode_at(0)), "%s's seal kanji is in the font" % id)
 
@@ -189,7 +207,7 @@ func test_chapter_one_plays_through() -> void:
 		await physics_frames(1)
 	assert_eq(finished, ["ch1_graduation"], "chapter finished")
 	assert_true(Game.chapter_done("ch1_graduation"))
-	assert_true(scene.story.is_unlocked("ch2_rival"), "next chapter unlocked")
+	assert_true(scene.story.is_unlocked("m02_night_before"), "next mission unlocked")
 	await physics_frames(70)
 	assert_true(scene.results.is_open(), "chapter complete panel")
 
@@ -260,10 +278,10 @@ func test_chapters_unlock_in_order() -> void:
 	var chosen := []
 	scene.title_screen.chapter_chosen.connect(func(id: String) -> void: chosen.append(id))
 	scene.title_screen.chapter_chosen.disconnect(scene.start_story)
-	var ch2: Button = buttons.filter(func(b: Button) -> bool: return b.text.contains("Lightning at Noon"))[0]
+	var ch2: Button = buttons.filter(func(b: Button) -> bool: return b.text.contains("The Night Before"))[0]
 	ch2.pressed.emit()
 	await physics_frames(1)
-	assert_eq(chosen, ["ch2_rival"])
+	assert_eq(chosen, ["m02_night_before"])
 
 
 func test_night_relights_without_touching_the_scene_file() -> void:

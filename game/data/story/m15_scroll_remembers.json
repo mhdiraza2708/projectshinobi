@@ -1,0 +1,59 @@
+{
+	"id": "m15_scroll_remembers",
+	"number": 15,
+	"part": 5,
+	"objective": "Return home to Emberwood: Hisame has something to teach you",
+	"title": "What the Scroll Remembers",
+	"location": "Emberwood Academy yard",
+	"time": "night",
+	"island": "emberwood",
+	"summary": "The night before the new moon, Hisame opens the scroll to its oldest technique, and everyone says what they've been carrying.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"enter": "hisame", "at": [0, -1], "puff": false},
+			{"cam": "close", "on": "hisame", "seconds": 4},
+			{"say": [
+				["hisame", "You came back. I wasn't sure you would, after what he told you.", "sad"]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["player", "You said you'd teach me something no one has used in a hundred years."],
+			["hisame", "The founders' own binding. The Five-Nature Seal. Rat, Tiger, Dragon, Snake, Boar."],
+			["hisame", "Five natures woven into one circle. It is how they tore the Nue apart the first time. It will cost you nearly everything you have."],
+			["hisame", "Tomorrow you'll weave it while the Nue screams at you. Tonight you'll weave it while I watch. Twice."]
+		]},
+		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Tiger, Dragon, Snake, Boar (hold {weave}; {charge_chakra} charges chakra)",
+			"goal": "cast", "jutsu": "five_nature_seal", "count": 2},
+		{"do": "say", "lines": [
+			["hisame", "...The founders would have liked you. They were stubborn too.", "happy"]
+		]},
+		{"do": "enter", "who": "asahi", "at": [-4, 4]},
+		{"do": "enter", "who": "tsumugi", "at": [4, 4]},
+		{"do": "say", "lines": [
+			["asahi", "I saw the light from the wall. Was that the seal? It looked expensive."],
+			["tsumugi", "Iwao told the Watch everything. The new moon is tomorrow night. The Watch wants Kagerou dead before it rises.", "angry"],
+			["hisame", "The Watch can want what it likes. He's coming home."],
+			["tsumugi", "And if he doesn't want to?"],
+			["hisame", "Then I drag him home. I should have done it years ago.", "angry"]
+		]},
+		{"do": "scene", "steps": [
+			{"cam": "two", "on": ["asahi", "player"], "seconds": 5},
+			{"say": [
+				["asahi", "Can I say something stupid?", "sad"],
+				["player", "You usually do."],
+				["asahi", "I'm scared. Not of the clones. Of being the one who isn't fast enough when it matters.", "sad"],
+				["tsumugi", "Everyone on a summit is scared, Asahi. The brave ones climb anyway."],
+				["asahi", "...That was almost nice. Are you feeling all right?", "happy"]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["hisame", "Five Winds. The summit stands far to the north, past the dam. Leap stones at the foot of its southern cliffs will carry you up."],
+			["hisame", "We meet at the top at dusk. Sleep if you can. I won't."]
+		]},
+		{"do": "exit", "who": "asahi"},
+		{"do": "exit", "who": "tsumugi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

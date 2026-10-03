@@ -1,0 +1,61 @@
+{
+	"id": "m02_night_before",
+	"number": 2,
+	"part": 1,
+	"objective": "Find Sensei Hisame in the Academy yard at dusk",
+	"title": "The Night Before",
+	"location": "Emberwood Academy yard",
+	"time": "dusk",
+	"island": "emberwood",
+	"summary": "Hisame tells you what the academy keeps in its vault, and Asahi comes to watch.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"enter": "hisame", "at": [-2.5, -1], "puff": false},
+			{"enter": "tobi", "at": [2.5, -1.5], "puff": false},
+			{"cam": "two", "on": ["hisame", "tobi"], "seconds": 5},
+			{"say": [
+				["tobi", "So this is the new genin. Tobi. I teach the first-years to throw things at targets instead of each other.", "happy"],
+				["hisame", "And he fails at it every spring.", "relaxed"],
+				["tobi", "Every spring they get better at hitting each other. That's a kind of progress."]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["hisame", "Sit with us a moment, {name}. A genin should know what the academy is guarding."],
+			["player", "The vault?"],
+			["hisame", "What's in it. The Scroll of Five Natures. The founders wrote it when these islands were still at war with each other."],
+			["hisame", "Fire, wind, lightning, earth, water. Five natures, five seals. It can lend its chakra to make clones, which is why we train with it."],
+			["tobi", "And it's older than the academy. Older than the walls. Some of the seals in it nobody here can read any more."],
+			["player", "Then why keep it?"],
+			["hisame", "Because the founders made us promise to. And because whatever they sealed is safer with us than with anyone else.", "sad"]
+		]},
+		{"do": "say", "lines": [
+			["tobi", "Enough history. You've had a long day, and you'll have a longer one tomorrow."],
+			["tobi", "Show me you can still move. Two dashes, then gather your chakra."]
+		]},
+		{"do": "task", "text": "Dash twice ({evade})", "goal": "dash", "count": 2},
+		{"do": "task", "text": "Charge your chakra (hold {charge_chakra})", "goal": "charge"},
+		{"do": "say", "lines": [
+			["tobi", "Good. Tired, but good. That's the right way round.", "happy"]
+		]},
+		{"do": "enter", "who": "asahi", "at": [5, 5]},
+		{"do": "say", "lines": [
+			["asahi", "I wasn't watching. I was walking past. Very slowly."],
+			["hisame", "Asahi. Your patrol route doesn't come through the yard."],
+			["asahi", "It does tonight."],
+			["tobi", "He's been on the wall since your trial, {name}. He thinks nobody saw.", "happy"],
+			["asahi", "...I wanted to see who I'm fighting. That's all.", "angry"],
+			["player", "And?"],
+			["asahi", "And my mother was the best lightning user this academy ever trained. Everybody says so. So I have to be better than everybody.", "sad"],
+			["asahi", "Noon. Don't make me wait. I'm bad at waiting."]
+		]},
+		{"do": "exit", "who": "asahi"},
+		{"do": "say", "lines": [
+			["hisame", "He's not as loud as he sounds. Most of it is for himself."],
+			["hisame", "Sleep, {name}. Noon comes early."]
+		]},
+		{"do": "exit", "who": "tobi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

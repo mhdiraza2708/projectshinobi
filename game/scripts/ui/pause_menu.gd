@@ -694,8 +694,11 @@ func _refresh_quests() -> void:
 	if c.is_empty():
 		_quest_list.add_child(_quest_row("完", "The story is told", "Every chapter is cleared.", Quests.MAIN, tracked))
 	else:
-		_quest_list.add_child(_quest_row("章", "Chapter %s · %s" % [Story.numeral(c["number"]), c["title"]],
-			"The pillar of light on %s" % Island.display_name(str(c["island"])), Quests.MAIN, tracked))
+		var part := world.story.part(c["part"])
+		_quest_list.add_child(_quest_row(str(part.get("kanji", "章")),
+			"第%s章 %s  ·  %s" % [Story.numeral(c["part"]), part.get("title", ""), world.mission_title(c)],
+			str(c["objective"]) if c["objective"] != "" else "The pillar of light on %s" % Island.display_name(str(c["island"])),
+			Quests.MAIN, tracked))
 	for group: Array in [[Quests.ACTIVE, "Taken on"], [Quests.AVAILABLE, "Someone is asking"], [Quests.DONE, "Done"]]:
 		var list := Quests.with_status(group[0])
 		if list.is_empty():

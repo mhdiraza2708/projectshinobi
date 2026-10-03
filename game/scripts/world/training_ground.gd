@@ -305,6 +305,7 @@ func start_story_in_world(chapter_id: String) -> void:
 	story_in_world = true
 	world.save_position()
 	world.busy = true
+	world.set_people_visible(false)
 	player.surface_speed = 1.0
 	mode = Game.Mode.STORY
 	world.archipelago.focus_on(chapter["island"])
@@ -318,7 +319,10 @@ func start_story_in_world(chapter_id: String) -> void:
 	_quick = false
 	set_time_of_day(chapter["time"])
 	set_weather(chapter["weather"])
-	_open_chapter(chapter, false)
+	# No card over the screen: a banner names the mission and it begins.
+	var part := story.part(chapter["part"])
+	hud.show_banner("第%s章 %s  ·  %s" % [Story.numeral(chapter["part"]), part.get("title", ""), world.mission_title(chapter)], &"cast")
+	_open_chapter(chapter, true)
 
 
 ## Back to free roam after a chapter played in the world.
@@ -351,6 +355,7 @@ func return_to_world() -> void:
 	player.visible = true
 	player.input_enabled = true
 	world.busy = false
+	world.set_people_visible(true)
 	world.refresh()
 	Game.save_records()
 	Music.play(&"calm")
@@ -439,10 +444,19 @@ func _on_chapter_finished(chapter: Dictionary) -> void:
 	if not is_inside_tree():
 		return
 	if story_in_world:
-		var body := "Next:  %s %s, where the pillar of light stands." % [Story.numeral(next["number"]), next["title"]] \
-			if not next.is_empty() else "The story is told. The islands are still yours to wander."
-		results.show_panel("完", true, "第%s章" % Story.numeral(chapter["number"]), "CHAPTER COMPLETE",
-			"%s %s" % [Story.numeral(chapter["number"]), chapter["title"]], body, false, "Continue", "Title screen")
+		# Straight back to the world: a banner, and the next objective on the
+		# tracker (no panel over the screen).
+		hud.show_banner("Mission complete:  %s" % chapter["title"], &"cast")
+		await get_tree().create_timer(1.6).timeout
+		if not is_inside_tree():
+			return
+		return_to_world()
+		if next.is_empty():
+			hud.show_banner("The story is told. The islands are still yours.", &"cast")
+		elif next["part"] != chapter["part"]:
+			hud.show_banner("第%s章  %s" % [Story.numeral(next["part"]), story.part(next["part"]).get("title", "")], &"cast")
+		else:
+			hud.show_banner("Next:  %s" % next["objective"], &"info")
 		return
 	if not _quick:
 		await _teleport_out()

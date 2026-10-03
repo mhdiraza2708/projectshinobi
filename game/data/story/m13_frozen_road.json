@@ -1,0 +1,45 @@
+{
+	"id": "m13_frozen_road",
+	"number": 13,
+	"part": 5,
+	"objective": "Search the Frozen Road, far to the north-east, for Kagerou's trail",
+	"title": "The Frozen Road",
+	"location": "The lantern road, Frozen Road",
+	"time": "day",
+	"island": "frozen_road",
+	"weather": "snow",
+	"summary": "A traveller saw a man who melted the snow where he walked. Kagerou's clones would rather you didn't follow.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "The Frozen Road", "sub": "Two nights before the new moon", "seconds": 3},
+			{"enter": "renji", "at": [2, 0], "puff": false},
+			{"cam": "mid", "on": "renji", "seconds": 4},
+			{"say": [
+				["renji", "Academy? Then you're the one he said would come.", "relaxed"]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["player", "Who said?"],
+			["renji", "A man walked past my lantern at dawn. Red coat, no cloak, in this cold. The snow melted where he stepped."],
+			["renji", "He bought tea from me and paid too much. He said a child from Emberwood would come asking, and that I should tell them where he went."],
+			["player", "Where did he go?"],
+			["renji", "Up the road, to the shrine. But he left company behind. Look at the trees."]
+		]},
+		{"do": "exit", "who": "renji"},
+		{"do": "fight", "text": "Break the ambush in the snow", "waves": [
+			{"element": "fire", "enemies": ["genin", "genin", "genin"]},
+			{"element": "fire", "enemies": ["chunin", "chunin"]},
+			{"element": "wind", "enemies": ["chunin", "genin", "genin"]}
+		]},
+		{"do": "enter", "who": "renji", "at": [2, 1]},
+		{"do": "say", "lines": [
+			["renji", "Fire clones in the snow. They hissed when they fell. I'll be hearing that all winter.", "sad"],
+			["renji", "He's not hiding, you know. A man who wants to hide doesn't pay for the tea."],
+			["player", "He wants to be found."],
+			["renji", "He wants to be found by you. Whatever you are to him, go carefully.", "relaxed"]
+		]},
+		{"do": "exit", "who": "renji"}
+	]
+}

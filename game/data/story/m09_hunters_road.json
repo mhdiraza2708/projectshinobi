@@ -1,0 +1,55 @@
+{
+	"id": "m09_hunters_road",
+	"number": 9,
+	"part": 3,
+	"objective": "Meet Tsumugi at the shrine in the Autumn Wood, north-east across the sea",
+	"title": "The Hunter's Road",
+	"location": "Forest shrine, Autumn Wood",
+	"time": "day",
+	"island": "autumn_wood",
+	"weather": "leaves",
+	"summary": "Tsumugi tells you what the Windward Watch guards, and what was stitched into the scroll's last seal.",
+	"player_at": [0, 5],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "Autumn Wood", "sub": "Red leaves, old roots, and a shrine the hunters use", "seconds": 3},
+			{"enter": "tsumugi", "at": [0, -2], "puff": false},
+			{"cam": "mid", "on": "tsumugi", "seconds": 4},
+			{"say": [
+				["tsumugi", "You came across the water alone. Good. The ones who need an escort don't last in the Watch."]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["player", "What is the Watch, exactly?"],
+			["tsumugi", "Hunters. Seal-keepers. Five of us, once, one for each wind. Now there are three, and I'm the one who still travels."],
+			["tsumugi", "The founders didn't only write the Scroll of Five Natures. They bound something into it, and they left the Watch to make sure it stayed bound."],
+			["player", "The Nue."],
+			["tsumugi", "A spirit stitched from five beasts. The face of a monkey, the body of a tiger, a serpent for a tail. Each one a nature."],
+			["tsumugi", "Alone, each is a beast. Together they are hunger with a shape. It ate villages until the founders tore it apart and bound the pieces into five seals."],
+			["tsumugi", "Kagerou has the last one. The binding. Break it, and the pieces come home to each other.", "angry"]
+		]},
+		{"do": "say", "lines": [
+			["tsumugi", "His scouts are in this wood. They weave slowly, like they're counting. A hunter doesn't wait for the count."],
+			["tsumugi", "Break their weaves before they finish. Twice."]
+		]},
+		{"do": "task", "text": "Break a scout's weave before its last seal (twice)", "goal": "interrupt", "count": 2,
+			"enemies": [["genin", "wind"]]},
+		{"do": "say", "lines": [
+			["tsumugi", "Clean. You don't hesitate when you see the seals.", "relaxed"],
+			["tsumugi", "...And now they know we're here. Back to back."]
+		]},
+		{"do": "ally", "who": "tsumugi", "rank": "jonin", "health": 260},
+		{"do": "fight", "text": "Drive off Kagerou's scouts", "waves": [
+			{"element": "wind", "enemies": ["genin", "genin", "chunin"]},
+			{"element": "lightning", "enemies": ["chunin", "genin"]}
+		]},
+		{"do": "say", "lines": [
+			["tsumugi", "They were guarding something deeper in. Plans, from the way they fought to keep us out."],
+			["tsumugi", "Your loud friend from the academy is coming at dusk. We go through the rest of them then."],
+			["player", "You'll like him."],
+			["tsumugi", "I very much doubt that.", "relaxed"]
+		]},
+		{"do": "exit", "who": "tsumugi"}
+	]
+}

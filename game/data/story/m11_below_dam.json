@@ -1,0 +1,53 @@
+{
+	"id": "m11_below_dam",
+	"number": 11,
+	"part": 4,
+	"objective": "Cross the sea north-west to the Old Dam and scout it with Tsumugi",
+	"title": "Below the Dam",
+	"location": "The spillway, Old Dam",
+	"time": "dusk",
+	"island": "old_dam",
+	"summary": "The dam keeper tells you what Iwao has been carving, and why he cried while he did it.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "The Old Dam", "sub": "Four hundred years of stone between a valley and the sea", "seconds": 3},
+			{"enter": "tsumugi", "at": [-2.5, 2], "puff": false},
+			{"enter": "chiyo", "at": [2.5, 1], "puff": false},
+			{"cam": "two", "on": ["tsumugi", "chiyo"], "seconds": 4},
+			{"say": [
+				["chiyo", "You're from the academy? Then you're late. Three days late.", "angry"]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["tsumugi", "This is Chiyo. She keeps the dam. Kept it, until three days ago."],
+			["chiyo", "A big man came with an army of copies of himself. He told us to leave, politely. Then he told us again, less politely."],
+			["player", "Iwao."],
+			["chiyo", "He's carving seals into the face of the dam. Thousands of them. Every night, until his hands bleed."],
+			["chiyo", "The strangest thing. He cried while he did it. Like a man pulling down his own house.", "sad"],
+			["tsumugi", "Kagerou found the one person in these islands who knows stone well enough to turn a dam into a ritual circle."],
+			["chiyo", "Iwao used to come every spring to mend the spillway. For free. He said a dam is a promise to the people downstream.", "sad"]
+		]},
+		{"do": "say", "lines": [
+			["tsumugi", "Then let's keep his promise for him. Copies at the spillway, {name}. Clear them so we can see the seal lines."]
+		]},
+		{"do": "ally", "who": "tsumugi", "rank": "jonin", "health": 260},
+		{"do": "fight", "text": "Clear the spillway", "waves": [
+			{"element": "earth", "enemies": ["genin", "genin", "genin"]},
+			{"element": "water", "enemies": ["chunin", "genin"]},
+			{"element": "earth", "enemies": ["chunin", "chunin"]}
+		]},
+		{"do": "enter", "who": "hisame", "at": [0, -3]},
+		{"do": "say", "lines": [
+			["hisame", "I heard the fighting from the water. Report.", "angry"],
+			["tsumugi", "A seal array across the whole face of the dam, and a barrier tied to it. He wakes it tonight."],
+			["hisame", "Then I cut the seal lines while the two of you keep the clones off me. And then we talk to Iwao."],
+			["chiyo", "Talk to him? He has an army!"],
+			["hisame", "He has a reason. That's harder to fight than an army. Come back when the storm breaks, {name}.", "sad"]
+		]},
+		{"do": "exit", "who": "chiyo"},
+		{"do": "exit", "who": "tsumugi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

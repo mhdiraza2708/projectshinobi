@@ -331,12 +331,12 @@ func show_chapters() -> void:
 		var id: String = c["id"]
 		if c["part"] != part:
 			part = c["part"]
-			var title: String = Story.PART_TITLES.get(part, "")
-			_menu.add_child(UiKit.label("第%s部  PART %s%s" % [Story.numeral(part), ["", "ONE", "TWO", "THREE"][mini(part, 3)],
+			var title: String = story.part(part).get("title", "")
+			_menu.add_child(UiKit.label("第%s章  CHAPTER %d%s" % [Story.numeral(part), part,
 				(": " + title.to_upper()) if title != "" else ""], 22, UiKit.CRIMSON_DARK, &"bold"))
 		var unlocked := story.is_unlocked(id)
 		var done := Game.chapter_done(id)
-		var status := "Cleared" if done else ("New" if unlocked else "Sealed: clear the chapter before it")
+		var status := "Cleared" if done else ("New" if unlocked else "Sealed: clear the mission before it")
 		var b := _entry(Story.numeral(c["number"]) if unlocked else "封", c["title"] if unlocked else "? ? ?",
 			"%s  ·  %s" % [c["location"], status] if unlocked else status, chapter_chosen.emit.bind(id))
 		b.disabled = not unlocked

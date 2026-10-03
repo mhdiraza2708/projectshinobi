@@ -1,0 +1,52 @@
+{
+	"id": "m16_the_climb",
+	"number": 16,
+	"part": 6,
+	"objective": "Sail far north to Five Winds and climb it: leap stones wait at the foot of the southern cliffs",
+	"title": "The Climb",
+	"location": "Summit of the Five Winds",
+	"time": "dusk",
+	"island": "five_winds",
+	"weather": "leaves",
+	"summary": "The pillars wake one nature at a time, and Kagerou has left guardians at each.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "Five Winds", "sub": "The summit where the founders bound the Nue", "seconds": 3},
+			{"enter": "asahi", "at": [-3, 3], "puff": false},
+			{"enter": "tsumugi", "at": [3, 3], "puff": false},
+			{"cam": "two", "on": ["asahi", "tsumugi"], "seconds": 4},
+			{"say": [
+				["asahi", "You took the leap stones too? I screamed the whole way up. Manly screaming.", "happy"],
+				["tsumugi", "It was not manly."]
+			]}
+		]},
+		{"do": "say", "lines": [
+			["tsumugi", "Listen. The pillars are humming. One for each nature."],
+			["player", "Something's moving between them."],
+			["tsumugi", "Guardians. Kagerou left one company of clones for each pillar, so the circle is ready when the moon goes dark."],
+			["asahi", "Five pillars, five fights. Hisame isn't here yet, so we're doing something brave before she arrives again.", "happy"],
+			["tsumugi", "One nature at a time, {name}. Read each wave and answer it."]
+		]},
+		{"do": "ally", "who": "asahi", "rank": "chunin", "health": 260},
+		{"do": "ally", "who": "tsumugi", "rank": "jonin", "health": 280},
+		{"do": "fight", "text": "Silence the pillar guardians", "waves": [
+			{"element": "fire", "enemies": ["chunin", "genin"]},
+			{"element": "wind", "enemies": ["chunin", "genin"]},
+			{"element": "lightning", "enemies": ["chunin", "chunin"]},
+			{"element": "earth", "enemies": ["chunin", "chunin"]},
+			{"element": "water", "enemies": ["jonin", "genin"]}
+		]},
+		{"do": "enter", "who": "hisame", "at": [0, -3]},
+		{"do": "say", "lines": [
+			["hisame", "Five silent pillars. You've made his circle harder to close.", "relaxed"],
+			["asahi", "Did we do something brave before you arrived?"],
+			["hisame", "Again. Yes. Thank you.", "happy"],
+			["hisame", "The light's going. When the moon is gone, he'll come. Stay together, whatever he wakes."]
+		]},
+		{"do": "exit", "who": "asahi"},
+		{"do": "exit", "who": "tsumugi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

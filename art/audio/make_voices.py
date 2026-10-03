@@ -81,6 +81,10 @@ NAMES = {
 	"Iwao": "iwˈɑO",
 	"Tsumugi": "ʦumˈuɡi",
 	"Nue": "nˈuɛ",
+	"Tobi": "tˈObi",
+	"Chiyo": "ʧˈijO",
+	"Renji": "ɹˈɛnʤi",
+	"Kurogane": "kuɹOɡˈɑnɛ",
 	"Sensei": "sˈɛnsA",
 	"sensei": "sˈɛnsA",
 }
@@ -279,6 +283,7 @@ def main() -> int:
 	parser.add_argument("--kokoro", type=Path, help="folder with kokoro-v1.0.onnx and voices-v1.0.bin")
 	parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
 	parser.add_argument("--only", help="just this character")
+	parser.add_argument("--missing", action="store_true", help="only lines that have no recording yet")
 	parser.add_argument("--list", action="store_true", help="print the lines as they'll be spoken and stop")
 	parser.add_argument("--phonemes", action="store_true", help="with --list: print the phonemes too")
 	args = parser.parse_args()
@@ -303,11 +308,12 @@ def main() -> int:
 		sys.exit("oggenc not found: apt install vorbis-tools")
 
 	total = 0.0
+	todo = [l for l in lines if not (args.missing and (args.out / l.who / f"{l.key}.ogg").exists())]
 	with tempfile.TemporaryDirectory() as tmp:
-		for i, l in enumerate(lines):
+		for i, l in enumerate(todo):
 			voice = cast[l.who]["voice"]
 			total += finish(speaker.say(l, voice), SAMPLE_RATE, args.out / l.who / f"{l.key}.ogg", voice, Path(tmp))
-			print(f"\r{i + 1}/{len(lines)}", end="", flush=True)
+			print(f"\r{i + 1}/{len(todo)}", end="", flush=True)
 	print()
 	# Drop recordings of lines that no longer exist.
 	keep = {(args.out / l.who / f"{l.key}.ogg") for l in lines}

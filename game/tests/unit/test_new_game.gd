@@ -260,7 +260,7 @@ func test_begin_starts_chapter_one_and_marks_the_character_created() -> void:
 		await physics_frames(1)
 	assert_eq(scene.mode, Game.Mode.STORY, "the story begins")
 	assert_true(scene.story_in_world, "in the open world, not a separate island")
-	assert_true(scene.hud.visible, "with the HUD back")
+	assert_true(scene.hud.visible or Cutscene.active != null, "with the HUD back (or the opening cutscene playing)")
 	assert_true(Game.tracking, "and play time counting")
 	var meta := SaveSlots.meta(1)
 	assert_true(meta["created"] and meta["clan"] == "hearth", "the slot card shows the new shinobi")

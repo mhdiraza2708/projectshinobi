@@ -142,6 +142,14 @@ func refresh() -> void:
 	tracker.refresh()
 
 
+## Quest figures step aside while a story mission plays (the story has its
+## own Tobi, Chiyo or Renji on stage).
+func set_people_visible(show: bool) -> void:
+	for npc in _givers.values():
+		if is_instance_valid(npc):
+			(npc as Node3D).visible = show
+
+
 ## Who should be standing where: one figure per person, marked "!" when
 ## they have something for you.
 func wanted_people() -> Dictionary:
@@ -282,10 +290,24 @@ func _place_beacon() -> void:
 	if not is_instance_valid(_beacon):
 		_beacon = QuestBeacon.new()
 		archipelago.add_child(_beacon)
+	if _beacon.chapter_id != c["id"]:
+		# A new mission: it waits until you've stepped away from where the
+		# last one ended, so the story never starts again under your feet.
+		_beacon.armed = _beacon.chapter_id == ""
 	_beacon.chapter_id = c["id"]
-	_beacon.label = "第%s章  %s" % [Story.numeral(c["number"]), c["title"]]
+	_beacon.label = mission_title(c)
 	var at: Vector2 = c["player_at"]
 	_beacon.global_position = archipelago.on_island(str(c["island"]), at)
+
+
+## "第二章 The Ashen Trail" for a chapter of the story.
+static func _chapter_name(part: Dictionary) -> String:
+	return "第%s章 %s" % [Story.numeral(int(part.get("number", 1))), part.get("title", "")]
+
+
+## "Mission 2/3: Ash on the Wind".
+func mission_title(c: Dictionary) -> String:
+	return "Mission %d/%d: %s" % [story.mission_index(c), story.missions_in(c["part"]).size(), c["title"]]
 
 
 # --- Where things are (for the tracker) -----------------------------------------
@@ -297,9 +319,11 @@ func objective() -> Dictionary:
 		var c := Quests.main_chapter(story)
 		if c.is_empty():
 			return {"title": "The story is told", "kanji": "完", "text": "Every chapter is cleared. Explore, and help who you can.", "at": null}
-		return {"title": "Chapter %s · %s" % [Story.numeral(c["number"]), c["title"]], "kanji": "章",
-			"text": "Go to the pillar of light on %s" % Island.display_name(str(c["island"])),
-			"at": _beacon.global_position if is_instance_valid(_beacon) else null}
+		var part := story.part(c["part"])
+		var where := Island.display_name(str(c["island"]))
+		var text := str(c["objective"]) if c["objective"] != "" else "Go to the pillar of light on %s" % where
+		return {"title": "%s  ·  %s" % [_chapter_name(part), mission_title(c)], "kanji": str(part.get("kanji", "章")),
+			"text": text, "at": _beacon.global_position if is_instance_valid(_beacon) else null}
 	var q := Quests.quest(id)
 	var text := str(q["objective"])
 	var counter := Quests.counter(id)
@@ -404,7 +428,16 @@ func _check_fights() -> void:
 func _find_interact() -> void:
 	_interact = {}
 	var prompt := ""
-	if is_instance_valid(_beacon) and _beacon.global_position.distance_to(player.global_position) < BEACON_RANGE:
+	var at_beacon := is_instance_valid(_beacon) and _beacon.global_position.distance_to(player.global_position) < BEACON_RANGE
+	if is_instance_valid(_beacon) and not at_beacon:
+		_beacon.armed = true
+	if at_beacon and _beacon.armed and player.input_enabled and _fight == null:
+		# Arriving is enough: the story picks up where you are.
+		_beacon.armed = false
+		tracker.set_prompt("")
+		chapter_requested.emit(_beacon.chapter_id)
+		return
+	if at_beacon:
 		_interact = {"kind": "chapter", "id": _beacon.chapter_id}
 		prompt = "Begin  %s" % _beacon.label
 	else:

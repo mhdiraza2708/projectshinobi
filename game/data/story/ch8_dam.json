@@ -1,7 +1,8 @@
 {
 	"id": "ch8_dam",
-	"number": 8,
-	"part": 2,
+	"number": 12,
+	"part": 4,
+	"objective": "Stop Iwao at the Old Dam before the array wakes",
 	"title": "The Old Dam",
 	"location": "The Old Dam, Ashen Valley",
 	"time": "night",

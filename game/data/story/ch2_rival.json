@@ -1,6 +1,8 @@
 {
 	"id": "ch2_rival",
-	"number": 2,
+	"number": 3,
+	"part": 1,
+	"objective": "Meet Asahi in the Academy yard at noon for your duel",
 	"title": "Lightning at Noon",
 	"location": "Emberwood Academy yard",
 	"time": "day",
