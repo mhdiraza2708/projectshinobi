@@ -32,16 +32,18 @@ automatically. Prompts switch the moment you touch the other device.
 ## Menus
 
 The game opens on the title screen: **Continue** (the save you played last),
-**New Game**, **Load Game**, **Chapters**, **Trial of the Five Natures**,
+**New Game**, **Load / Delete Save**, **Chapters**, **Trial of the Five Natures**,
 **Training Ground**, **Customize** and **Quit**. Without a save only New Game,
 the Trial, the Training Ground and Quit show. Move with the stick, D-pad,
 arrow keys or mouse. Confirm with A or Enter; B or Esc backs out. From the
 pause menu, **Title screen** leaves the current mode.
 
-**Saves.** There are three slots. New Game and Load Game list them as cards
-(name, clan, nature, chapters cleared, play time, when it was saved). Starting
-a new game over an occupied slot asks first, and Load Game has a Delete button
-that asks too. The game saves as you play and when you quit; settings
+**Saves.** There are ten slots. New Game and Load / Delete Save list them as
+cards in a scrolling column (name, clan, nature, chapters cleared, play time,
+when it was saved). Starting a new game over an occupied slot asks first.
+Every save has a red **Delete** button beside its card, on both pages, and
+**Delete** (keyboard) or **X / Square** (controller) deletes the selected
+save; deleting always asks first. The game saves as you play and when you quit; settings
 (controls, audio, accessibility) belong to the machine, not a slot.
 
 **Character creation** follows New Game: tabs for Clan, Eyes, Identity (name

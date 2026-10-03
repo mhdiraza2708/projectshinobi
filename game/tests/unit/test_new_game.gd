@@ -67,7 +67,7 @@ func test_title_without_saves_offers_a_new_game_only() -> void:
 	var titles := _titles()
 	assert_true(titles.has("New Game"), "a new game")
 	assert_true(titles.has("Training Ground") and titles.has("Trial of the Five Natures"), "the open modes")
-	for hidden in ["Continue", "Load Game", "Chapters", "Customize"]:
+	for hidden in ["Continue", "Load / Delete Save", "Chapters", "Customize"]:
 		assert_false(titles.has(hidden), "no %s without a save" % hidden)
 
 
@@ -77,11 +77,21 @@ func test_title_with_a_save_offers_continue_load_and_chapters() -> void:
 	scene.show_title()
 	await physics_frames(2)
 	var titles := _titles()
-	for shown in ["Continue", "New Game", "Load Game", "Chapters", "Customize"]:
+	for shown in ["Continue", "New Game", "Load / Delete Save", "Chapters", "Customize"]:
 		assert_true(titles.has(shown), shown)
 
 
-func test_slot_cards_list_three_slots_and_confirm_an_overwrite() -> void:
+func _cards(title: TitleScreen) -> Array:
+	return title.find_children("*", "Button", true, false).filter(
+		func(b: Button) -> bool: return b.has_meta(&"slot"))
+
+
+func _delete_buttons(title: TitleScreen) -> Array:
+	return title.find_children("*", "Button", true, false).filter(
+		func(b: Button) -> bool: return b.text == "Delete")
+
+
+func test_slot_cards_list_every_slot_and_confirm_an_overwrite() -> void:
 	_saved_game(1, "Kaze")
 	_saved_game(3, "Rin")
 	await physics_frames(2)
@@ -91,9 +101,9 @@ func test_slot_cards_list_three_slots_and_confirm_an_overwrite() -> void:
 	assert_true(title.showing_slots())
 	var started: Array[int] = []
 	title.new_game_chosen.connect(func(slot: int) -> void: started.append(slot))
-	var cards := title.find_children("*", "Button", true, false).filter(
-		func(b: Button) -> bool: return b.custom_minimum_size.y >= 100.0)
-	assert_eq(cards.size(), SaveSlots.COUNT, "one card per slot")
+	assert_eq(_cards(title).size(), SaveSlots.COUNT, "one card per slot")
+	assert_true(SaveSlots.COUNT >= 10, "room for ten games")
+	assert_eq(_delete_buttons(title).size(), 2, "the new game page can clear a save too")
 	title._slot_pressed(1, true)
 	assert_true(started.is_empty(), "an occupied slot asks before it is overwritten")
 	assert_false(title.showing_slots(), "the question is showing")
@@ -129,6 +139,43 @@ func test_deleting_a_save_asks_first_then_removes_it() -> void:
 	assert_true(title.showing_slots(), "back on the list while saves remain")
 	title._delete_slot(2, false)
 	assert_false(title.showing_slots(), "no saves left: back on the main page")
+
+
+func test_every_save_has_a_delete_button_and_shortcut() -> void:
+	_saved_game(2, "Rin")
+	_saved_game(7, "Sora")
+	await physics_frames(2)
+	scene.show_title()
+	var title: TitleScreen = scene.title_screen
+	title.show_slots(false)
+	await physics_frames(2)
+	assert_eq(_delete_buttons(title).size(), 2, "one per save, none on empty slots")
+	var seven: Button = _cards(title).filter(func(b: Button) -> bool: return b.get_meta(&"slot") == 7)[0]
+	seven.grab_focus()
+	assert_eq(title.focused_slot(), 7)
+	var press := InputEventJoypadButton.new()
+	press.button_index = TitleScreen.DELETE_BUTTON
+	press.pressed = true
+	title._unhandled_input(press)
+	assert_false(title.showing_slots(), "the controller shortcut asks first")
+	assert_true(SaveSlots.exists(7), "nothing deleted yet")
+	title.show_slots(false)
+	await physics_frames(1)
+	var del: Button = _delete_buttons(title)[1]
+	del.grab_focus()
+	assert_eq(title.focused_slot(), 7, "the Delete button belongs to its card")
+	var key := InputEventKey.new()
+	key.keycode = TitleScreen.DELETE_KEY
+	key.pressed = true
+	title._unhandled_input(key)
+	assert_false(title.showing_slots(), "the Delete key asks too")
+
+
+func test_a_save_in_slot_ten_works() -> void:
+	_saved_game(SaveSlots.COUNT, "Last")
+	assert_true(SaveSlots.exists(SaveSlots.COUNT))
+	assert_eq(SaveSlots.meta(SaveSlots.COUNT)["name"], "Last")
+	assert_eq(SaveSlots.first_free(), 1)
 
 
 func test_new_game_opens_creation_in_a_fresh_slot() -> void:

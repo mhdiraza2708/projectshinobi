@@ -128,7 +128,7 @@ wrong trade.
 - **Loadouts** (`Loadouts`): presets of 8 quick-cast slots, each slot a jutsu
   and a cast style (`weave` forms the seals for you, `instant` skips them for
   +35% chakra). They live in the Profile, so they are saved per slot.
-- **Saves** (`SaveSlots`, `Profile`, `Game`): three slot folders under
+- **Saves** (`SaveSlots`, `Profile`, `Game`): ten slot folders under
   `user://saves/slot_N/` hold `profile.cfg` (the shinobi) and `records.cfg`
   (story progress, trial times, play time). With no slot active nothing is
   written. Settings stay global in `user://settings.cfg`. A pre-slot

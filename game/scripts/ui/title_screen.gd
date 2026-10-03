@@ -3,8 +3,9 @@ extends CanvasLayer
 ## The first screen: a hanging scroll with the game's modes and your saves,
 ## while your character stands beside it. Fully usable with a controller.
 ##
-## Continue resumes the slot you played last; New Game and Load Game list the
-## three save slots (a new game over an old save, and deleting one, ask first).
+## Continue resumes the slot you played last; New Game and Load / Delete Save
+## list the save slots (a new game over an old save, and deleting one, ask
+## first; Delete or the controller's X deletes the selected save).
 
 signal trial_chosen
 signal training_chosen
@@ -15,6 +16,10 @@ signal continue_chosen(slot: int)
 ## A fresh game in this slot (anything saved there is confirmed gone).
 signal new_game_chosen(slot: int)
 
+## Deletes the save whose card is selected on the slot page.
+const DELETE_KEY := KEY_DELETE
+const DELETE_BUTTON := JOY_BUTTON_X
+
 ## The story, for the chapter list (loaded on first use if not given).
 var story: Story
 
@@ -24,6 +29,8 @@ var _menu: VBoxContainer
 var _first: Button
 ## &"main", &"chapters", &"slots" or &"confirm".
 var _page := &"main"
+## Whether the slot page is choosing where a new game goes.
+var _slots_for_new := false
 
 
 func _init() -> void:
@@ -73,7 +80,7 @@ func show_main() -> void:
 	if _first == null or slot == 0:
 		_first = _menu.get_child(0) as Button
 	if SaveSlots.any():
-		_entry("録", "Load Game", "", show_slots.bind(false))
+		_entry("録", "Load / Delete Save", "", show_slots.bind(false))
 	if slot > 0 and bool(Profile.get_value(&"created")):
 		_entry("物", "Chapters", "", show_chapters)
 	var best := Game.best_time(TrialDirector.TRIAL_ID)
@@ -83,7 +90,7 @@ func show_main() -> void:
 		_entry("装", "Customize", "", customize_chosen.emit)
 	if OS.get_name() != "Web":
 		_entry("退", "Quit", "", func() -> void: get_tree().quit())
-	_first.grab_focus.call_deferred()
+	_focus_later(_first)
 
 
 ## One line about a save, for Continue and the slot cards.
@@ -102,16 +109,30 @@ static func _clan_name(clan_id: String) -> String:
 	return clan["name"] if not clan.is_empty() else "No clan"
 
 
-## The three saves as cards. `for_new`: pick where a new game goes (an
-## occupied slot asks before it is overwritten); otherwise pick one to load
-## (or delete).
+## The saves as cards, in a column that scrolls with controller focus.
+## `for_new`: pick where a new game goes (an occupied slot asks before it is
+## overwritten); otherwise pick one to load. Either way a save can be
+## deleted: its Delete button, or DELETE_KEY / DELETE_BUTTON on its card.
 func show_slots(for_new: bool) -> void:
 	_page = &"slots"
+	_slots_for_new = for_new
 	_clear_menu()
 	if story == null:
 		story = Story.load_all()
 	_menu.add_child(UiKit.label("Choose where the new game goes" if for_new else "Choose a save to load",
 		22, UiKit.CRIMSON_DARK, &"bold"))
+	if SaveSlots.any():
+		_menu.add_child(_delete_hint())
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	scroll.custom_minimum_size.y = 470
+	_menu.add_child(scroll)
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override(&"separation", 6)
+	scroll.add_child(column)
 	var cards: Array[Button] = []
 	for slot in range(1, SaveSlots.COUNT + 1):
 		var row := HBoxContainer.new()
@@ -119,13 +140,9 @@ func show_slots(for_new: bool) -> void:
 		var card := _slot_card(slot, for_new)
 		cards.append(card)
 		row.add_child(card)
-		if not for_new and SaveSlots.exists(slot):
-			var del := Button.new()
-			del.text = "Delete"
-			del.custom_minimum_size = Vector2(88, 0)
-			del.pressed.connect(func() -> void: _ask_delete.call_deferred(slot, for_new))
-			row.add_child(del)
-		_menu.add_child(row)
+		if SaveSlots.exists(slot):
+			row.add_child(_delete_button(slot, for_new))
+		column.add_child(row)
 	# A new game starts on the first empty slot; Load on the slot in play (or
 	# else the first save).
 	var pick := 0
@@ -136,12 +153,49 @@ func show_slots(for_new: bool) -> void:
 		if not for_new and SaveSlots.exists(slot) and (pick == 0 or slot == SaveSlots.active):
 			pick = slot
 	_entry("戻", "Back", "", show_main)
-	cards[maxi(pick, 1) - 1].grab_focus.call_deferred()
+	_focus_later(cards[maxi(pick, 1) - 1])
+
+
+func _delete_button(slot: int, for_new: bool) -> Button:
+	var del := Button.new()
+	del.text = "Delete"
+	del.tooltip_text = "Delete this save"
+	del.custom_minimum_size = Vector2(104, 0)
+	del.add_theme_color_override(&"font_color", UiKit.CRIMSON)
+	del.add_theme_color_override(&"font_hover_color", UiKit.CRIMSON_DARK)
+	del.add_theme_color_override(&"font_focus_color", UiKit.CRIMSON_DARK)
+	del.pressed.connect(func() -> void: _ask_delete.call_deferred(slot, for_new))
+	return del
+
+
+## "[Del] / [X] Delete the selected save": the shortcut on both devices.
+func _delete_hint() -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override(&"separation", 6)
+	row.add_child(InputGlyph.for_binding(Binding.key(DELETE_KEY), 24.0))
+	row.add_child(UiKit.label("/", 16, UiKit.INK_SOFT, &"body"))
+	row.add_child(InputGlyph.for_binding(Binding.joy_button(DELETE_BUTTON), 24.0))
+	row.add_child(UiKit.label("Delete the selected save", 16, UiKit.INK_SOFT, &"body"))
+	return row
+
+
+## The slot whose card (or Delete button) has focus, 0 for none.
+func focused_slot() -> int:
+	var f := get_viewport().gui_get_focus_owner()
+	if f == null:
+		return 0
+	if f.has_meta(&"slot"):
+		return int(f.get_meta(&"slot"))
+	for sibling in f.get_parent().get_children():
+		if sibling.has_meta(&"slot"):
+			return int(sibling.get_meta(&"slot"))
+	return 0
 
 
 func _slot_card(slot: int, for_new: bool) -> Button:
 	var m := SaveSlots.meta(slot)
 	var b := Button.new()
+	b.set_meta(&"slot", slot)
 	b.custom_minimum_size = Vector2(0, 122)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var kanji := "空"
@@ -250,7 +304,7 @@ func _confirm(heading: String, body: String, yes_label: String, on_yes: Callable
 	_menu.add_child(spacer)
 	var no := _entry("戻", "No, go back", "", on_no)
 	_entry("消", yes_label, "", on_yes)
-	no.grab_focus.call_deferred()
+	_focus_later(no)
 
 
 func show_chapters() -> void:
@@ -290,14 +344,39 @@ func show_chapters() -> void:
 	_menu = outer
 	_entry("戻", "Back", "", show_main)
 	if focus:
-		focus.grab_focus.call_deferred()
+		_focus_later(focus)
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if visible and _page == &"slots" and _is_delete(event):
+		var slot := focused_slot()
+		if SaveSlots.exists(slot):
+			Sfx.ui(&"ui_back")
+			_ask_delete(slot, _slots_for_new)
+			get_viewport().set_input_as_handled()
+			return
 	if visible and _page != &"main" and event.is_action_pressed(&"ui_cancel"):
 		Sfx.ui(&"ui_back")
 		show_main()
 		get_viewport().set_input_as_handled()
+
+
+static func _is_delete(event: InputEvent) -> bool:
+	if event is InputEventKey:
+		var k := event as InputEventKey
+		return k.pressed and not k.echo and (k.keycode == DELETE_KEY or k.physical_keycode == DELETE_KEY)
+	if event is InputEventJoypadButton:
+		var j := event as InputEventJoypadButton
+		return j.pressed and j.button_index == DELETE_BUTTON
+	return false
+
+
+## Focuses `control` once it's laid out, unless the page was rebuilt (and
+## it thrown away) in the meantime.
+func _focus_later(control: Control) -> void:
+	(func() -> void:
+		if is_instance_valid(control) and control.is_inside_tree():
+			control.grab_focus()).call_deferred()
 
 
 func _clear_menu() -> void:

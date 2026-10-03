@@ -1,13 +1,13 @@
 class_name SaveSlots
 extends RefCounted
-## Three save slots. Each is a separate game: its own shinobi (the Profile:
+## Ten save slots. Each is a separate game: its own shinobi (the Profile:
 ## look, clan, eye art, name, jutsu loadouts), story progress and records
 ## (Game). They live in user://saves/slot_N/. Settings (controls, audio,
 ## accessibility) belong to the machine, not a slot.
 ##
 ## No active slot means "no game loaded yet": nothing is written to disk.
 
-const COUNT := 3
+const COUNT := 10
 
 ## Where the slots live (tests point this somewhere disposable).
 static var root := "user://saves"

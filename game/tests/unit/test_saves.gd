@@ -1,5 +1,5 @@
 extends TestCase
-## Save slots: three independent games (character, progress, play time) in
+## Save slots: ten independent games (character, progress, play time) in
 ## separate folders, a nothing-is-saved state before a game is loaded, and
 ## the old single save becoming slot 1.
 

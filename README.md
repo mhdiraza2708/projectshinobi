@@ -84,9 +84,10 @@ controls can be remapped.
   bars, talisman seals with zodiac kanji, a burning-fuse timing window, a
   shuriken lock-on marker, and drawn keyboard/mouse/Xbox/PlayStation/Nintendo
   button icons that switch the moment you change device.
-- **Save slots:** three. The title screen has Continue (the slot you played
-  last, at the first chapter you haven't cleared), New Game, Load Game (with
-  cards showing name, clan, chapters cleared and play time, and Delete) and
+- **Save slots:** ten. The title screen has Continue (the slot you played
+  last, at the first chapter you haven't cleared), New Game and Load / Delete
+  Save (cards showing name, clan, chapters cleared and play time; a Delete
+  button on every save, or Delete / X on the selected one) and
   asks before overwriting anything. Each slot holds its own shinobi, jutsu
   loadouts, story progress and records, and saves as you play. A save from
   an older version becomes slot 1.
