@@ -18,7 +18,9 @@ var _bounds := Rect2()
 
 
 func _init() -> void:
-	custom_minimum_size = Vector2(470, 520)
+	# Fits the pause menu's page without scrolling (at 16:9 the page shows
+	# about 475 pixels of height).
+	custom_minimum_size = Vector2(430, 460)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 

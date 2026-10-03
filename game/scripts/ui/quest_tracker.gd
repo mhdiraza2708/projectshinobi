@@ -42,6 +42,8 @@ func _ready() -> void:
 	box.offset_right = -40
 	box.offset_top = 200
 	box.alignment = BoxContainer.ALIGNMENT_END
+	# A long line widens the box leftward, never off the screen's edge.
+	box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(box)
 	var lines := VBoxContainer.new()
@@ -50,6 +52,9 @@ func _ready() -> void:
 	box.add_child(lines)
 	_title = UiKit.label("", 24, UiKit.GOLD, &"bold", 5)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# "Chapter · Mission i/n: Title" can be long: it wraps like the text.
+	_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_title.custom_minimum_size.x = 440
 	lines.add_child(_title)
 	_text = UiKit.label("", 19, UiKit.PAPER, &"bold", 5)
 	_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

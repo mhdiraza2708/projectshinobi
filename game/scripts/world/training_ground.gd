@@ -809,12 +809,31 @@ func _demo_slots() -> void:
 	Profile.set_value(&"name", "Kaze of the Ash Valley")
 
 
+## A save partway through the story for screenshots: seven missions done,
+## two side quests finished and one under way, three islands found.
+func _demo_progress() -> void:
+	if story == null:
+		story = Story.load_all()
+	for i in 7:
+		Game.set_record("story", story.chapters[i]["id"], true)
+	for id: String in ["practice_kunai", "pier_bandits"]:
+		Game.set_record("quests", id, Quests.DONE)
+	Quests.accept("healer_herbs")
+	Quests.set_progress("healer_herbs", 2)
+	Game.set_record("world", "discovered", ["autumn_wood", "ashen_pass"])
+	Game.add_xp(SkillTrees.xp_for_level(9) + 60)
+	Profile.set_value(&"name", "Kaze")
+
+
 func _screenshot(path: String, demo: String, device: String) -> void:
 	# Screenshots must not read or write the player's saved profile.
 	Profile.persist = false
 	Profile.load_from_disk()
 	Game.persist = false
 	Game.load_records()
+	# --clock=0.6 sets the open world's time of day (fraction of the day).
+	if _user_args().has("clock"):
+		Game.set_record("world", "clock", float(_user_args()["clock"]) * OpenWorld.DAY_LENGTH)
 	# --quality=standard|high|cinematic, for comparing the presets (not saved).
 	var quality: String = _user_args().get("quality", "")
 	if quality in Graphics.LEVELS:
@@ -1050,10 +1069,23 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)]
 				print(info)
 				get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % v[0]))
+		"world_map", "world_quests":
+			# The pause menu's Map or Quests tab partway through the story.
+			instant_world = true
+			_demo_progress()
+			await start_world()
+			await _frames(20)
+			pause_menu.open()
+			pause_menu._select_tab(PauseMenu.TAB_MAP if demo == "world_map" else PauseMenu.TAB_QUESTS)
+			await _frames(20)
 		_ when demo.begins_with("world"):
 			# The open world: --demo=world[:<island>[:x,z]] stands you there
-			# (a new game at Emberwood by default).
+			# (a new game at Emberwood by default; --progress=1 for a save
+			# partway through the story, --look=<island> to face that island
+			# with the camera behind you).
 			instant_world = true
+			if _user_args().has("progress"):
+				_demo_progress()
 			var parts := demo.split(":")
 			if parts.size() > 1:
 				var at := Vector2.ZERO
@@ -1062,7 +1094,13 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 					at = Vector2(float(xz[0]), float(xz[1]))
 				Game.set_record("world", "position", Archipelago.offset_of(parts[1]) + Vector3(at.x, 0.0, at.y))
 			await start_world()
-			player.camera_rig.begin_showcase(float(_user_args().get("yaw", "0.6")))
+			if _user_args().has("look"):
+				var to := world.archipelago.to_global(Archipelago.offset_of(_user_args()["look"])) - player.global_position
+				player.rotation.y = atan2(-to.x, -to.z)
+				player.camera_rig.yaw = player.rotation.y
+				player.camera_rig.snap()
+			else:
+				player.camera_rig.begin_showcase(float(_user_args().get("yaw", "0.6")))
 			await _frames(30)
 		_ when demo.begins_with("menu_skills"):
 			# The Skills tab partway through a save: --demo=menu_skills[:<tree>]

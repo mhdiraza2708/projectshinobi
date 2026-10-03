@@ -30,9 +30,10 @@ vec2 panorama_uv(vec3 d) {
 	return vec2(atan(d.x, -d.z) / TAU + 0.5, acos(clamp(d.y, -1.0, 1.0)) / PI);
 }
 
-// One panorama's colour toward EYEDIR, turned by `turn`.
-vec3 sample_sky(sampler2D tex, mat3 turn, bool cubemap) {
-	vec2 uv = panorama_uv(normalize(turn * EYEDIR));
+// One panorama's colour toward `eye` (EYEDIR, which only sky() can read),
+// turned by `turn`.
+vec3 sample_sky(sampler2D tex, mat3 turn, vec3 eye, bool cubemap) {
+	vec2 uv = panorama_uv(normalize(turn * eye));
 	if (cubemap) {
 		// Reflections and ambient light: a blurred lookup is all they need.
 		return textureLod(tex, uv, 4.0).rgb;
@@ -52,9 +53,9 @@ vec3 sample_sky(sampler2D tex, mat3 turn, bool cubemap) {
 }
 
 void sky() {
-	vec3 col = sample_sky(panorama, to_panorama, AT_CUBEMAP_PASS) * scale;
+	vec3 col = sample_sky(panorama, to_panorama, EYEDIR, AT_CUBEMAP_PASS) * scale;
 	if (blend < 0.999) {
-		col = mix(sample_sky(prev_panorama, prev_to_panorama, AT_CUBEMAP_PASS) * prev_scale, col, blend);
+		col = mix(sample_sky(prev_panorama, prev_to_panorama, EYEDIR, AT_CUBEMAP_PASS) * prev_scale, col, blend);
 	}
 	col *= tint;
 	col += flash * vec3(0.55, 0.6, 0.75) * smoothstep(-0.05, 0.4, EYEDIR.y);
