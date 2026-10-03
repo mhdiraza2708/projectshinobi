@@ -52,6 +52,9 @@ static func table() -> Dictionary:
 			Binding.key(KEY_E), Binding.joy_button(JOY_BUTTON_RIGHT_SHOULDER)]),
 		&"charge_chakra": _a("Charge Chakra (hold)", "Combat", [
 			Binding.key(KEY_R), Binding.joy_button(JOY_BUTTON_Y)]),
+		# B is only a seal while weaving, so in the field it's free for this.
+		&"ultimate": _a("Ultimate (when charged)", "Combat", [
+			Binding.key(KEY_V), Binding.joy_button(JOY_BUTTON_B)]),
 		&"lock_on": _a("Lock On", "Combat", [
 			Binding.key(KEY_TAB), Binding.mouse(MOUSE_BUTTON_MIDDLE),
 			Binding.joy_button(JOY_BUTTON_RIGHT_STICK)]),

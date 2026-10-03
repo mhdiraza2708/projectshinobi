@@ -745,6 +745,35 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.look_at(Vector3(0.0, 0.85, -3.0))
 			cam.current = true
 			await _frames(20)
+		_ when demo.begins_with("ult:"):
+			# An ultimate partway through: --demo=ult:hearthfall:0.6,2.2 (seconds
+			# after it starts; earlier times also saved as <path>_<t>.png).
+			var parts := demo.split(":")
+			var u := Ultimates.get_ultimate(parts[1])
+			var nature: int = u["element_id"] if u["element_id"] != Element.NONE else Element.FIRE
+			Profile.set_value(&"affinity", nature)
+			Profile.set_value(&"ultimate", parts[1])
+			player.caster.affinity = nature
+			for i in 3:
+				var e := EnemyShinobi.new()
+				e.rank = &"genin"
+				e.element = [Element.WIND, Element.EARTH, Element.WATER][i]
+				add_child(e)
+				e.global_position = player.global_position + Vector3(-2.5 + 2.5 * i, 0.1, -9.0 - absf(i - 1) * 1.5)
+			for f in 40:
+				await get_tree().physics_frame
+			player.toggle_lock()
+			player.ult_charge = Ultimates.MAX_CHARGE
+			player.try_ultimate()
+			var fps := float(_user_args().get("fps", "60"))
+			var times := parts[2].split(",") if parts.size() > 2 else PackedStringArray(["1.0"])
+			var done := 0
+			for i in times.size():
+				var target := ceili(float(times[i]) * fps) + 1
+				await _frames(target - done)
+				done = target
+				if i < times.size() - 1:
+					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
 		"menu_jutsu":
 			pause_menu.open()
 			pause_menu._select_tab(2)

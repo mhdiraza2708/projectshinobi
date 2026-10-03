@@ -134,6 +134,16 @@ wrong trade.
   written. Settings stay global in `user://settings.cfg`. A pre-slot
   `user://profile.cfg` is migrated into slot 1 on first run.
 
+- **Ultimates** (`Ultimates`, `UltimateSequence`, `game/data/ultimates.json`):
+  the meter (0-100) fills from damage dealt (0.35/pt, a shade clone's counts
+  for its owner, through `Combat.apply_hit`), damage taken (0.6/pt),
+  interrupts (+10) and perfect guards (+8). Unleashing one freezes every
+  fighter, projectile and dummy (process disabled, collisions kept so the
+  blow can find them), plays a close-up and a wide shot, deals `power` to
+  everyone within `radius` of the target, then restores the world. Each
+  ultimate is data (name, kanji, nature, `style` = meteor, cyclone, chain,
+  fist, wave or shades, power, radius); styles are code. All names original.
+
 ### Combat (`game/scripts/combat`, `game/scripts/player`)
 - `Stats`: health, chakra (passive regen plus much faster regen while
   charging), elemental affinity, guard multiplier, i-frames, and timed

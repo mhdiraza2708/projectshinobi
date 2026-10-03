@@ -60,6 +60,13 @@ controls can be remapped.
 - **Weave seals** (12 seals, 3 banks × 4 directions) and cast any of **18
   original jutsu** in 6 forms: projectile, area, wall, buff, heal and
   summon. Walls really block projectiles, and a big hit interrupts your weave.
+- **Ultimates:** fighting fills a gold meter (landing blows, taking them,
+  interrupting weaves, perfect guards). Full, press **V / B** and time
+  stops: a close-up of your seals under a brush title card, then a wide shot
+  of the blow. One original ultimate per nature (a falling sun, a cyclone
+  that lifts foes, chain lightning, a stone fist, a breaking wave) plus
+  Hundred Shades, a storm of shade clones any nature can learn. Choose yours
+  in the Jutsu tab. Hold Pause to skip the cinematic.
 - **Shade Clones** (a summon): two chakra doubles step out of your shadow,
   wearing your own look, and fight at your side for 14 seconds. They are
   fragile, cost a lot of chakra, and casting again replaces them.

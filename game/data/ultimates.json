@@ -1,0 +1,34 @@
+{
+	"ultimates": [
+		{
+			"id": "hearthfall", "name": "Hearthfall", "kanji": "陽墜", "element": "fire", "style": "meteor",
+			"power": 85, "radius": 7.5,
+			"blurb": "Calls down a falling sun. Everything beneath it burns."
+		},
+		{
+			"id": "skyrend", "name": "Skyrend Cyclone", "kanji": "天裂", "element": "wind", "style": "cyclone",
+			"power": 78, "radius": 8.0,
+			"blurb": "A cyclone tears up the ground, lifts every foe near your target and shreds them in the air."
+		},
+		{
+			"id": "stormcaller", "name": "Stormcaller's Verdict", "kanji": "雷裁", "element": "lightning", "style": "chain",
+			"power": 80, "radius": 14.0,
+			"blurb": "Bolts fall on every foe in sight, one after another, then leap between them."
+		},
+		{
+			"id": "mountain_fist", "name": "Mountain's Fist", "kanji": "山拳", "element": "earth", "style": "fist",
+			"power": 92, "radius": 6.0,
+			"blurb": "A fist of living rock bursts from the ground beneath your foe, ringed by stone spears."
+		},
+		{
+			"id": "leviathan_tide", "name": "Leviathan Tide", "kanji": "大潮", "element": "water", "style": "wave",
+			"power": 78, "radius": 9.0,
+			"blurb": "A towering wave rises behind you and breaks over everything in front."
+		},
+		{
+			"id": "hundred_shades", "name": "Hundred Shades", "kanji": "百影", "element": "none", "style": "shades",
+			"power": 72, "radius": 7.0,
+			"blurb": "Shade clones pour out of the smoke and strike your foe from every side at once. Any nature can learn it."
+		}
+	]
+}

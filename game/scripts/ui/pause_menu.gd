@@ -71,8 +71,8 @@ func close() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _capture.is_empty():
 		return
-	# During a cutscene, Pause is held to skip instead.
-	if Cutscene.active != null and not is_open():
+	# During a cutscene or an ultimate, Pause is held to skip instead.
+	if (Cutscene.active != null or UltimateSequence.active != null) and not is_open():
 		return
 	if event.is_action_pressed(&"pause"):
 		if is_open():

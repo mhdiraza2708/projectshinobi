@@ -47,6 +47,7 @@ IN THE FIELD                 KEYBOARD + MOUSE        CONTROLLER
   Throw kunai                Q                       RT
   Guard (hold)               E                       RB
   Charge chakra (hold)       R                       Y
+  Ultimate (meter full)      V                       B
   Lock on                    Tab / middle mouse      R3
   WEAVE SEALS (hold)         Right mouse             LT
   Quick-cast jutsu 1-4       1 2 3 4                 D-pad

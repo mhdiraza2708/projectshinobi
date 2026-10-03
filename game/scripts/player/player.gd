@@ -9,6 +9,10 @@ extends CharacterBody3D
 signal state_changed(state: State)
 signal lock_target_changed(target: Node3D)
 signal quick_slots_changed
+## The ultimate meter moved (0 to Ultimates.MAX_CHARGE).
+signal ultimate_changed(charge: float, maximum: float)
+## An ultimate was unleashed (its UltimateSequence is starting).
+signal ultimate_used(ult: Dictionary)
 ## Short player-facing message: "Not enough chakra", jutsu names, etc.
 ## kind: &"cast", &"fail" or &"info".
 signal feedback(text: String, kind: StringName)
@@ -70,6 +74,8 @@ var lock_target: Node3D
 var quick_slots: Array[StringName] = []
 var quick_styles: Array[String] = []
 var quick_page := 0
+## The ultimate meter: fills as you fight, empties when unleashed.
+var ult_charge := 0.0
 ## Disable to freeze player control (cutscenes, menus, tests).
 var input_enabled := true
 ## While input is off, a cutscene can walk you (horizontal velocity) and pose
@@ -170,6 +176,8 @@ func _physics_process(delta: float) -> void:
 
 	if state == State.DOWN:
 		_decelerate(delta)
+	elif input_enabled and Input.is_action_just_pressed(&"ultimate") and try_ultimate():
+		pass
 	elif not input_enabled:
 		if state == State.CHARGING or state == State.GUARDING:
 			_enter(State.FREE)
@@ -699,6 +707,7 @@ func _on_dodged(_amount: float, _element: int) -> void:
 
 ## Still Eye: a perfectly timed guard.
 func _perfect_guard() -> void:
+	gain_ultimate(Ultimates.PER_PERFECT_GUARD)
 	Sfx.play(&"guard", 3.0)
 	feedback.emit("Still Eye: blocked", &"cast")
 	stats.chakra = minf(stats.max_chakra, stats.chakra + Perks.FOCUS_CHAKRA * 0.8)
@@ -757,7 +766,50 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 
 
 func take_hit(amount: float, element: int, _source: Node) -> float:
-	return stats.take_damage(amount, element)
+	var dealt := stats.take_damage(amount, element)
+	gain_ultimate(dealt * Ultimates.PER_DAMAGE_TAKEN)
+	return dealt
+
+
+# --- Ultimate --------------------------------------------------------------------
+
+func gain_ultimate(amount: float) -> void:
+	if amount <= 0.0 or UltimateSequence.active != null or state == State.DOWN:
+		return
+	var before := ult_charge
+	ult_charge = minf(Ultimates.MAX_CHARGE, ult_charge + amount)
+	if ult_charge == before:
+		return
+	ultimate_changed.emit(ult_charge, Ultimates.MAX_CHARGE)
+	if before < Ultimates.MAX_CHARGE and ultimate_ready():
+		feedback.emit("Ultimate ready: %s" % InputDevice.glyph(&"ultimate"), &"info")
+		Sfx.play(&"buff", 2.0)
+		InputDevice.rumble(0.3, 0.3, 0.2)
+
+
+func ultimate_ready() -> bool:
+	return ult_charge >= Ultimates.MAX_CHARGE
+
+
+## Unleashes the equipped ultimate if the meter is full. Returns whether it
+## began.
+func try_ultimate() -> bool:
+	if not ultimate_ready():
+		feedback.emit("Ultimate charging: %d%%" % floori(ult_charge / Ultimates.MAX_CHARGE * 100.0), &"info")
+		return false
+	if not state in [State.FREE, State.GUARDING, State.CHARGING] or UltimateSequence.active != null \
+			or Cutscene.active != null:
+		return false
+	var u := Ultimates.equipped()
+	if u.is_empty():
+		return false
+	if state != State.FREE:
+		_enter(State.FREE)
+	ult_charge = 0.0
+	ultimate_changed.emit(ult_charge, Ultimates.MAX_CHARGE)
+	ultimate_used.emit(u)
+	UltimateSequence.begin(self, u)
+	return true
 
 
 ## Called by projectiles and blasts this player made when they deal damage.

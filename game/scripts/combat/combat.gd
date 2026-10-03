@@ -36,7 +36,12 @@ static func apply_hit(target: Node, amount: float, element: int, source: Variant
 		return 0.0
 	if same_team(target, source):
 		return 0.0
-	return target.take_hit(amount, element, source)
+	var dealt: float = target.take_hit(amount, element, source)
+	# Landing blows charges the ultimate (a shade clone's count for its owner).
+	var fighter: Variant = source.get(&"clone_of") if source is EnemyShinobi else source
+	if dealt > 0.0 and fighter is Player:
+		(fighter as Player).gain_ultimate(dealt * Ultimates.PER_DAMAGE_DEALT)
+	return dealt
 
 
 ## Fighters with the same non-empty `team` never hurt each other. A team name

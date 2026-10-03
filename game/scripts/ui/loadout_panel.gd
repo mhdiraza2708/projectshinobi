@@ -31,7 +31,7 @@ func _ready() -> void:
 func _on_profile_changed(key: StringName) -> void:
 	if _busy:
 		return
-	if key in [&"", &"loadouts", &"loadout"]:
+	if key in [&"", &"loadouts", &"loadout", &"ultimate", &"affinity"]:
 		_confirm_delete = false
 		refresh()
 
@@ -53,6 +53,12 @@ func refresh() -> void:
 		% roundi(Loadouts.INSTANT_SURCHARGE * 100.0)))
 	if _message != "":
 		add_child(UiKit.label(_message, 18, UiKit.CRIMSON_DARK, &"bold"))
+	add_child(_section("Ultimate"))
+	add_child(_hint("Fighting fills the ultimate meter: landing blows, taking them, interrupting weaves. When it's full, press %s."
+		% InputDevice.glyph(&"ultimate")))
+	var equipped_ult := Ultimates.equipped()
+	for u in Ultimates.all():
+		add_child(_ultimate_row(u, u["id"] == equipped_ult.get("id", "")))
 	add_child(_section("Jutsu · filling slot %d" % (_slot + 1)))
 	for j in JutsuRegistry.all():
 		add_child(_catalog_row(j, presets[equipped]))
@@ -269,6 +275,51 @@ func _catalog_row(j: JutsuDefinition, preset: Dictionary) -> Control:
 		equip.add_theme_stylebox_override(&"normal", _selected_box())
 	row.add_child(equip)
 	return row
+
+
+func _ultimate_row(u: Dictionary, is_equipped: bool) -> Control:
+	var element: int = u["element_id"]
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override(&"separation", 12)
+	var stamp_color := UiKit.CRIMSON if element == Element.NONE else Element.color(element).darkened(0.35)
+	var stamp := Hanko.make(Element.kanji(element), 40.0, stamp_color)
+	stamp.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	row.add_child(stamp)
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override(&"separation", 2)
+	var title := HBoxContainer.new()
+	title.add_theme_constant_override(&"separation", 12)
+	title.add_child(UiKit.label(u["name"], 22, UiKit.INK, &"display"))
+	var kanji := UiKit.label(u["kanji"], 24, UiKit.CRIMSON, &"brush")
+	kanji.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	title.add_child(kanji)
+	info.add_child(title)
+	info.add_child(UiKit.label("%s · power %d · reach %d m" % [
+		"Any nature" if element == Element.NONE else Element.display_name(element) + " nature",
+		int(u["power"]), roundi(float(u["radius"]))], 16, UiKit.INK_SOFT, &"bold"))
+	var blurb := UiKit.label(u["blurb"], 16, UiKit.INK_SOFT, &"body")
+	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	blurb.custom_minimum_size.x = 200
+	blurb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_child(blurb)
+	row.add_child(info)
+	var allowed := Ultimates.allowed(u, int(Profile.get_value(&"affinity")))
+	var label := "Equipped" if is_equipped else ("Equip" if allowed else "%s only" % Element.display_name(element))
+	var b := _button(label, _equip_ultimate.bind(str(u["id"])), "ult_%s" % u["id"])
+	b.custom_minimum_size = Vector2(120, 44)
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	b.disabled = is_equipped or not allowed
+	if is_equipped:
+		b.add_theme_stylebox_override(&"disabled", _selected_box())
+	b.tooltip_text = "Your nature can't learn this one" if not allowed else ""
+	row.add_child(b)
+	return row
+
+
+func _equip_ultimate(id: String) -> void:
+	_message = "%s is your ultimate." % Ultimates.get_ultimate(id).get("name", id)
+	Profile.set_value(&"ultimate", id)
 
 
 func _equip_to_slot(j: JutsuDefinition) -> void:

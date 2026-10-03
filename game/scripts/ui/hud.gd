@@ -15,6 +15,10 @@ var player: Player
 var _health_bar: InkBar
 var _health_text: Label
 var _chakra_bar: InkBar
+var _ult_bar: InkBar
+var _ult_text: Label
+## Hidden while an ultimate's cinematic plays.
+var _hidden_for_ult := false
 var _chakra_text: Label
 var _buffs: Label
 var _name: Label
@@ -61,6 +65,11 @@ func bind(p: Player) -> void:
 			show_banner(text, kind))
 	player.quick_slots_changed.connect(_refresh_slots)
 	player.quick_slots_changed.connect(_refresh_loadout_name)
+	player.ultimate_changed.connect(_on_ultimate)
+	player.ultimate_used.connect(func(_u: Dictionary) -> void:
+		if visible:
+			_hidden_for_ult = true
+			visible = false)
 	Profile.changed.connect(func(_k: StringName) -> void: _refresh_name())
 	_refresh_name()
 	InputDevice.device_changed.connect(func(_d: Binding.Device) -> void: _refresh_weave(true))
@@ -68,6 +77,7 @@ func bind(p: Player) -> void:
 	Settings.value_changed.connect(func(_k: StringName, _v: Variant) -> void: _refresh_weave(true))
 	_on_health(player.stats.health, player.stats.max_health)
 	_on_chakra(player.stats.chakra, player.stats.max_chakra)
+	_on_ultimate(player.ult_charge, Ultimates.MAX_CHARGE)
 	_refresh_slots()
 	_refresh_loadout_name()
 	_refresh_weave(true)
@@ -106,6 +116,12 @@ func _build() -> void:
 	bars.add_child(_health_bar)
 	bars.add_child(_vital_row("気", "CHAKRA", _chakra_text))
 	bars.add_child(_chakra_bar)
+	_ult_bar = InkBar.new()
+	_ult_bar.ink_color = UiKit.GOLD
+	_ult_bar.seed = 13.0
+	_ult_text = UiKit.label("", 20, UiKit.INK, &"bold")
+	bars.add_child(_vital_row("奥", "ULTIMATE", _ult_text))
+	bars.add_child(_ult_bar)
 	_buffs = UiKit.label("", 17, UiKit.CRIMSON_DARK, &"bold")
 	bars.add_child(_buffs)
 
@@ -317,6 +333,15 @@ func _vital_row(kanji: String, title: String, value_label: Label) -> HBoxContain
 func _process(_delta: float) -> void:
 	if player == null:
 		return
+	if _hidden_for_ult and UltimateSequence.active == null:
+		_hidden_for_ult = false
+		visible = true
+	if player.ultimate_ready():
+		# A full meter breathes so it's noticed mid-fight.
+		_ult_bar.modulate = Color(1, 1, 1).lerp(Color(1.5, 1.3, 0.8), 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008))
+		_ult_text.text = "READY  %s" % InputDevice.glyph(&"ultimate")
+	else:
+		_ult_bar.modulate = Color.WHITE
 	if player.weaver.is_weaving:
 		_fuse.ratio = player.weaver.window_remaining()
 	_refresh_slots()
@@ -343,6 +368,13 @@ func _refresh_name() -> void:
 func _on_health(current: float, maximum: float) -> void:
 	_health_bar.set_ratio(current / maximum)
 	_health_text.text = "%d / %d" % [ceili(current), int(maximum)]
+
+
+func _on_ultimate(current: float, maximum: float) -> void:
+	_ult_bar.set_ratio(current / maximum)
+	_ult_text.text = "READY  %s" % InputDevice.glyph(&"ultimate") if current >= maximum \
+		else "%d%%" % floori(current / maximum * 100.0)
+	_ult_text.add_theme_color_override(&"font_color", UiKit.CRIMSON_DARK if current >= maximum else UiKit.INK)
 
 
 func _on_chakra(current: float, maximum: float) -> void:

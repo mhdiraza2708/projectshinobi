@@ -669,6 +669,8 @@ func take_hit(amount: float, hit_element: int, source: Node) -> float:
 	if state == State.WEAVING and dealt >= interrupt:
 		_interrupted()
 		interrupted.emit(source)
+		if source is Player:
+			(source as Player).gain_ultimate(Ultimates.PER_INTERRUPT)
 	elif dealt >= interrupt * 2.5 or (state == State.WINDUP and dealt >= interrupt * 1.5):
 		_stagger()
 	elif state == State.FIGHT and source is Player and randf() < float(_r["guard"]):

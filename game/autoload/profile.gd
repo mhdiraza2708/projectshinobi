@@ -44,6 +44,8 @@ const DEFAULTS := {
 	# the starter presets.
 	&"loadouts": [],
 	&"loadout": 0,
+	# The chosen ultimate's id ("" = your nature's own; see Ultimates).
+	&"ultimate": "",
 }
 
 ## When false nothing touches disk (tests).

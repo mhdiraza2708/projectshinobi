@@ -43,6 +43,8 @@ func _init(d: StoryDirector) -> void:
 
 ## Plays the steps (as parsed by Story) and emits `finished`.
 func play(steps: Array) -> void:
+	if UltimateSequence.active != null:
+		await UltimateSequence.active.finished
 	active = self
 	var player := director.player
 	_player_was_visible = player.visible
