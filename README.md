@@ -31,6 +31,8 @@ controls can be remapped.
 
 ![Weaving seals on a controller: each seal stamped as a talisman with its zodiac kanji and the buttons that make it; a fuse burns down the timing window and the next seal is hinted](docs/images/weaving.jpg)
 
+![Casting Ember Volley and Sunfall Orb at a locked-on training dummy](docs/images/casting.jpg)
+
 ![Trial of the Five Natures: locked on to a Lightning chunin weaving a jutsu, its seals shown above its head; the wave, weakness and timer at the top](docs/images/trial.jpg)
 
 ## What you can do right now
