@@ -83,9 +83,11 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
   `snow` or `leaves`.
 - `part`: which part of the story the chapter belongs to (headers in the
   chapter list).
-- `island`: where the chapter happens (default `emberwood`). You're
-  teleported there by a summoning seal when the chapter starts, and away
-  again when it ends. See **Islands** below.
+- `island`: where the chapter happens (default `emberwood`). In the open
+  world you walk there: a pillar of light marks the chapter's `player_at`,
+  and it plays where you stand. A replay from the title's chapter list
+  teleports you there by a summoning seal instead, and away again when it
+  ends. See **Islands** below.
 - `dummies`: keep the training dummies (default false).
 - Positions are `[x, z]` in metres. Every island has a flat clearing about
   40 m across, centred on `[0, 0]`, and an invisible wall about 38 m out.

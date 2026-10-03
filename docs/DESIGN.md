@@ -163,6 +163,29 @@ wrong trade.
   ultimate is data (name, kanji, nature, `style` = meteor, cyclone, chain,
   fist, wave or shades, power, radius); styles are code. All names original.
 
+### Open world (`game/scripts/world/archipelago.gd`, `open_world.gd`, `game/scripts/quests`)
+- **Archipelago** places every island preset at a `LAYOUT` offset (a summit
+  is lifted by its `plateau` so its own sea level meets the shared one) and
+  builds them nearest first, one a frame. Islands built with `open_world`
+  skip their own sea, wall and horizon, make every tree solid and fade
+  scenery past 520 m. One sea mesh follows the player; a
+  `WorldBoundaryShape3D` at `SEA_LEVEL` makes the sea walkable. Leap stones
+  (`LeapStone`) arc the player up and down Five Winds' cliffs.
+- **Chapters in place:** chapters are written with their island at the
+  origin, so `focus_on(id)` shifts the whole archipelago (and the player) to
+  put it there, an `ArenaWall` rings the clearing, and the chapter plays as
+  written. `return_to_world()` lifts the wall and resumes free roam.
+- **Quests** (`Quests`, `game/data/quests.json`): the main quest is the next
+  chapter not cleared (a `QuestBeacon` pillar at its `player_at`); side
+  quests have a giver, an island, a `requires` (chapter or quest) and a type:
+  `gather` (items at seeded spots on dry land), `defeat` (TrialDirector waves
+  at a spot, which now take a `center` and per-enemy natures), `duel` (the
+  giver becomes a named foe) or `deliver` (talk to `to` on another island).
+  State lives in the slot's records (`quests` section); XP on completion.
+  `OpenWorld` keeps one figure per person and decides what talking to them
+  means; `QuestTracker` draws the tracked objective, an edge-pinned marker,
+  the Interact prompt and island arrival cards.
+
 ### Combat (`game/scripts/combat`, `game/scripts/player`)
 - `Stats`: health, chakra (passive regen plus much faster regen while
   charging), elemental affinity, guard multiplier, i-frames, and timed

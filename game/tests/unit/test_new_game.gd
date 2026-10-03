@@ -252,7 +252,14 @@ func test_begin_starts_chapter_one_and_marks_the_character_created() -> void:
 	menu._begin.pressed.emit()
 	assert_true(bool(Profile.get_value(&"created")), "creation is finished")
 	assert_false(menu.is_open())
+	assert_eq(scene.mode, Game.Mode.WORLD, "into the open world")
+	# The islands build a frame apart; then chapter one opens where it stands.
+	for i in 120:
+		if scene.mode == Game.Mode.STORY:
+			break
+		await physics_frames(1)
 	assert_eq(scene.mode, Game.Mode.STORY, "the story begins")
+	assert_true(scene.story_in_world, "in the open world, not a separate island")
 	assert_true(scene.hud.visible, "with the HUD back")
 	assert_true(Game.tracking, "and play time counting")
 	var meta := SaveSlots.meta(1)
@@ -271,7 +278,7 @@ func test_backing_out_of_creation_abandons_the_new_game() -> void:
 	assert_true(scene.title_screen.is_open(), "back on the title")
 
 
-func test_continue_picks_up_at_the_first_chapter_not_cleared() -> void:
+func test_continue_goes_to_the_open_world_with_the_next_chapter_waiting() -> void:
 	_saved_game(1)
 	Game.mark_chapter_done("ch1_graduation")
 	await physics_frames(2)
@@ -279,7 +286,8 @@ func test_continue_picks_up_at_the_first_chapter_not_cleared() -> void:
 	var story: Story = Story.load_all()
 	assert_eq(story.resume_chapter()["id"], story.chapters[1]["id"], "chapter two is next")
 	scene.title_screen.continue_chosen.emit(1)
-	assert_eq(scene.mode, Game.Mode.STORY)
+	assert_eq(scene.mode, Game.Mode.WORLD, "a save continues in the open world")
+	assert_true(is_instance_valid(scene.world))
 	for c in story.chapters:
 		Game.mark_chapter_done(c["id"])
 	assert_true(story.resume_chapter().is_empty(), "a finished story has nowhere to resume")

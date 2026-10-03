@@ -3,7 +3,7 @@ extends Node
 ## play time. Saved in the active save slot (see SaveSlots). Autoloaded as
 ## `Game`.
 
-enum Mode { TITLE, TRAINING, TRIAL, STORY }
+enum Mode { TITLE, TRAINING, TRIAL, STORY, WORLD }
 
 ## Experience was earned (`reason` is a SkillTrees XP key).
 signal xp_gained(amount: int, reason: String)
@@ -89,6 +89,18 @@ func set_ult_charge(value: float) -> void:
 	_records.set_value("ultimate", "charge", value)
 
 
+## A value saved in the slot's records (quests, the open world).
+func record(section: String, key: String, default: Variant = null) -> Variant:
+	# ConfigFile reads a null default as "no default" and complains.
+	if not _records.has_section_key(section, key):
+		return default
+	return _records.get_value(section, key)
+
+
+func set_record(section: String, key: String, value: Variant) -> void:
+	_records.set_value(section, key, value)
+
+
 ## Experience earned in this slot (see SkillTrees for what it's worth).
 func xp() -> int:
 	return int(_records.get_value("skills", "xp", 0))
@@ -139,6 +151,11 @@ func restart(mode: Mode) -> void:
 	start_mode = mode
 	get_tree().paused = false
 	get_tree().reload_current_scene()
+
+
+## Reloads the game scene into the open world.
+func start_world() -> void:
+	restart(Mode.WORLD)
 
 
 ## Reloads the game scene into a story chapter.

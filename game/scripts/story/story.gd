@@ -103,6 +103,14 @@ func next_chapter(id: String) -> Dictionary:
 
 
 ## Where a save picks up: the first chapter not cleared yet ({} once all are).
+## Adds people who aren't in the story cast (the open world's quest givers)
+## so dialogue and NPCs can use them.
+func add_cast(people: Dictionary) -> void:
+	for id: String in people:
+		if not characters.has(id):
+			_parse_character(id, people[id])
+
+
 func resume_chapter() -> Dictionary:
 	for c in chapters:
 		if not Game.chapter_done(c["id"]):

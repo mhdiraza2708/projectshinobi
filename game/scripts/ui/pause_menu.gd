@@ -7,11 +7,13 @@ extends CanvasLayer
 ## controller: D-pad/stick to move, A to select, B to back out, LB/RB to
 ## switch tabs.
 
-const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["画", "Graphics"], ["巻", "Jutsu Scroll"], ["技", "Skills"]]
+const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["画", "Graphics"], ["巻", "Jutsu Scroll"], ["技", "Skills"],
+	["任", "Quests"]]
 const TAB_ACCESSIBILITY := 1
 const TAB_GRAPHICS := 2
 const TAB_JUTSU := 3
 const TAB_SKILLS := 4
+const TAB_QUESTS := 5
 
 signal customize_requested
 signal title_requested
@@ -31,6 +33,7 @@ var _jutsu_panel: LoadoutPanel
 var skill_screen: SkillScreen
 var _skills_summary: VBoxContainer
 var _skills_open: Button
+var _quest_list: VBoxContainer
 var _notice: Label
 var _resume: Button
 ## {action, device, button} while waiting for a new input.
@@ -72,6 +75,7 @@ func open() -> void:
 	_refresh_controls()
 	_refresh_jutsu()
 	_refresh_skills()
+	_refresh_quests()
 	_resume.grab_focus()
 
 
@@ -199,6 +203,9 @@ func _build() -> void:
 	_tabs.add_child(_scroll("Graphics", _build_graphics()))
 	_tabs.add_child(_scroll("Jutsu Scroll", _build_jutsu()))
 	_tabs.add_child(_scroll("Skills", _build_skills()))
+	_quest_list = VBoxContainer.new()
+	_quest_list.add_theme_constant_override(&"separation", 8)
+	_tabs.add_child(_scroll("Quests", _quest_list))
 	_select_tab(0)
 
 	vbox.add_child(_rule())
@@ -657,6 +664,80 @@ func _refresh_skills() -> void:
 	var hint := _hint_label()
 	hint.text = "Fights, story chapters, quests and trials give XP; every level is a skill point."
 	_skills_summary.add_child(hint)
+
+
+# --- Quests tab ------------------------------------------------------------------
+
+## The quest log: the story, what you've taken on, who is asking, and what's
+## done. Track one and the HUD points at it.
+func _refresh_quests() -> void:
+	if _quest_list == null:
+		return
+	for c in _quest_list.get_children():
+		_quest_list.remove_child(c)
+		c.queue_free()
+	var world := _open_world()
+	if world == null:
+		_quest_list.add_child(_hint_row("Quests are taken on in the open world: Continue a save from the title screen."))
+		return
+	var tracked := Quests.tracked()
+	_quest_list.add_child(_section("The story"))
+	var c := Quests.main_chapter(world.story)
+	if c.is_empty():
+		_quest_list.add_child(_quest_row("完", "The story is told", "Every chapter is cleared.", Quests.MAIN, tracked))
+	else:
+		_quest_list.add_child(_quest_row("章", "Chapter %s · %s" % [Story.numeral(c["number"]), c["title"]],
+			"The pillar of light on %s" % Island.display_name(str(c["island"])), Quests.MAIN, tracked))
+	for group: Array in [[Quests.ACTIVE, "Taken on"], [Quests.AVAILABLE, "Someone is asking"], [Quests.DONE, "Done"]]:
+		var list := Quests.with_status(group[0])
+		if list.is_empty():
+			continue
+		_quest_list.add_child(_section(group[1]))
+		for q in list:
+			var giver: Dictionary = Quests.person(str(q["giver"]))
+			var line := str(q["objective"])
+			match group[0]:
+				Quests.ACTIVE:
+					var counter := Quests.counter(q["id"])
+					if counter != "":
+						line += "  (%s)" % counter
+				Quests.AVAILABLE:
+					line = "%s, on %s" % [giver.get("name", "Someone"), Island.display_name(str(q["island"]))]
+				Quests.DONE:
+					line = "+%d XP" % int(q.get("xp", 0))
+			_quest_list.add_child(_quest_row(str(q["kanji"]), str(q["name"]), line,
+				q["id"] if group[0] == Quests.ACTIVE else "", tracked))
+	var hint := _hint_label()
+	hint.text = "Talk with %s beside someone. Run on the sea between islands; hold %s on open water to sprint faster." % [
+		InputDevice.glyph(&"interact"), InputDevice.glyph(&"evade")]
+	_quest_list.add_child(hint)
+
+
+func _quest_row(kanji: String, title: String, line: String, track_id: String, tracked: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override(&"separation", 14)
+	row.add_child(UiKit.label(kanji, 34, UiKit.CRIMSON if track_id == tracked else UiKit.INK_SOFT, &"brush"))
+	var texts := VBoxContainer.new()
+	texts.add_theme_constant_override(&"separation", -2)
+	texts.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	texts.add_child(UiKit.label(title, 22, UiKit.INK, &"bold"))
+	var sub := UiKit.label(line, 18, UiKit.INK_SOFT, &"bold")
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	texts.add_child(sub)
+	row.add_child(texts)
+	if track_id != "":
+		var b := _button("Tracking" if track_id == tracked else "Track", func() -> void:
+			Quests.set_tracked(track_id)
+			_refresh_quests()
+			_focus_first(_quest_list))
+		b.disabled = track_id == tracked
+		row.add_child(b)
+	return row
+
+
+func _open_world() -> OpenWorld:
+	var found := get_tree().root.find_children("*", "OpenWorld", true, false)
+	return found[0] if not found.is_empty() else null
 
 
 ## Opens the full-screen skill trees over the paused game.

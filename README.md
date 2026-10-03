@@ -26,6 +26,19 @@ controls can be remapped.
 
 ## What you can do right now
 
+- **An open world of islands.** Continue a save (or start one) and you're
+  on Emberwood with the whole archipelago around you: six islands in one
+  sea, and shinobi run on water, so you cross on foot (hold Sprint on open
+  water to run faster). Each island announces itself as you arrive; Five
+  Winds is a summit you reach from leap stones at the foot of its cliffs.
+  The story waits at a **pillar of light** where the next chapter happens;
+  step in and press **Interact (T, or X beside someone)** to play it right
+  there. People around the islands ask for help: **eight original side
+  quests** (gather, drive off bandits, a duel, a delivery across the sea,
+  and a post-game trial), opened as the story goes on, tracked on screen
+  with a marker and listed in **Pause → Quests**, and paid in XP. Your place
+  in the world is saved with the slot. (Chapters can still be replayed on
+  their own from the title's chapter list.)
 - **Story mode: two parts, ten chapters.** *Part One: The Stolen Scroll*
   (tutorial, rival duel, clone ambushes, a boss who changes nature as it
   weakens) and *Part Two: The Last Seal* (interrupt training, a hunter's

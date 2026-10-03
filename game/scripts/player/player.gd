@@ -76,6 +76,11 @@ var quick_styles: Array[String] = []
 var quick_page := 0
 ## The ultimate meter: fills as you fight, empties when unleashed, and keeps
 ## its charge between fights (Game saves it with the slot).
+## Ground speed multiplier from what you stand on (the open world's sea
+## makes the sprint faster).
+var surface_speed := 1.0
+## Someone to talk to is in reach (the open world sets it).
+var can_interact := false
 ## Second Wind (skill tree) can save the player from the next lethal blow.
 var second_wind_ready := true
 var ult_charge := 0.0:
@@ -275,12 +280,13 @@ func _state_free(delta: float) -> void:
 		return
 	if Input.is_action_just_pressed(&"jump"):
 		_jump()
-	if Input.is_action_just_pressed(&"attack"):
+	# Beside someone to talk to, the strike button talks instead (OpenWorld).
+	if Input.is_action_just_pressed(&"attack") and not can_interact:
 		_strike()
 	if Input.is_action_just_pressed(&"throw_tool"):
 		throw_kunai()
 
-	var speed := sprint_speed if _sprinting else run_speed
+	var speed := (sprint_speed if _sprinting else run_speed) * surface_speed
 	_move(delta, speed * (1.0 + stats.modifier(&"move_speed")))
 
 
@@ -841,6 +847,10 @@ func gain_ultimate(amount: float) -> void:
 		feedback.emit("Ultimate ready: %s" % InputDevice.glyph(&"ultimate"), &"info")
 		Sfx.play(&"buff", 2.0)
 		InputDevice.rumble(0.3, 0.3, 0.2)
+
+
+func is_sprinting() -> bool:
+	return _sprinting
 
 
 func ultimate_ready() -> bool:

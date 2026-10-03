@@ -1,0 +1,137 @@
+{
+	"_about": "Side quests in the open world (Quests). Every person and line here is original. 'at' is a point on the quest's island in that island's own metres (its clearing is the origin). 'requires' is a story chapter or another quest that must be done first. Types: gather (find 'count' of an item around the island), defeat (waves of foes at 'at'), duel (one named foe at 'at'), deliver (talk to 'to' on another island).",
+	"people": {
+		"tobi": {"name": "Tobi", "title": "Academy Instructor", "kanji": "教", "model": "darkness_shibu", "element": "fire",
+			"style": {"tints": {"outfit": "#3b3530", "lower": "#26232a"}, "headband": "cloth", "headband_color": "#b8321f", "scarf": false, "back": "none", "pouch": true}},
+		"mago": {"name": "Mago", "title": "Fisher", "kanji": "漁", "model": "hairsample_male", "element": "water",
+			"style": {"tints": {"outfit": "#4a5a66", "lower": "#2c3238", "hair": "#8a8a8a"}, "headband": "none", "scarf": true, "scarf_color": "#7a8f99", "back": "none", "pouch": false}},
+		"suzu": {"name": "Suzu", "title": "Healer", "kanji": "薬", "model": "vivi", "element": "earth",
+			"style": {"tints": {"outfit": "#5a6b3a", "lower": "#3a3528", "hair": "#3a2a22"}, "headband": "none", "scarf": false, "back": "none", "pouch": true}},
+		"kurogane": {"name": "Kurogane", "title": "The Ash Blade", "kanji": "鋼", "model": "sendagaya_shibu", "element": "fire",
+			"style": {"tints": {"outfit": "#1e1c20", "lower": "#151418", "hair": "#c9c4bd"}, "headband": "hachigane", "headband_color": "#8a8580", "scarf": true, "scarf_color": "#7a1e12", "back": "ninjato", "mask": true, "pouch": false}},
+		"chiyo": {"name": "Chiyo", "title": "Dam Keeper", "kanji": "守", "model": "hairsample_female", "element": "water",
+			"style": {"tints": {"outfit": "#2f4a5c", "lower": "#23303a", "hair": "#1c1c22"}, "headband": "cloth", "headband_color": "#3b82c4", "scarf": false, "back": "none", "pouch": true}},
+		"renji": {"name": "Renji", "title": "Traveller", "kanji": "旅", "model": "vita", "element": "wind",
+			"style": {"tints": {"outfit": "#6b5a44", "lower": "#3a3228", "hair": "#d8d0c4"}, "headband": "none", "scarf": true, "scarf_color": "#c9a45c", "back": "none", "pouch": true}}
+	},
+	"quests": [
+		{
+			"id": "practice_kunai", "name": "Thrown and Forgotten", "kanji": "拾",
+			"island": "emberwood", "giver": "tobi", "giver_at": [24, 24], "requires": "ch1_graduation",
+			"type": "gather", "item": "kunai", "count": 6,
+			"objective": "Find the first-years' practice kunai around Emberwood",
+			"intro": [
+				{"who": "tobi", "text": "The first-years threw their practice kunai into the woods. Every last one."},
+				{"who": "tobi", "text": "Six are missing. Find them before the head instructor counts the rack."},
+				{"who": "player", "text": "Six kunai. I'm on it."}
+			],
+			"outro": [
+				{"who": "tobi", "text": "All six, and not a scratch on them. Better than the first-years manage."}
+			],
+			"xp": 150
+		},
+		{
+			"id": "pier_bandits", "name": "Trouble at the Old Pier", "kanji": "賊",
+			"island": "emberwood", "giver": "mago", "giver_at": [-24, 24], "requires": "ch2_rival",
+			"type": "defeat", "at": [0, 40],
+			"waves": [[["genin", "fire"], ["genin", "water"]], [["chunin", "lightning"]]],
+			"objective": "Drive the bandits off the south shore",
+			"intro": [
+				{"who": "mago", "text": "Bandits on my pier again. They take the catch and laugh about it."},
+				{"who": "mago", "text": "They camp on the south shore. You're Academy, aren't you? Chase them off."}
+			],
+			"outro": [
+				{"who": "mago", "text": "Gone! Come by at dawn some day. The first fish of the morning is yours."}
+			],
+			"xp": 220
+		},
+		{
+			"id": "healer_herbs", "name": "Red Leaf Remedy", "kanji": "薬",
+			"island": "autumn_wood", "giver": "suzu", "giver_at": [19, -19], "requires": "ch3_vault",
+			"type": "gather", "item": "herb", "count": 5,
+			"objective": "Gather red-leaf herbs across Autumn Wood",
+			"intro": [
+				{"who": "suzu", "text": "Shinobi always come to me bleeding. Today you can help me instead."},
+				{"who": "suzu", "text": "Red-leaf grows all over this wood. Five bundles will keep my shelves full."}
+			],
+			"outro": [
+				{"who": "suzu", "text": "Lovely. Now try not to need any of it."}
+			],
+			"xp": 160
+		},
+		{
+			"id": "maple_thieves", "name": "Thieves in the Maples", "kanji": "盗",
+			"island": "autumn_wood", "giver": "suzu", "giver_at": [19, -19], "requires": "healer_herbs",
+			"type": "defeat", "at": [-28, 28],
+			"waves": [[["chunin", "wind"], ["genin", "wind"]], [["chunin", "wind"], ["chunin", "earth"]]],
+			"objective": "Stop the herb thieves in the western maples",
+			"intro": [
+				{"who": "suzu", "text": "Someone has been stripping the red-leaf before it can grow back."},
+				{"who": "suzu", "text": "Wind users, by the cuts. They hide in the maples to the west."}
+			],
+			"outro": [
+				{"who": "suzu", "text": "The wood will grow back now. So will my patience."}
+			],
+			"xp": 260
+		},
+		{
+			"id": "ash_duelist", "name": "The Ash Blade", "kanji": "鋼",
+			"island": "ashen_pass", "giver": "kurogane", "giver_at": [0, 34], "requires": "ch5_kagerou",
+			"type": "duel", "at": [0, 34], "foe": {"rank": "jonin", "element": "fire", "health": 360},
+			"objective": "Defeat Kurogane in a duel",
+			"intro": [
+				{"who": "kurogane", "text": "So you're the one who walked out of the pass alive."},
+				{"who": "kurogane", "text": "Stories get told. I'd like to see if this one is true."},
+				{"who": "player", "text": "Then draw."}
+			],
+			"outro": [
+				{"who": "kurogane", "text": "Ha. True after all. Go on, before I want a second round."}
+			],
+			"xp": 350
+		},
+		{
+			"id": "dam_seals", "name": "Holding Back the Flood", "kanji": "封",
+			"island": "old_dam", "giver": "chiyo", "giver_at": [19, 19], "requires": "ch7_wood",
+			"type": "gather", "item": "seal", "count": 4,
+			"objective": "Recover the warding seals torn from the old dam",
+			"intro": [
+				{"who": "chiyo", "text": "The storm tore the warding seals off the dam and scattered them."},
+				{"who": "chiyo", "text": "Four of them. Without them, the next storm takes the valley."}
+			],
+			"outro": [
+				{"who": "chiyo", "text": "Every seal back where it belongs. The valley sleeps tonight because of you."}
+			],
+			"xp": 280
+		},
+		{
+			"id": "lost_letter", "name": "A Letter Through the Snow", "kanji": "文",
+			"island": "frozen_road", "giver": "renji", "giver_at": [-24, 24], "requires": "ch8_dam",
+			"type": "deliver", "to": "suzu", "to_island": "autumn_wood", "to_at": [19, -19],
+			"objective": "Carry Renji's letter to Suzu in Autumn Wood",
+			"intro": [
+				{"who": "renji", "text": "My feet won't take me another step on this road. My sister will worry."},
+				{"who": "renji", "text": "She's the healer in Autumn Wood. Would you carry this letter to her?"}
+			],
+			"handover": [
+				{"who": "player", "text": "A letter, from your brother on the frozen road."},
+				{"who": "suzu", "text": "Renji? That fool. Thank you. I'll send him something warm."}
+			],
+			"xp": 300
+		},
+		{
+			"id": "five_pillars", "name": "The Five Pillars", "kanji": "柱",
+			"island": "five_winds", "giver": "hisame", "giver_at": [24, 24], "requires": "ch10_nue",
+			"type": "defeat", "at": [0, 0],
+			"waves": [[["jonin", "fire"]], [["jonin", "wind"]], [["jonin", "lightning"]], [["jonin", "earth"]], [["jonin", "water"]]],
+			"objective": "Answer the five pillars, one nature at a time",
+			"intro": [
+				{"who": "hisame", "text": "The pillars still hum. Every nature remembers the fight up here."},
+				{"who": "hisame", "text": "Answer them, one by one. Then you'll know what you've become."}
+			],
+			"outro": [
+				{"who": "hisame", "text": "Five natures, one shinobi. I have nothing left to teach you."}
+			],
+			"xp": 600
+		}
+	]
+}

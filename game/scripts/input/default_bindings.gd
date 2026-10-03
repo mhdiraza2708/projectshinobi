@@ -11,6 +11,9 @@ extends RefCounted
 
 const CONTEXT_FIELD := &"field"
 const CONTEXT_WEAVING := &"weaving"
+## Interact shares the strike button on a gamepad: it only means "talk"
+## beside someone in the open world (OpenWorld), where it takes priority.
+const CONTEXT_INTERACT := &"interact"
 
 const STICK_ACTIONS: Array[StringName] = [
 	&"move_forward", &"move_back", &"move_left", &"move_right",
@@ -113,6 +116,9 @@ static func table() -> Dictionary:
 			Binding.key(KEY_SHIFT), Binding.joy_button(JOY_BUTTON_LEFT_SHOULDER)], [CONTEXT_WEAVING]),
 		&"seal_layer_2": _a("Seal Bank III (hold)", "Seal Weaving", [
 			Binding.key(KEY_SPACE), Binding.joy_button(JOY_BUTTON_RIGHT_SHOULDER)], [CONTEXT_WEAVING]),
+
+		&"interact": _a("Talk / Interact", "Movement", [
+			Binding.key(KEY_T), Binding.joy_button(JOY_BUTTON_X)], [CONTEXT_INTERACT]),
 
 		# --- Menu -----------------------------------------------------------
 		&"pause": _a("Pause / Settings", "Menu", [

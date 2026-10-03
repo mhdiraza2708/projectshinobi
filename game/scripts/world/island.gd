@@ -167,6 +167,12 @@ const PRESETS := {
 
 var id := ""
 var preset: Dictionary = {}
+## Part of the open world (Archipelago): the shared sea and horizon replace
+## this island's own, there is no invisible wall (a fight raises its own,
+## ArenaWall), every tree is solid, and scenery fades out with distance.
+var open_world := false
+## How far scenery stays drawn in the open world (metres).
+const SCENERY_RANGE := 520.0
 ## Lantern props, for the night lights.
 var lanterns: Array[Node3D] = []
 var water_level := -1.0
@@ -210,7 +216,8 @@ func build(island_id: String) -> void:
 	add_child(_body)
 	_build_terrain()
 	_build_water()
-	_build_wall()
+	if not open_world:
+		_build_wall()
 	var avoid: Array[Vector2] = []
 	for prop: Dictionary in preset.get("props", []):
 		avoid.append(_place_prop(prop))
@@ -218,7 +225,8 @@ func build(island_id: String) -> void:
 		_scatter(s, avoid)
 	if preset.get("tufts") != null:
 		_build_tufts(preset["tufts"])
-	_build_horizon()
+	if not open_world:
+		_build_horizon()
 
 
 # --- Shape ---------------------------------------------------------------------
@@ -369,8 +377,9 @@ func _build_water() -> void:
 	mat.shader = WATER_SHADER
 	mat.set_shader_parameter(&"deep", preset["deep"])
 	mat.set_shader_parameter(&"shallow", preset["shallow"])
-	# A detailed sea near the island, and a flat one out to the horizon.
-	for part: Array in [["Sea", 700.0, 70, 0.0], ["FarSea", 12000.0, 1, -0.08]]:
+	# A detailed sea near the island, and a flat one out to the horizon (the
+	# open world has one sea for every island).
+	for part: Array in ([] if open_world else [["Sea", 700.0, 70, 0.0], ["FarSea", 12000.0, 1, -0.08]]):
 		var plane := PlaneMesh.new()
 		plane.size = Vector2(part[1], part[1])
 		plane.subdivide_width = part[2]
@@ -503,7 +512,8 @@ func _scatter(spec: Dictionary, avoid: Array[Vector2]) -> void:
 		placed.append(p)
 		var s := rng.randf_range(spec["scale"][0], spec["scale"][1])
 		xforms.append(Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * s), Vector3(p.x, h - 0.08, p.y)))
-		if is_tree and r < walk_radius() + 2.0:
+		var near := open_world or r < walk_radius() + 2.0
+		if is_tree and near:
 			var shape := CylinderShape3D.new()
 			shape.radius = 0.35 * s
 			shape.height = 4.0
@@ -511,7 +521,7 @@ func _scatter(spec: Dictionary, avoid: Array[Vector2]) -> void:
 			col.shape = shape
 			col.position = Vector3(p.x, h + 2.0, p.y)
 			_body.add_child(col)
-		elif scene_name == "rock" and r < walk_radius() + 2.0:
+		elif scene_name == "rock" and near:
 			var shape := BoxShape3D.new()
 			shape.size = Vector3(1.6, 1.0, 1.3) * s
 			var col := CollisionShape3D.new()
@@ -528,6 +538,10 @@ func _scatter(spec: Dictionary, avoid: Array[Vector2]) -> void:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = "Scatter_" + scene_name
 		mmi.multimesh = mm
+		if open_world:
+			mmi.visibility_range_end = SCENERY_RANGE
+			mmi.visibility_range_end_margin = 40.0
+			mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		add_child(mmi)
 
 
@@ -578,6 +592,10 @@ func _build_tufts(color: Color) -> void:
 	mmi.name = "Tufts"
 	mmi.multimesh = mm
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if open_world:
+		# Grass tufts only matter close up.
+		mmi.visibility_range_end = 140.0
+		mmi.visibility_range_end_margin = 20.0
 	add_child(mmi)
 
 

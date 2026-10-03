@@ -118,6 +118,16 @@ keep weaving and can start the sequence again without letting go.
 | Ambient occlusion, bloom | Contact shadows and glow on/off. |
 | Ray-traced shadows (RTAO) | Hardware ray-traced ambient occlusion, on GPUs that have it. |
 
+## Open world
+
+| Input | Keyboard / mouse | Controller |
+|---|---|---|
+| Talk / begin a chapter at its pillar | T | X (beside someone; X strikes otherwise) |
+| Run faster on open water | Hold Shift | Hold L3 |
+| Quest log, track a quest | Esc → Quests | Start → Quests |
+
+Leap stones at the foot of Five Winds throw you to the summit (step on them).
+
 ## Skills (Pause → Skills → Open skill trees)
 
 | Input | Keyboard / mouse | Controller |

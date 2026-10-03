@@ -38,6 +38,10 @@ var running := false
 var alive: Array[EnemyShinobi] = []
 ## Waves fully cleared so far.
 var waves_cleared := 0
+## Where the fight is (the open world fights anywhere): spawns stay within
+## ARENA_RADIUS of it, standing on the ground there.
+var center := Vector3.ZERO
+var arena_radius := ARENA_RADIUS
 
 
 func start(p: Player) -> void:
@@ -73,8 +77,10 @@ func _next_wave() -> void:
 	if not running or not is_inside_tree():
 		return
 	var ranks: Array = w["enemies"]
+	# A wave may mix natures (quest fights): one per enemy.
+	var natures: Array = w.get("elements", [])
 	for i in ranks.size():
-		_spawn(ranks[i], w["element"], i, ranks.size())
+		_spawn(ranks[i], natures[i] if i < natures.size() else w["element"], i, ranks.size())
 	enemies_left_changed.emit(alive.size())
 
 
@@ -98,11 +104,13 @@ func spawn_point(index: int, count: int) -> Vector3:
 	var spread := deg_to_rad(40.0)
 	var angle := (index - (count - 1) * 0.5) * spread
 	var p := player.global_position + look.rotated(Vector3.UP, angle) * SPAWN_DISTANCE
-	p.y = 0.0
-	var flat := Vector2(p.x, p.z)
-	if flat.length() > ARENA_RADIUS:
-		flat = flat.normalized() * ARENA_RADIUS
-	return Vector3(flat.x, 0.2, flat.y)
+	var flat := Vector2(p.x - center.x, p.z - center.z)
+	if flat.length() > arena_radius:
+		flat = flat.normalized() * arena_radius
+	var at := Vector3(center.x + flat.x, center.y, center.z + flat.y)
+	if is_inside_tree() and player.is_inside_tree():
+		at.y = Combat.ground_height(player.get_world_3d(), at + Vector3.UP * 10.0, center.y)
+	return at + Vector3.UP * 0.2
 
 
 func _on_enemy_defeated(e: EnemyShinobi) -> void:

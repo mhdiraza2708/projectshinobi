@@ -10,7 +10,7 @@ extends Node3D
 ## story_boss, story_menu, chapter_card, night, chapter:<id>, island:<id> (from
 ## the air), title_saves, slots_load, slots_new, confirm_overwrite (the title with
 ## fake saves), creation, creation_eyes, creation_identity, creation_jutsu,
-## menu_jutsu, menu_skills[:<tree>|:tab], scene:<id>:<beat>:<seconds> (a cutscene partway through, best
+## menu_jutsu, menu_skills[:<tree>|:tab], world[:<island>[:x,z]], scene:<id>:<beat>:<seconds> (a cutscene partway through, best
 ## with --fixed-fps 60), teleport, teleport_night, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
@@ -41,6 +41,15 @@ var chapter_card: ChapterCard
 var lantern_lights: Array[OmniLight3D] = []
 ## The story island in use (null on the training ground).
 var island: Island
+## Free roam (Game.Mode.WORLD): the archipelago, its quests, and chapters
+## played where they happen.
+var world: OpenWorld
+## The chapter now playing is in the open world (no teleports; back to free
+## roam when it ends).
+var story_in_world := false
+## Build every island at once instead of a frame apart (screenshots, tests).
+var instant_world := false
+var _arena: ArenaWall
 ## Skip the teleport effects (chapters started with skip_card, i.e. tests).
 var _quick := false
 ## Which beat a chapter starts at (screenshots only).
@@ -115,6 +124,7 @@ func _ready() -> void:
 		Game.Mode.TITLE: show_title()
 		Game.Mode.TRIAL: start_trial()
 		Game.Mode.STORY: start_story(Game.story_chapter)
+		Game.Mode.WORLD: start_world()
 		_: start_training()
 
 
@@ -127,15 +137,7 @@ func _continue_slot(slot: int) -> void:
 	if not bool(Profile.get_value(&"created")):
 		_start_creation()
 		return
-	if story == null:
-		story = Story.load_all()
-	var next := story.resume_chapter()
-	if next.is_empty():
-		# Everything is cleared: pick a chapter to replay.
-		show_title()
-		title_screen.show_chapters()
-		return
-	start_story(next["id"])
+	start_world()
 
 
 ## A fresh game in `slot` (the title already confirmed any overwrite).
@@ -156,7 +158,10 @@ func _on_creation_begun() -> void:
 	Game.save_records()
 	if story == null:
 		story = Story.load_all()
-	start_story(story.chapters[0]["id"])
+	# The story opens at once; the world is yours after the first chapter.
+	await start_world()
+	if is_inside_tree() and not Game.chapter_done(story.chapters[0]["id"]):
+		start_story_in_world(story.chapters[0]["id"])
 
 
 ## Backing out of creation abandons the new game: the slot is cleared again.
@@ -225,6 +230,12 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 	player.global_position = Vector3(at.x, 0.1, at.y)
 	set_time_of_day(chapter["time"])
 	set_weather(chapter["weather"])
+	_open_chapter(chapter, skip_card)
+
+
+## The chapter card, then the chapter (teleporting in, unless it's played in
+## the open world, where you're already standing there).
+func _open_chapter(chapter: Dictionary, skip_card: bool) -> void:
 	dialogue = DialogueBox.new()
 	add_child(dialogue)
 	chapter_card = ChapterCard.new()
@@ -237,16 +248,105 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 	story_director.chapter_finished.connect(_on_chapter_finished)
 	player.input_enabled = false
 	if not skip_card:
-		# You arrive by summoning: hidden until the seal flares.
-		player.visible = false
+		# You arrive by summoning: hidden until the seal flares (in the open
+		# world you walked here).
+		player.visible = story_in_world
 		chapter_card.show_chapter(chapter["number"], chapter["title"],
 			"%s  ·  %s" % [chapter["location"], chapter["time"]])
 		await chapter_card.finished
 		if not is_inside_tree():
 			return
-		await _teleport_in()
+		if not story_in_world:
+			await _teleport_in()
 	if is_inside_tree():
 		story_director.start(chapter, demo_start_beat)
+
+
+# --- The open world ---------------------------------------------------------------
+
+## Free roam across the archipelago, where the slot left off.
+func start_world() -> void:
+	mode = Game.Mode.WORLD
+	_leave_title()
+	Music.play(&"calm")
+	if story == null:
+		story = Story.load_all()
+	if world != null:
+		return
+	for path in ["Ground", "Scenery"]:
+		var old := get_node_or_null(path)
+		if old:
+			remove_child(old)
+			old.queue_free()
+	world = OpenWorld.new()
+	world.setup(player, hud, story)
+	add_child(world)
+	world.chapter_requested.connect(start_story_in_world)
+	player.camera_rig.camera.far = 3000.0
+	set_time_of_day("day")
+	set_weather("none")
+	await world.start(instant_world)
+	if not is_inside_tree():
+		return
+	# The Academy's practice dummies belong to Emberwood now.
+	for dummy in find_children("*", "TrainingDummy", true, false):
+		if dummy.get_parent() != world.archipelago:
+			dummy.reparent(world.archipelago)
+
+
+## Plays a chapter where its pillar stands: the world shifts to put its island
+## at the origin (where chapters are written), a wall rings the clearing for
+## the fights, and there's no teleport in or out.
+func start_story_in_world(chapter_id: String) -> void:
+	var chapter := story.chapter(chapter_id)
+	if chapter.is_empty() or world == null:
+		return
+	story_in_world = true
+	world.save_position()
+	world.busy = true
+	player.surface_speed = 1.0
+	mode = Game.Mode.STORY
+	world.archipelago.focus_on(chapter["island"])
+	island = world.archipelago.islands.get(chapter["island"])
+	_arena = ArenaWall.new()
+	_arena.radius = island.walk_radius() if island else 38.0
+	add_child(_arena)
+	if not chapter["dummies"]:
+		for dummy in find_children("*", "TrainingDummy", true, false):
+			dummy.queue_free()
+	_quick = false
+	set_time_of_day(chapter["time"])
+	set_weather(chapter["weather"])
+	_open_chapter(chapter, false)
+
+
+## Back to free roam after a chapter played in the world.
+func return_to_world() -> void:
+	results.close()
+	story_in_world = false
+	for node in [story_director, dialogue, chapter_card, _arena]:
+		if is_instance_valid(node):
+			node.queue_free()
+	story_director = null
+	_arena = null
+	island = null
+	for light in lantern_lights:
+		if is_instance_valid(light):
+			light.queue_free()
+	lantern_lights.clear()
+	set_time_of_day("day")
+	set_weather("none")
+	hud.set_objective("")
+	hud.visible = true
+	mode = Game.Mode.WORLD
+	player.visible = true
+	player.input_enabled = true
+	world.busy = false
+	world.refresh()
+	Game.save_records()
+	Music.play(&"calm")
+	if DisplayServer.get_name() != "headless":
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 ## Replaces the training ground with a story island.
@@ -329,6 +429,12 @@ func _on_chapter_finished(chapter: Dictionary) -> void:
 	await get_tree().create_timer(1.0 if _quick else 0.8).timeout
 	if not is_inside_tree():
 		return
+	if story_in_world:
+		var body := "Next:  %s %s, where the pillar of light stands." % [Story.numeral(next["number"]), next["title"]] \
+			if not next.is_empty() else "The story is told. The islands are still yours to wander."
+		results.show_panel("完", true, "第%s章" % Story.numeral(chapter["number"]), "CHAPTER COMPLETE",
+			"%s %s" % [Story.numeral(chapter["number"]), chapter["title"]], body, false, "Continue", "Title screen")
+		return
 	if not _quick:
 		await _teleport_out()
 		if not is_inside_tree():
@@ -351,6 +457,8 @@ func _on_results_primary() -> void:
 				if DisplayServer.get_name() != "headless":
 					Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 				story_director.retry()
+			elif story_in_world:
+				return_to_world()
 			elif get_tree().current_scene == self:
 				var next := story.next_chapter(chapter["id"])
 				Game.start_story(next["id"] if not next.is_empty() else chapter["id"])
@@ -577,7 +685,13 @@ func _restart(to: Game.Mode) -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	if player.global_position.y < KILL_PLANE_Y:
+	var floor_y := KILL_PLANE_Y
+	if world and world.archipelago.is_inside_tree():
+		floor_y = world.archipelago.global_position.y + Archipelago.SEA_LEVEL - 15.0
+	if player.global_position.y < floor_y:
+		if world:
+			world.respawn()
+			return
 		player.global_position = Vector3(0, 1, 4)
 		player.velocity = Vector3.ZERO
 
@@ -831,6 +945,20 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			pause_menu._select_tab({"menu_jutsu": PauseMenu.TAB_JUTSU, "menu_graphics": PauseMenu.TAB_GRAPHICS,
 				"menu_accessibility": PauseMenu.TAB_ACCESSIBILITY}[demo])
 			await _frames(10)
+		_ when demo.begins_with("world"):
+			# The open world: --demo=world[:<island>[:x,z]] stands you there
+			# (a new game at Emberwood by default).
+			instant_world = true
+			var parts := demo.split(":")
+			if parts.size() > 1:
+				var at := Vector2.ZERO
+				if parts.size() > 2:
+					var xz := parts[2].split(",")
+					at = Vector2(float(xz[0]), float(xz[1]))
+				Game.set_record("world", "position", Archipelago.offset_of(parts[1]) + Vector3(at.x, 0.0, at.y))
+			await start_world()
+			player.camera_rig.begin_showcase(float(_user_args().get("yaw", "0.6")))
+			await _frames(30)
 		_ when demo.begins_with("menu_skills"):
 			# The Skills tab partway through a save: --demo=menu_skills[:<tree>]
 			Game.add_xp(SkillTrees.xp_for_level(14) + 120)
