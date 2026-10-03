@@ -1,16 +1,17 @@
 class_name PauseMenu
 extends CanvasLayer
 ## Pause menu, styled as a hanging scroll: rebinding for both devices,
-## accessibility options, and the jutsu scroll (every technique, its seals
-## for your device, and the loadout editor: presets and the eight quick-cast
-## slots). Fully navigable with a
+## accessibility options, graphics, the jutsu scroll (every technique, its
+## seals for your device, and the loadout editor: presets and the eight
+## quick-cast slots) and the skill trees. Fully navigable with a
 ## controller: D-pad/stick to move, A to select, B to back out, LB/RB to
 ## switch tabs.
 
-const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["画", "Graphics"], ["巻", "Jutsu Scroll"]]
+const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["画", "Graphics"], ["巻", "Jutsu Scroll"], ["技", "Skills"]]
 const TAB_ACCESSIBILITY := 1
 const TAB_GRAPHICS := 2
 const TAB_JUTSU := 3
+const TAB_SKILLS := 4
 
 signal customize_requested
 signal title_requested
@@ -26,6 +27,7 @@ var _tab_hint: HBoxContainer
 var _controls_list: VBoxContainer
 var _jutsu_list: VBoxContainer
 var _jutsu_panel: LoadoutPanel
+var _skills: SkillTreePanel
 var _notice: Label
 var _resume: Button
 ## {action, device, button} while waiting for a new input.
@@ -66,6 +68,7 @@ func open() -> void:
 	_tab_hint.visible = InputDevice.current == Binding.Device.GAMEPAD
 	_refresh_controls()
 	_refresh_jutsu()
+	_skills.refresh()
 	_resume.grab_focus()
 
 
@@ -192,6 +195,8 @@ func _build() -> void:
 	_tabs.add_child(_scroll("Accessibility", _build_accessibility()))
 	_tabs.add_child(_scroll("Graphics", _build_graphics()))
 	_tabs.add_child(_scroll("Jutsu Scroll", _build_jutsu()))
+	_skills = SkillTreePanel.new()
+	_tabs.add_child(_scroll("Skills", _skills))
 	_select_tab(0)
 
 	vbox.add_child(_rule())

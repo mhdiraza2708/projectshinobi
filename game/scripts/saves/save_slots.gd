@@ -125,6 +125,7 @@ static func meta(slot: int) -> Dictionary:
 		"nature": int(profile.get_value("profile", "affinity", Element.FIRE)),
 		"created": bool(profile.get_value("profile", "created", false)),
 		"cleared": cleared,
+		"level": SkillTrees.level_for_xp(int(records.get_value("skills", "xp", 0))),
 		"playtime": float(records.get_value("meta", "playtime", 0.0)),
 		"modified": FileAccess.get_modified_time(profile_path(slot)),
 	}

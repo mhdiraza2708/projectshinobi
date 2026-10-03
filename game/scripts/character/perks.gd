@@ -1,7 +1,7 @@
 class_name Perks
 extends RefCounted
 ## Clans and eye arts: what you choose in character creation, and what it
-## does. Both are data (res://data/clans.json, eye_arts.json); a perk is a
+## does (skill trees add theirs too: SkillTrees). Both are data (res://data/clans.json, eye_arts.json); a perk is a
 ## named number that the game reads where it matters (health, dash, chakra
 ## cost, damage, lock-on, enemy seal speed...). Every clan and eye art here
 ## is original.
@@ -24,12 +24,19 @@ const PERK_TEXT := {
 	"lock_range": "+%d%% lock-on range",
 	"homing": "+%d%% jutsu homing",
 	"enemy_seal_slow": "Rivals weave %d%% slower",
+	"max_chakra": "+%d%% maximum chakra",
+	"ult_gain": "+%d%% ultimate charge",
+	"eye_time": "+%d%% eye art open time",
+	"nature_damage": "+%d%% damage with your clan's nature",
 }
 const FLAG_TEXT := {
 	"clones": "+%d Shade Clone",
 	"reads_natures": "Shows which natures are weak to you",
 	"dodge_focus": "A clean dash through a hit slows time and refunds chakra",
 	"perfect_guard": "A guard raised just before a hit blocks it entirely",
+	"second_wind": "Once a fight, a blow that would defeat you leaves you standing (back after 30 s unhurt)",
+	"twin_weave": "Every projectile jutsu fires a second, echoing shot",
+	"shadow_bloom": "Shade Clones burst when they fade or fall, striking every foe nearby",
 }
 const FOCUS_TIME_SCALE := 0.35
 const FOCUS_SECONDS := 0.5
@@ -168,9 +175,14 @@ static func active_eye_art() -> Dictionary:
 	return eye_art(id) if allowed.any(func(a: Dictionary) -> bool: return a["id"] == id) else {}
 
 
-## Total of a perk across the player's clan and eye art (and the eye art's
-## open form, while it's open: EyeArtMode).
+## Total of a perk across the player's clan, eye art (and the eye art's open
+## form, while it's open: EyeArtMode) and skill trees.
 static func value(key: StringName) -> float:
+	return base_value(key) + float(SkillTrees.perks().get(String(key), 0.0))
+
+
+## The same without the skill trees (what the clan and eye art give).
+static func base_value(key: StringName) -> float:
 	var total := 0.0
 	var sources: Array[Dictionary] = [clan(Profile.get_value(&"clan")), active_eye_art(), {"perks": EyeArtMode.boost}]
 	for source in sources:
@@ -192,12 +204,15 @@ static func eye_cooldown() -> float:
 	return float(_eye_settings.get("cooldown", EYE_COOLDOWN))
 
 
-## What a hit of `element` is multiplied by: 1 plus the clan's general and
-## nature-specific damage perks.
+## What a hit of `element` is multiplied by: 1 plus the general and
+## nature-specific damage perks (and Nature's Voice for the clan's own nature;
+## neutral jutsu for a Wayfarer).
 static func damage_multiplier(element: int) -> float:
 	var bonus := value(&"damage")
 	if element != Element.NONE:
 		bonus += value(StringName("damage_" + Element.NAMES[element]))
+	if element == clan_element(Profile.get_value(&"clan")):
+		bonus += value(&"nature_damage")
 	return 1.0 + bonus
 
 

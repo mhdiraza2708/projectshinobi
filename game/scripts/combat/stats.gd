@@ -11,6 +11,8 @@ signal healed(amount: float)
 ## first moments).
 signal dodged(amount: float, element: int)
 signal died
+## A lethal blow was survived because `cheat_death` was set (Second Wind).
+signal death_cheated
 signal modifier_changed(stat: StringName, magnitude: float, time_left: float)
 
 @export var max_health := 100.0
@@ -30,6 +32,10 @@ var health: float
 var chakra: float
 var is_charging := false
 var is_invulnerable := false
+## The next blow that would be lethal leaves `cheat_death_health` of max
+## health instead (once; cleared when used).
+var cheat_death := false
+var cheat_death_health := 0.3
 ## Damage multiplier from guarding (1.0 = not guarding).
 var guard_multiplier := 1.0
 ## Seconds since damage was last taken.
@@ -82,6 +88,10 @@ func take_damage(amount: float, element: int = Element.NONE) -> float:
 	var mult := Element.multiplier(element, affinity)
 	var dealt := amount * mult * guard_multiplier * (1.0 - modifier(&"damage_reduction"))
 	health = maxf(0.0, health - dealt)
+	if health <= 0.0 and cheat_death:
+		cheat_death = false
+		health = max_health * cheat_death_health
+		death_cheated.emit()
 	since_hit = 0.0
 	damaged.emit(dealt, element, mult)
 	health_changed.emit(health, max_health)

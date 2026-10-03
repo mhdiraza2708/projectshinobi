@@ -10,7 +10,7 @@ extends Node3D
 ## story_boss, story_menu, chapter_card, night, chapter:<id>, island:<id> (from
 ## the air), title_saves, slots_load, slots_new, confirm_overwrite (the title with
 ## fake saves), creation, creation_eyes, creation_identity, creation_jutsu,
-## menu_jutsu, scene:<id>:<beat>:<seconds> (a cutscene partway through, best
+## menu_jutsu, menu_skills[:<tree>], scene:<id>:<beat>:<seconds> (a cutscene partway through, best
 ## with --fixed-fps 60), teleport, teleport_night, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
@@ -830,6 +830,17 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			pause_menu.open()
 			pause_menu._select_tab({"menu_jutsu": PauseMenu.TAB_JUTSU, "menu_graphics": PauseMenu.TAB_GRAPHICS,
 				"menu_accessibility": PauseMenu.TAB_ACCESSIBILITY}[demo])
+			await _frames(10)
+		_ when demo.begins_with("menu_skills"):
+			# The Skills tab partway through a save: --demo=menu_skills[:<tree>]
+			Game.add_xp(SkillTrees.xp_for_level(14) + 120)
+			for id: String in ["iron_hide", "iron_hide", "light_feet", "rooted_stance", "rooted_stance", "wind_step",
+					"keen_eye", "gathering_storm", "deep_well", "sharp_seals", "quiet_flow"]:
+				SkillTrees.learn(id)
+			pause_menu.open()
+			pause_menu._select_tab(PauseMenu.TAB_SKILLS)
+			var tree := demo.trim_prefix("menu_skills").trim_prefix(":")
+			pause_menu._skills._show_tree(tree if tree != "" else "body")
 			await _frames(10)
 		"chapter_card":
 			start_story("ch3_vault")

@@ -67,6 +67,14 @@ controls can be remapped.
   that lifts foes, chain lightning, a stone fist, a breaking wave) plus
   Hundred Shades, a storm of shade clones any nature can learn. Choose yours
   in the Jutsu tab. Hold Pause to skip the cinematic.
+- **Skill trees** (Pause → Skills): fights, story chapters and trials give
+  XP, and every level (up to 50) is a skill point. Three original trees
+  (Way of the Body 体, Way of Chakra 気, Way of the Mind 心), each a branching
+  path of ranked nodes that ends in a final skill: **Second Wind** (a blow
+  that would defeat you leaves you standing, once a fight), **Twin Weave**
+  (every projectile jutsu fires an echo) or **Shadow Bloom** (Shade Clones
+  burst when they go). Deeper tiers open as you spend points in the tree, and
+  points can be taken back for free. Saved per save slot.
 - **Shade Clones** (a summon): two chakra doubles step out of your shadow,
   wearing your own look, and fight at your side for 14 seconds. They are
   fragile, cost a lot of chakra, and casting again replaces them.

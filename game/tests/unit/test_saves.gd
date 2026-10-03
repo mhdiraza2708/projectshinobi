@@ -83,9 +83,11 @@ func test_slot_cards_read_from_the_files() -> void:
 	Game.mark_chapter_done("ch1_graduation")
 	Game.mark_chapter_done("ch2_rival")
 	Game.playtime = 3725.0
+	Game.add_xp(SkillTrees.xp_for_level(7))
 	Game.save_records()
 	var m := SaveSlots.meta(1)
 	assert_true(m["exists"])
+	assert_eq(m["level"], 7, "the slot remembers its level")
 	assert_eq(m["name"], "Kaze")
 	assert_eq(m["clan"], "gale")
 	assert_eq(m["nature"], Element.WIND)

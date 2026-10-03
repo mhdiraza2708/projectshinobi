@@ -5,6 +5,13 @@ extends Node
 
 enum Mode { TITLE, TRAINING, TRIAL, STORY }
 
+## Experience was earned (`reason` is a SkillTrees XP key).
+signal xp_gained(amount: int, reason: String)
+## A new level: one more skill point to spend.
+signal leveled_up(level: int)
+## A skill was learned, or the points were taken back.
+signal skills_changed
+
 ## Read by the game scene when it loads. Tests set TRAINING.
 var start_mode := Mode.TITLE
 ## The chapter id a STORY start plays.
@@ -52,6 +59,7 @@ func load_records() -> void:
 		_records.load(path())
 	playtime = float(_records.get_value("meta", "playtime", 0.0))
 	_since_save = 0.0
+	SkillTrees.invalidate()
 
 
 ## A new game: no progress, no records.
@@ -59,6 +67,7 @@ func reset_records() -> void:
 	_records = ConfigFile.new()
 	playtime = 0.0
 	_since_save = 0.0
+	SkillTrees.invalidate()
 
 
 func save_records() -> void:
@@ -78,6 +87,35 @@ func ult_charge() -> float:
 
 func set_ult_charge(value: float) -> void:
 	_records.set_value("ultimate", "charge", value)
+
+
+## Experience earned in this slot (see SkillTrees for what it's worth).
+func xp() -> int:
+	return int(_records.get_value("skills", "xp", 0))
+
+
+## Adds experience and announces any new levels. Returns the levels gained.
+func add_xp(amount: int, reason := "") -> int:
+	if amount <= 0:
+		return 0
+	var before := SkillTrees.level()
+	_records.set_value("skills", "xp", xp() + amount)
+	xp_gained.emit(amount, reason)
+	var after := SkillTrees.level()
+	for level in range(before + 1, after + 1):
+		leveled_up.emit(level)
+	return after - before
+
+
+## Ranks learned in each skill node: {node_id: rank}.
+func skill_ranks() -> Dictionary:
+	return (_records.get_value("skills", "ranks", {}) as Dictionary).duplicate()
+
+
+func set_skill_ranks(ranks: Dictionary) -> void:
+	_records.set_value("skills", "ranks", ranks)
+	SkillTrees.invalidate()
+	skills_changed.emit()
 
 
 ## Best completion time in seconds for `trial`, or 0.0 if never completed.

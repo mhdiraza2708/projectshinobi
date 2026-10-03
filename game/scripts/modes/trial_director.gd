@@ -133,6 +133,10 @@ func _finish(won: bool) -> void:
 		if is_instance_valid(e):
 			e.stand_down()
 	var record := Game.record_time(record_id, elapsed) if won and record_id != "" else false
+	if won:
+		SkillTrees.award("trial")
+	if record:
+		SkillTrees.award("trial_record")
 	Sfx.play(&"victory" if won else &"defeat")
 	finished.emit(won, elapsed, record)
 

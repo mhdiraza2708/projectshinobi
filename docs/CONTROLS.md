@@ -118,6 +118,19 @@ keep weaving and can start the sequence again without letting go.
 | Ambient occlusion, bloom | Contact shadows and glow on/off. |
 | Ray-traced shadows (RTAO) | Hardware ray-traced ambient occlusion, on GPUs that have it. |
 
+## Skills (Pause → Skills)
+
+| Input | Keyboard / mouse | Controller |
+|---|---|---|
+| Walk the tree | Arrow keys or mouse | D-pad / left stick |
+| Learn a rank of the selected node | Enter or click | A |
+| Switch tree | Up from the top node, then left/right | Up from the top node, then left/right |
+| Take points back | Reset (this tree) / Reset all (press twice) | same |
+
+Every level gives one point. A node needs one of the nodes linked above it,
+and deeper tiers open once you've spent enough points in that tree (shown
+down the left edge).
+
 ## Accessibility options (Pause → Accessibility)
 
 | Option | What it does |

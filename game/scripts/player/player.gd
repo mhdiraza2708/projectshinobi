@@ -76,6 +76,8 @@ var quick_styles: Array[String] = []
 var quick_page := 0
 ## The ultimate meter: fills as you fight, empties when unleashed, and keeps
 ## its charge between fights (Game saves it with the slot).
+## Second Wind (skill tree) can save the player from the next lethal blow.
+var second_wind_ready := true
 var ult_charge := 0.0:
 	set(value):
 		ult_charge = value
@@ -128,8 +130,10 @@ func _ready() -> void:
 	caster.affinity = Profile.get_value(&"affinity")
 	caster.use_perks = true
 	_base = {"run": run_speed, "sprint": sprint_speed, "dash_cooldown": dash_cooldown, "lock": lock_range,
-		"guard": guard_damage_multiplier, "health": stats.max_health, "chakra_regen": stats.chakra_regen}
+		"guard": guard_damage_multiplier, "health": stats.max_health, "chakra_regen": stats.chakra_regen,
+		"chakra": stats.max_chakra}
 	_apply_perks()
+	Game.skills_changed.connect(_apply_perks)
 	_load_loadout()
 	eye_mode = EyeArtMode.new()
 	add_child(eye_mode)
@@ -165,6 +169,8 @@ func _ready() -> void:
 	caster.cast_failed.connect(_on_cast_failed)
 	stats.damaged.connect(_on_damaged)
 	stats.died.connect(_on_died)
+	stats.cheat_death_health = SkillTrees.SECOND_WIND_HEALTH
+	stats.death_cheated.connect(_on_second_wind)
 
 
 func _exit_tree() -> void:
@@ -179,6 +185,10 @@ func _sync_settings() -> void:
 
 func _physics_process(delta: float) -> void:
 	_state_time += delta
+	if not second_wind_ready and stats.since_hit >= SkillTrees.SECOND_WIND_RECHARGE and not is_down():
+		second_wind_ready = true
+		if Perks.has(&"second_wind"):
+			feedback.emit("Second Wind ready", &"info")
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_strike_cooldown = maxf(0.0, _strike_cooldown - delta)
 	weaver.tick(delta)
@@ -710,7 +720,11 @@ func _apply_perks() -> void:
 	stats.max_health = _base["health"] * (1.0 + Perks.value(&"max_health"))
 	stats.health = clampf(ratio * stats.max_health, 0.0, stats.max_health)
 	stats.chakra_regen = _base["chakra_regen"] * (1.0 + Perks.value(&"chakra_regen"))
+	var chakra_ratio := stats.chakra / stats.max_chakra if stats.max_chakra > 0.0 else 1.0
+	stats.max_chakra = _base["chakra"] * (1.0 + Perks.value(&"max_chakra"))
+	stats.chakra = clampf(chakra_ratio * stats.max_chakra, 0.0, stats.max_chakra)
 	stats.health_changed.emit(stats.health, stats.max_health)
+	stats.chakra_changed.emit(stats.chakra, stats.max_chakra)
 
 
 ## Seconds per seal when a quick-cast weaves for you.
@@ -801,7 +815,9 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 
 
 func take_hit(amount: float, element: int, _source: Node) -> float:
+	stats.cheat_death = second_wind_ready and Perks.has(&"second_wind")
 	var dealt := stats.take_damage(amount, element)
+	stats.cheat_death = false
 	gain_ultimate(dealt * Ultimates.PER_DAMAGE_TAKEN)
 	return dealt
 
@@ -812,7 +828,7 @@ func gain_ultimate(amount: float) -> void:
 	if amount <= 0.0 or UltimateSequence.active != null or state == State.DOWN:
 		return
 	var before := ult_charge
-	ult_charge = minf(Ultimates.MAX_CHARGE, ult_charge + amount)
+	ult_charge = minf(Ultimates.MAX_CHARGE, ult_charge + amount * (1.0 + Perks.value(&"ult_gain")))
 	if ult_charge == before:
 		return
 	ultimate_changed.emit(ult_charge, Ultimates.MAX_CHARGE)
@@ -868,8 +884,27 @@ func _on_died() -> void:
 	defeated.emit()
 
 
+## Second Wind: a lethal blow was shrugged off. A burst of wind, a moment
+## untouchable, and it rests until the player goes a while unhurt.
+func _on_second_wind() -> void:
+	second_wind_ready = false
+	var world := get_parent()
+	var at := global_position + Vector3.UP
+	Vfx.shockwave(world, global_position + Vector3.UP * 0.2, Color("f4e7c5"), 4.0, 0.6)
+	Vfx.flash(world, at, Color("fff3d6"), 2.6, 0.25)
+	Vfx.sparks(world, at, Color("f4e7c5"), 20, 7.0)
+	Sfx.play(&"buff", 2.0)
+	InputDevice.rumble(0.8, 0.6, 0.35)
+	feedback.emit("Second Wind!", &"info")
+	stats.is_invulnerable = true
+	get_tree().create_timer(SkillTrees.SECOND_WIND_SHIELD).timeout.connect(func() -> void:
+		if is_instance_valid(self) and state != State.DASHING:
+			stats.is_invulnerable = false)
+
+
 ## Back on your feet at full health (trial retry).
 func revive() -> void:
+	second_wind_ready = true
 	stats.restore()
 	model.rotation = Vector3.ZERO
 	if animator:

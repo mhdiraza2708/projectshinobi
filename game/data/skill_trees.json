@@ -1,0 +1,92 @@
+{
+	"_about": "Skill trees (SkillTrees). Every name here is original. A node's perks are per rank (a 3-rank +6% node gives +18% at rank 3). 'requires' is any one of those nodes; a tier also needs that many points already spent in the tree (tier_points). XP comes from fights, chapters and trials; every level is one skill point.",
+	"xp": {
+		"genin": 15,
+		"chunin": 25,
+		"jonin": 40,
+		"boss": 150,
+		"chapter": 300,
+		"chapter_replay": 60,
+		"trial": 120,
+		"trial_record": 50
+	},
+	"levels": {"first": 100, "step": 30, "max": 50},
+	"tier_points": [0, 1, 3, 5, 8],
+	"trees": [
+		{
+			"id": "body",
+			"name": "Way of the Body",
+			"kanji": "体",
+			"color": "#c8553d",
+			"blurb": "Toughness, footwork and the guard. Ends in a blow you walk away from.",
+			"nodes": [
+				{"id": "iron_hide", "name": "Iron Hide", "kanji": "鉄", "tier": 1, "col": 1, "ranks": 3,
+					"perks": {"max_health": 0.06}, "requires": []},
+				{"id": "light_feet", "name": "Light Feet", "kanji": "軽", "tier": 2, "col": 0, "ranks": 3,
+					"perks": {"move_speed": 0.04}, "requires": ["iron_hide"]},
+				{"id": "rooted_stance", "name": "Rooted Stance", "kanji": "根", "tier": 2, "col": 2, "ranks": 3,
+					"perks": {"guard": 0.08}, "requires": ["iron_hide"]},
+				{"id": "wind_step", "name": "Wind Step", "kanji": "疾", "tier": 3, "col": 0, "ranks": 2,
+					"perks": {"dash_cooldown": -0.1}, "requires": ["light_feet"]},
+				{"id": "mending_breath", "name": "Mending Breath", "kanji": "癒", "tier": 3, "col": 2, "ranks": 2,
+					"perks": {"heal": 0.12}, "requires": ["rooted_stance"]},
+				{"id": "falling_leaf", "name": "Falling Leaf", "kanji": "葉", "tier": 4, "col": 0, "ranks": 1,
+					"perks": {"dodge_focus": 1}, "requires": ["wind_step"]},
+				{"id": "unbroken_wall", "name": "Unbroken Wall", "kanji": "壁", "tier": 4, "col": 2, "ranks": 1,
+					"perks": {"perfect_guard": 1}, "requires": ["mending_breath"]},
+				{"id": "second_wind", "name": "Second Wind", "kanji": "甦", "tier": 5, "col": 1, "ranks": 1,
+					"perks": {"second_wind": 1}, "requires": ["falling_leaf", "unbroken_wall"]}
+			]
+		},
+		{
+			"id": "chakra",
+			"name": "Way of Chakra",
+			"kanji": "気",
+			"color": "#3d7ec8",
+			"blurb": "A deeper well, cheaper seals, harder jutsu. Ends in every shot answered by its echo.",
+			"nodes": [
+				{"id": "deep_well", "name": "Deep Well", "kanji": "泉", "tier": 1, "col": 1, "ranks": 3,
+					"perks": {"max_chakra": 0.08}, "requires": []},
+				{"id": "quiet_flow", "name": "Quiet Flow", "kanji": "流", "tier": 2, "col": 0, "ranks": 3,
+					"perks": {"chakra_regen": 0.08}, "requires": ["deep_well"]},
+				{"id": "sharp_seals", "name": "Sharp Seals", "kanji": "鋭", "tier": 2, "col": 2, "ranks": 3,
+					"perks": {"damage": 0.04}, "requires": ["deep_well"]},
+				{"id": "thrifty_hands", "name": "Thrifty Hands", "kanji": "倹", "tier": 3, "col": 0, "ranks": 2,
+					"perks": {"cost": -0.06}, "requires": ["quiet_flow"]},
+				{"id": "quick_fingers", "name": "Quick Fingers", "kanji": "速", "tier": 3, "col": 2, "ranks": 2,
+					"perks": {"cast_speed": 0.1}, "requires": ["sharp_seals"]},
+				{"id": "seeking_mind", "name": "Seeking Mind", "kanji": "追", "tier": 4, "col": 0, "ranks": 2,
+					"perks": {"homing": 0.15}, "requires": ["thrifty_hands"]},
+				{"id": "natures_voice", "name": "Nature's Voice", "kanji": "性", "tier": 4, "col": 2, "ranks": 2,
+					"perks": {"nature_damage": 0.08}, "requires": ["quick_fingers"]},
+				{"id": "twin_weave", "name": "Twin Weave", "kanji": "双", "tier": 5, "col": 1, "ranks": 1,
+					"perks": {"twin_weave": 1}, "requires": ["seeking_mind", "natures_voice"]}
+			]
+		},
+		{
+			"id": "mind",
+			"name": "Way of the Mind",
+			"kanji": "心",
+			"color": "#9a6fc4",
+			"blurb": "Reading the fight: lock-on, shadows, the eye and the ultimate. Ends in clones that bloom.",
+			"nodes": [
+				{"id": "keen_eye", "name": "Keen Eye", "kanji": "視", "tier": 1, "col": 1, "ranks": 3,
+					"perks": {"lock_range": 0.1}, "requires": []},
+				{"id": "long_shadow", "name": "Long Shadow", "kanji": "影", "tier": 2, "col": 0, "ranks": 2,
+					"perks": {"clone_time": 0.2}, "requires": ["keen_eye"]},
+				{"id": "gathering_storm", "name": "Gathering Storm", "kanji": "蓄", "tier": 2, "col": 2, "ranks": 3,
+					"perks": {"ult_gain": 0.1}, "requires": ["keen_eye"]},
+				{"id": "patient_hunter", "name": "Patient Hunter", "kanji": "待", "tier": 3, "col": 0, "ranks": 2,
+					"perks": {"enemy_seal_slow": 0.08}, "requires": ["long_shadow"]},
+				{"id": "open_gaze", "name": "Open Gaze", "kanji": "眼", "tier": 3, "col": 2, "ranks": 2,
+					"perks": {"eye_time": 0.15}, "requires": ["gathering_storm"]},
+				{"id": "many_shadows", "name": "Many Shadows", "kanji": "分", "tier": 4, "col": 0, "ranks": 1,
+					"perks": {"clones": 1}, "requires": ["patient_hunter"]},
+				{"id": "nature_reader", "name": "Nature Reader", "kanji": "読", "tier": 4, "col": 2, "ranks": 1,
+					"perks": {"reads_natures": 1}, "requires": ["open_gaze"]},
+				{"id": "shadow_bloom", "name": "Shadow Bloom", "kanji": "咲", "tier": 5, "col": 1, "ranks": 1,
+					"perks": {"shadow_bloom": 1}, "requires": ["many_shadows", "nature_reader"]}
+			]
+		}
+	]
+}

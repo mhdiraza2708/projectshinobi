@@ -148,8 +148,13 @@ func _world_parent() -> Node:
 	return scene if scene else get_tree().root
 
 
-func _spawn_projectiles(jutsu: JutsuDefinition, power: float, target: Node3D) -> void:
+func _spawn_projectiles(jutsu: JutsuDefinition, power: float, target: Node3D, echo := false) -> void:
 	var aim := aim_direction(target)
+	if use_perks and not echo and Perks.has(&"twin_weave"):
+		get_tree().create_timer(SkillTrees.TWIN_WEAVE_DELAY, false).timeout.connect(func() -> void:
+			if is_instance_valid(self) and is_inside_tree():
+				_spawn_projectiles(jutsu, power * SkillTrees.TWIN_WEAVE_POWER,
+					target if is_instance_valid(target) else null, true))
 	for i in jutsu.count:
 		var offset := (i - (jutsu.count - 1) * 0.5) * FAN_SPREAD
 		var p := JutsuProjectile.new()
@@ -161,6 +166,8 @@ func _spawn_projectiles(jutsu: JutsuDefinition, power: float, target: Node3D) ->
 		p.direction = aim.rotated(Vector3.UP, offset).normalized()
 		p.caster = _body()
 		p.style = jutsu.visual
+		if echo:
+			p.radius *= 0.75
 		p.homing_rate = jutsu.homing * ((1.0 + Perks.value(&"homing")) if use_perks else 1.0)
 		# Only the centre shot of a fan homes, so the spread stays readable.
 		p.target = target if offset == 0.0 else null
@@ -222,6 +229,8 @@ func _summon(jutsu: JutsuDefinition) -> void:
 		c.lifetime = time
 		c.health_override = jutsu.health
 		c.damage_scale = jutsu.power
+		if use_perks and Perks.has(&"shadow_bloom"):
+			c.bloom_power = SkillTrees.SHADOW_BLOOM_POWER
 		var angle := owner_body.rotation.y + TAU * (i + 0.5) / count
 		var pos := owner_body.global_position + Vector3(sin(angle), 0.0, cos(angle)) * 2.4
 		pos.y = Combat.ground_height(get_world_3d(), pos, owner_body.global_position.y)

@@ -66,6 +66,9 @@ func bind(p: Player) -> void:
 	player.feedback.connect(func(text: String, kind: StringName) -> void:
 		if kind != &"cast":
 			show_banner(text, kind))
+	Game.leveled_up.connect(func(level: int) -> void:
+		show_banner("Level %d · a skill point to spend (%s → Skills)" % [level, InputDevice.glyph(&"pause")], &"info")
+		Sfx.play(&"buff", 1.0))
 	player.quick_slots_changed.connect(_refresh_slots)
 	player.quick_slots_changed.connect(_refresh_loadout_name)
 	player.ultimate_changed.connect(_on_ultimate)

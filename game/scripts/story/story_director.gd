@@ -564,5 +564,7 @@ func _finish() -> void:
 	player.input_enabled = false
 	hud.set_objective("")
 	Music.stop(2.5)
+	# A chapter's first clear is worth far more than a replay.
+	SkillTrees.award("chapter_replay" if Game.chapter_done(chapter["id"]) else "chapter")
 	Game.mark_chapter_done(chapter["id"])
 	chapter_finished.emit(chapter)

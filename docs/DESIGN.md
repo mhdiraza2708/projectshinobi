@@ -125,6 +125,19 @@ wrong trade.
   A clan lists which eye arts it allows. **Every clan and eye art is original**:
   no canon clans, no named dojutsu (see section 2). Rename or retune them in
   the JSON.
+- **Skill trees** (`SkillTrees`, `game/data/skill_trees.json`,
+  `SkillTreePanel`): XP (`Game.add_xp`) comes from defeated enemies (by rank,
+  bosses more; not clones, allies or dismissed foes), story chapters (a first
+  clear is worth 5x a replay) and trial wins (plus a bonus for a record).
+  Level L needs `first + step * (L - 1)` XP to reach L+1, to a cap of 50;
+  each level is one point. Each tree is 8 nodes on a 3-column, 5-tier grid:
+  `requires` is any one of the listed nodes, and a tier also needs
+  `tier_points` already spent in that tree. A node's `perks` (the same keys
+  as clans, plus `max_chakra`, `ult_gain`, `eye_time`, `nature_damage` and
+  the flags `second_wind`, `twin_weave`, `shadow_bloom`) are multiplied by its
+  rank and added in `Perks.value()`, so they apply wherever perks already do;
+  the player re-reads them the moment a rank is learned. XP and ranks live in
+  the slot's `records.cfg`; a reset refunds everything. All names original.
 - **Loadouts** (`Loadouts`): presets of 8 quick-cast slots, each slot a jutsu
   and a cast style (`weave` forms the seals for you, `instant` skips them for
   +35% chakra). They live in the Profile, so they are saved per slot.

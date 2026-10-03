@@ -76,7 +76,7 @@ static func form() -> Dictionary:
 
 
 func seconds() -> float:
-	return float(form().get("seconds", 10.0))
+	return float(form().get("seconds", 10.0)) * (1.0 + Perks.value(&"eye_time"))
 
 
 func cost() -> float:
@@ -166,7 +166,7 @@ func release() -> bool:
 		world.add_child(p)
 		p.global_position = origin
 	Vfx.shockwave(world, origin, Color(str(art()["color"])), 1.6, 0.4, aim)
-	Sfx.play(&"cast_" + Element.NAMES[int(held[0]["element"])], 2.0)
+	Sfx.play(StringName("cast_" + Element.NAMES[int(held[0]["element"])]), 2.0)
 	if player.animator:
 		player.animator.cast()
 	player.feedback.emit("Returned %d jutsu" % held.size(), &"info")

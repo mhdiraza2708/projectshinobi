@@ -211,7 +211,8 @@ func _slot_card(slot: int, for_new: bool) -> Button:
 		heading = m["name"]
 		if m["created"]:
 			line1 = "Slot %d  ·  %s  ·  %s" % [slot, _clan_name(m["clan"]), Element.display_name(m["nature"])]
-			line2 = "%d of %d chapters  ·  %s" % [m["cleared"], story.chapters.size(), SaveSlots.format_playtime(m["playtime"])]
+			line2 = "Lv %d  ·  %d of %d chapters  ·  %s" % [m["level"], m["cleared"], story.chapters.size(),
+				SaveSlots.format_playtime(m["playtime"])]
 		else:
 			line1 = "Slot %d  ·  character not finished" % slot
 		line3 = _date(m["modified"])

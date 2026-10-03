@@ -78,6 +78,10 @@ var drill := false
 ## Profile), vanishes after `lifetime` seconds, and keeps close to its owner
 ## between fights. `damage_scale` is how much of a rank's damage it deals.
 var clone_of: Node3D
+## Shadow Bloom (skill tree): a clone bursts for this much when it goes.
+var bloom_power := 0.0
+## Sent away rather than beaten (no XP for the player).
+var _dismissed := false
 var lifetime := 0.0
 var damage_scale := 1.0
 ## Body scale for oversized bosses.
@@ -369,6 +373,7 @@ func is_defeated() -> bool:
 ## Leaves in a puff of smoke without counting as defeated (an ally
 ## stepping out of the story).
 func leave() -> void:
+	_bloom()
 	state = State.DEFEATED
 	remove_from_group(&"lockable")
 	remove_from_group(team)
@@ -377,9 +382,24 @@ func leave() -> void:
 	queue_free()
 
 
+## Shadow Bloom: a clone's last act is a burst of its nature around it.
+func _bloom() -> void:
+	if bloom_power <= 0.0 or state == State.DEFEATED or not is_inside_tree():
+		return
+	var power := bloom_power
+	bloom_power = 0.0
+	var at := global_position + Vector3.UP
+	var exclude: Array[RID] = [get_rid()]
+	for victim in Combat.hittables_in_sphere(get_world_3d(), at, SkillTrees.SHADOW_BLOOM_RADIUS, exclude):
+		if Combat.apply_hit(victim, power, element, self) > 0.0 and clone_of is Player:
+			(clone_of as Player).notify_hit(victim, &"jutsu")
+	Vfx.area_blast(get_parent(), at, element, SkillTrees.SHADOW_BLOOM_RADIUS)
+
+
 ## Vanishes at once, whatever state it is in (a boss's clones when it falls).
 func dismiss() -> void:
 	if state != State.DEFEATED:
+		_dismissed = true
 		stats.health = 0.0
 		_on_died()
 
@@ -738,6 +758,9 @@ func _on_damaged(amount: float, hit_element: int, multiplier: float) -> void:
 
 
 func _on_died() -> void:
+	_bloom()
+	if not is_ally() and clone_of == null and not _dismissed:
+		Game.add_xp(SkillTrees.enemy_xp(rank, is_boss()), "boss" if is_boss() else String(rank))
 	_enter(State.DEFEATED)
 	remove_from_group(&"lockable")
 	remove_from_group(team)
