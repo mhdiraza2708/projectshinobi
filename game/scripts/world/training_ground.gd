@@ -324,6 +324,14 @@ func start_story_in_world(chapter_id: String) -> void:
 func return_to_world() -> void:
 	results.close()
 	story_in_world = false
+	# The chapter's cast leaves the stage (a reload used to clear them).
+	if is_instance_valid(story_director):
+		for npc in story_director.npcs.values():
+			if is_instance_valid(npc):
+				npc.queue_free()
+	for child in get_children():
+		if child is EnemyShinobi or child is StoryNpc:
+			child.queue_free()
 	for node in [story_director, dialogue, chapter_card, _arena]:
 		if is_instance_valid(node):
 			node.queue_free()

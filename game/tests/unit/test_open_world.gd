@@ -107,9 +107,12 @@ func test_the_story_waits_at_a_pillar_and_plays_in_place() -> void:
 	assert_true(island.global_position.length() < 0.01, "the chapter's island is moved to the origin")
 	assert_true(is_instance_valid(scene._arena), "a wall rings the clearing")
 	assert_eq(scene.mode, Game.Mode.STORY)
+	var npc: StoryNpc = scene.story_director.add_npc("hisame", Vector2(2, 2), true)
 	scene.return_to_world()
 	assert_eq(scene.mode, Game.Mode.WORLD)
 	assert_false(is_instance_valid(scene._arena))
+	await physics_frames(1)
+	assert_false(is_instance_valid(npc), "the chapter's cast leaves with it")
 
 
 func test_a_gather_quest_from_offer_to_reward() -> void:
