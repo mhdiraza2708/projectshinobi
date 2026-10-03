@@ -262,3 +262,13 @@ func test_the_map_charts_the_islands_and_travel_needs_a_visit() -> void:
 	await physics_frames(2)
 	assert_true(menu._map != null and menu._map.is_visible_in_tree(), "the Map tab shows the chart")
 	menu.close()
+
+
+func test_continuing_at_sea_announces_no_island() -> void:
+	# Until the world puts you back where you were you stand at the origin,
+	# on Emberwood: nothing may be announced (or found) from there.
+	Game.set_record("world", "position", Archipelago.offset_of("autumn_wood") + Vector3(-130, 0, 50))
+	await _load()
+	await physics_frames(3)
+	assert_eq(world.archipelago.island_near(player.global_position), "", "you're back out at sea")
+	assert_eq(world.tracker._place_name.text, "", "and no island's name comes up")

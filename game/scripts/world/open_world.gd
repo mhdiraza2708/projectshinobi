@@ -46,6 +46,9 @@ var tracker: QuestTracker
 var dialogue: DialogueBox
 ## A chapter or quest fight in progress (free roam pauses its quests).
 var busy := false
+## Nothing is checked (islands, water, pickups) until start() has put you
+## where you were: until then you stand at the origin, on Emberwood.
+var placed := false
 
 var _givers: Dictionary = {}       # who -> StoryNpc (one figure per person)
 var _pickups: Dictionary = {}      # quest id -> Array[WorldPickup]
@@ -120,6 +123,7 @@ func start(instant := false) -> void:
 	ground.y = Combat.ground_height(player.get_world_3d(), ground + Vector3.UP * 30.0, ground.y)
 	player.global_position = ground + Vector3.UP * 0.2
 	player.velocity = Vector3.ZERO
+	placed = true
 	refresh()
 
 
@@ -355,6 +359,8 @@ func _nearest_pickup(id: String) -> Variant:
 # --- Loop ------------------------------------------------------------------------
 
 func _physics_process(delta: float) -> void:
+	if not placed:
+		return
 	if player == null or busy and _fight == null and not is_instance_valid(_duelist):
 		_interact = {}
 		tracker.set_prompt("")
