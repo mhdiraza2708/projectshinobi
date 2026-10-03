@@ -29,6 +29,8 @@ controls can be remapped.
 
 ![Story mode, chapter 2, The Ashen Trail: Kagerou wreathed in fire on a snowy night](docs/images/story_night.jpg)
 
+![Weaving seals on a controller: each seal stamped as a talisman with its zodiac kanji and the buttons that make it; a fuse burns down the timing window and the next seal is hinted](docs/images/weaving.jpg)
+
 ![Trial of the Five Natures: locked on to a Lightning chunin weaving a jutsu, its seals shown above its head; the wave, weakness and timer at the top](docs/images/trial.jpg)
 
 ## What you can do right now
