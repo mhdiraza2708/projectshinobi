@@ -186,6 +186,18 @@ func test_twin_weave_fires_an_echo() -> void:
 	assert_eq(count.call(), plain, "the first shot goes at once")
 	await seconds(SkillTrees.TWIN_WEAVE_DELAY + 0.1)
 	assert_eq(count.call(), plain * 2, "then its echo")
+	for p in scene.find_children("*", "JutsuProjectile", true, false):
+		p.free()
+	# Kunai fly fast and far: count them as they're thrown, not after.
+	var thrown := [0]
+	var on_added := func(n: Node) -> void:
+		if n is JutsuProjectile:
+			thrown[0] += 1
+	root.get_tree().node_added.connect(on_added)
+	assert_true(player.caster.cast(player._kunai))
+	await seconds(SkillTrees.TWIN_WEAVE_DELAY + 0.1)
+	root.get_tree().node_added.disconnect(on_added)
+	assert_eq(thrown[0], player._kunai.count, "a thrown kunai isn't a jutsu: no echo")
 
 
 func test_shadow_bloom_clones_burst_when_they_go() -> void:

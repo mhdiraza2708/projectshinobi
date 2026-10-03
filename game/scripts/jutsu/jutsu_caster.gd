@@ -150,7 +150,7 @@ func _world_parent() -> Node:
 
 func _spawn_projectiles(jutsu: JutsuDefinition, power: float, target: Node3D, echo := false) -> void:
 	var aim := aim_direction(target)
-	if use_perks and not echo and Perks.has(&"twin_weave"):
+	if use_perks and not echo and jutsu.visual != &"kunai" and Perks.has(&"twin_weave"):
 		get_tree().create_timer(SkillTrees.TWIN_WEAVE_DELAY, false).timeout.connect(func() -> void:
 			if is_instance_valid(self) and is_inside_tree():
 				_spawn_projectiles(jutsu, power * SkillTrees.TWIN_WEAVE_POWER,
