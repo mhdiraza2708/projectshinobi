@@ -74,8 +74,12 @@ var lock_target: Node3D
 var quick_slots: Array[StringName] = []
 var quick_styles: Array[String] = []
 var quick_page := 0
-## The ultimate meter: fills as you fight, empties when unleashed.
-var ult_charge := 0.0
+## The ultimate meter: fills as you fight, empties when unleashed, and keeps
+## its charge between fights (Game saves it with the slot).
+var ult_charge := 0.0:
+	set(value):
+		ult_charge = value
+		Game.set_ult_charge(value)
 ## Disable to freeze player control (cutscenes, menus, tests).
 var input_enabled := true
 ## While input is off, a cutscene can walk you (horizontal velocity) and pose
@@ -125,6 +129,8 @@ func _ready() -> void:
 		"guard": guard_damage_multiplier, "health": stats.max_health, "chakra_regen": stats.chakra_regen}
 	_apply_perks()
 	_load_loadout()
+	# Whatever the meter held at the end of the last fight.
+	ult_charge = clampf(Game.ult_charge(), 0.0, Ultimates.MAX_CHARGE)
 	Profile.changed.connect(func(key: StringName) -> void:
 		caster.affinity = Profile.get_value(&"affinity")
 		if key in [&"clan", &"eye_art", &""]:

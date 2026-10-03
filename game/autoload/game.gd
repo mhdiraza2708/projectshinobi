@@ -70,6 +70,16 @@ func save_records() -> void:
 	_records.save(path())
 
 
+## The ultimate meter, carried from fight to fight and saved with the slot
+## (on the next autosave, scene change or quit).
+func ult_charge() -> float:
+	return float(_records.get_value("ultimate", "charge", 0.0))
+
+
+func set_ult_charge(value: float) -> void:
+	_records.set_value("ultimate", "charge", value)
+
+
 ## Best completion time in seconds for `trial`, or 0.0 if never completed.
 func best_time(trial: String) -> float:
 	return float(_records.get_value("best_time", trial, 0.0))

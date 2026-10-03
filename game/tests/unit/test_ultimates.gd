@@ -11,6 +11,8 @@ var player: Player
 func before_each() -> void:
 	Profile.persist = false
 	Profile.reset()
+	# The meter carries over between fights: start each test empty.
+	Game.set_ult_charge(0.0)
 	Game.start_mode = Game.Mode.TRAINING
 	scene = Scene.instantiate()
 	root.add_child(scene)
@@ -189,3 +191,17 @@ func test_the_hud_shows_the_meter() -> void:
 	assert_true(scene.hud._ult_text.text.begins_with("50"), "half full (%s)" % scene.hud._ult_text.text)
 	player.gain_ultimate(50.0)
 	assert_true(scene.hud._ult_text.text.begins_with("READY"), "ready, with the button")
+
+
+func test_the_meter_keeps_its_charge_between_fights() -> void:
+	await physics_frames(2)
+	player.gain_ultimate(60.0)
+	scene.queue_free()
+	await physics_frames(2)
+	scene = Scene.instantiate()
+	root.add_child(scene)
+	player = scene.player
+	await physics_frames(2)
+	assert_near(player.ult_charge, 60.0, 0.01, "the next fight starts where the last one left off")
+	assert_near(Game.ult_charge(), 60.0, 0.01, "and it's kept with the save")
+
