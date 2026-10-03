@@ -272,3 +272,10 @@ func test_continuing_at_sea_announces_no_island() -> void:
 	await physics_frames(3)
 	assert_eq(world.archipelago.island_near(player.global_position), "", "you're back out at sea")
 	assert_eq(world.tracker._place_name.text, "", "and no island's name comes up")
+
+
+func test_a_save_made_at_dusk_continues_at_dusk() -> void:
+	Game.set_record("world", "clock", 0.6 * OpenWorld.DAY_LENGTH)
+	await _load()
+	assert_eq(world.phase(), "dusk")
+	assert_eq(scene.time_of_day(), "dusk", "the world is lit for the saved time")
