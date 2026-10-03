@@ -115,6 +115,7 @@ keep weaving and can start the sequence again without letting go.
 | Vibration | Controller rumble on/off. |
 | Screen shake | 0–100%. |
 | UI scale | Makes every menu and HUD element bigger or smaller. |
+| Graphics quality | Standard (fastest), High (global illumination, volumetric fog, filmic tone curve) or Cinematic (adds depth of field in cinematics and film grain). Needs the Vulkan renderer; greyed out otherwise. |
 | Master / Effects / Menu sounds volume | 0–100% each. 0 mutes that group. |
 | Remapping | Rebind any action on either device. If a key is already in use, the two actions swap, so nothing is left bound twice by accident. |
 

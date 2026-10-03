@@ -28,6 +28,8 @@ const DEFAULTS := {
 	&"ui_scale": 1.0,
 	# Hardware ray-traced ambient occlusion (only where the GPU supports it).
 	&"ray_tracing": true,
+	# "standard", "high" or "cinematic" (see Graphics).
+	&"graphics_quality": "standard",
 	# Linear 0-1 volumes for the Master, SFX, UI, Music and Voice audio buses.
 	&"master_volume": 1.0,
 	&"sfx_volume": 1.0,

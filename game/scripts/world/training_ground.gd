@@ -15,15 +15,16 @@ extends Node3D
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
 const KILL_PLANE_Y := -20.0
-## Lighting per story time of day ("day" is the scene as authored).
+## Per story time of day: the sun's bearing (degrees; its height comes from
+## the sky photo, see Skies) and whether the lanterns are lit.
 const TIMES := {
-	"dawn": {"top": Color(0.3, 0.36, 0.62), "horizon": Color(0.96, 0.7, 0.55), "sun": Color(1.0, 0.76, 0.58),
-		"energy": 1.0, "elevation": 12.0, "yaw": 70.0, "ambient": Color(0.78, 0.68, 0.7), "lanterns": false},
-	"dusk": {"top": Color(0.2, 0.18, 0.4), "horizon": Color(0.98, 0.5, 0.3), "sun": Color(1.0, 0.56, 0.36),
-		"energy": 0.9, "elevation": 8.0, "yaw": -110.0, "ambient": Color(0.62, 0.5, 0.56), "lanterns": true},
-	"night": {"top": Color(0.015, 0.02, 0.06), "horizon": Color(0.09, 0.11, 0.2), "sun": Color(0.55, 0.65, 0.95),
-		"energy": 0.35, "elevation": 42.0, "yaw": 30.0, "ambient": Color(0.33, 0.38, 0.58), "lanterns": true},
+	"dawn": {"yaw": 70.0, "lanterns": false},
+	"day": {"yaw": 40.0, "lanterns": false},
+	"dusk": {"yaw": -110.0, "lanterns": true},
+	"night": {"yaw": 30.0, "lanterns": true},
 }
+## How much thicker the fog gets in each weather.
+const WEATHER_FOG := {"rain": 4.0, "storm": 4.0, "snow": 3.0}
 
 var hud: Hud
 var pause_menu: PauseMenu
@@ -51,15 +52,29 @@ var weather_particles: CPUParticles3D
 var _next_flash := 0.0
 
 var _customize_from_title := false
+## The time of day the lighting is set for.
+var _mood := "day"
+var _grain: CanvasLayer
+## The scene's own fog density, before weather thickens it.
+var _base_fog := 0.0
 
 @onready var player: Player = $Player
 
 
 func _ready() -> void:
-	# Textured grass with a worn dirt ring where you fight.
+	# Meadow grass with a worn dirt ring where you fight (colours a real
+	# meadow has: the scanned textures are tinted to average out to them).
 	$Ground/GroundMesh.material_override = TerrainMaterial.make({}, {
-		"grass": Color("5f8f3e"), "grass2": Color("50803a"), "dirt": Color("8c6d4b")}, 15.0)
-	add_child(RayTracing.new(self, $WorldEnvironment))
+		"grass": Color("4f6a2e"), "grass2": Color("5f6b33"), "dirt": Color("7d6549")}, 15.0)
+	# The scene's Environment is shared by every instance of it: light a copy.
+	var world := $WorldEnvironment as WorldEnvironment
+	world.environment = world.environment.duplicate(true)
+	_base_fog = world.environment.fog_density
+	add_child(RayTracing.new(self, world))
+	_relight()
+	Settings.value_changed.connect(func(key: StringName, _v: Variant) -> void:
+		if key == &"graphics_quality":
+			apply_graphics())
 	hud = Hud.new()
 	add_child(hud)
 	hud.bind(player)
@@ -341,28 +356,13 @@ func _on_results_primary() -> void:
 				Game.start_story(next["id"] if not next.is_empty() else chapter["id"])
 
 
-## Relights the arena for a story time of day ("day" leaves it as authored).
+## Relights the world for a story time of day.
 func set_time_of_day(time: String) -> void:
 	if not TIMES.has(time):
 		return
-	var t: Dictionary = TIMES[time]
-	var world := $WorldEnvironment as WorldEnvironment
-	world.environment = world.environment.duplicate(true)
-	var env := world.environment
-	var sky := env.sky.sky_material as ProceduralSkyMaterial
-	sky.sky_top_color = t["top"]
-	sky.sky_horizon_color = t["horizon"]
-	sky.ground_horizon_color = t["horizon"]
-	# Over the sea the horizon continues down; on the training ground the
-	# ground below the horizon is dark earth.
-	sky.ground_bottom_color = Color(t["horizon"]) if island else Color(t["horizon"]).darkened(0.8)
-	env.ambient_light_color = t["ambient"]
-	env.fog_light_color = t["horizon"]
-	var sun := $Sun as DirectionalLight3D
-	sun.light_color = t["sun"]
-	sun.light_energy = t["energy"]
-	sun.rotation_degrees = Vector3(-float(t["elevation"]), float(t["yaw"]), 0.0)
-	if t["lanterns"] and lantern_lights.is_empty():
+	_mood = time
+	_relight()
+	if TIMES[time]["lanterns"] and lantern_lights.is_empty():
 		for node in lanterns():
 			var light := OmniLight3D.new()
 			light.light_color = Color(1.0, 0.7, 0.38)
@@ -371,6 +371,28 @@ func set_time_of_day(time: String) -> void:
 			light.position = Vector3(0, 1.3, 0)
 			node.add_child(light)
 			lantern_lights.append(light)
+
+
+## Lights the world for the time of day and the weather together, from
+## scratch each time (so changing either twice never stacks up).
+func _relight() -> void:
+	var env := ($WorldEnvironment as WorldEnvironment).environment
+	var sky := Skies.key_for(_mood, weather)
+	# A storm at night keeps the night sky, darker.
+	var dim := 0.6 if sky == "night" and weather in ["rain", "storm", "snow"] else 1.0
+	Skies.apply(env, $Sun as DirectionalLight3D, sky, float(TIMES[_mood]["yaw"]), dim)
+	env.fog_density = _base_fog * float(WEATHER_FOG.get(weather, 1.0))
+	apply_graphics()
+
+
+## Lights the world for the graphics quality setting (and the time of day).
+func apply_graphics() -> void:
+	Graphics.apply(($WorldEnvironment as WorldEnvironment).environment, $Sun as DirectionalLight3D, _mood)
+	if is_instance_valid(_grain):
+		_grain.queue_free()
+	_grain = Graphics.grain_layer()
+	if _grain:
+		add_child(_grain)
 
 
 ## The lantern props: the island's, or the training ground's.
@@ -395,6 +417,7 @@ func set_weather(kind: String) -> void:
 	Sfx.stop_loop(&"weather")
 	if kind == "none" or not ["rain", "storm", "snow", "leaves"].has(kind):
 		weather = "none"
+		_relight()
 		return
 	var p := CPUParticles3D.new()
 	p.name = "Weather"
@@ -409,18 +432,7 @@ func set_weather(kind: String) -> void:
 	mat.vertex_color_use_as_albedo = true
 	quad.material = mat
 	p.mesh = quad
-	var world := $WorldEnvironment as WorldEnvironment
-	world.environment = world.environment.duplicate(true)
-	if kind in ["rain", "storm", "snow"]:
-		# Overcast: a greyer sky and a weaker sun.
-		var sky := world.environment.sky.sky_material as ProceduralSkyMaterial
-		var grey := Color(0.42, 0.45, 0.5) if kind != "snow" else Color(0.72, 0.74, 0.78)
-		var amount := 0.65 if kind == "storm" else 0.55
-		sky.sky_top_color = sky.sky_top_color.lerp(grey * sky.sky_top_color.get_luminance() * 2.0, amount)
-		sky.sky_horizon_color = sky.sky_horizon_color.lerp(grey, amount * 0.8)
-		sky.ground_horizon_color = sky.sky_horizon_color
-		world.environment.fog_light_color = sky.sky_horizon_color
-		($Sun as DirectionalLight3D).light_energy *= 0.6
+	_relight()
 	match kind:
 		"rain", "storm":
 			quad.size = Vector2(0.018, 0.7)
@@ -434,7 +446,6 @@ func set_weather(kind: String) -> void:
 			p.initial_velocity_max = 32.0
 			p.gravity = Vector3(0, -10, 0)
 			p.color = Color(0.78, 0.84, 0.95, 0.4)
-			world.environment.fog_density *= 4.0
 			Sfx.start_loop(&"weather", &"rain_loop", -5.0)
 		"snow":
 			quad.size = Vector2(0.06, 0.06)
@@ -448,7 +459,6 @@ func set_weather(kind: String) -> void:
 			p.initial_velocity_max = 2.2
 			p.gravity = Vector3(0, -0.4, 0)
 			p.color = Color(1, 1, 1, 0.9)
-			world.environment.fog_density *= 3.0
 			Sfx.start_loop(&"weather", &"wind_loop", -9.0)
 		"leaves":
 			quad.size = Vector2(0.09, 0.06)
@@ -482,6 +492,11 @@ func _flash_lightning() -> void:
 	var tw := create_tween().set_parallel(true)
 	tw.tween_property(sun, "light_energy", energy, 0.35).set_delay(0.08)
 	tw.tween_property(env, "ambient_light_energy", ambient, 0.35).set_delay(0.08)
+	# The clouds light up too.
+	var sky := Skies.material(env)
+	if sky:
+		sky.set_shader_parameter(&"flash", 1.0)
+		tw.tween_method(func(v: float) -> void: sky.set_shader_parameter(&"flash", v), 1.0, 0.0, 0.35).set_delay(0.08)
 	await get_tree().create_timer(randf_range(0.4, 1.4)).timeout
 	Sfx.play(&"thunder", -2.0, 0.1)
 
@@ -614,6 +629,11 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 	Profile.load_from_disk()
 	Game.persist = false
 	Game.load_records()
+	# --quality=standard|high|cinematic, for comparing the presets (not saved).
+	var quality: String = _user_args().get("quality", "")
+	if quality in Graphics.LEVELS:
+		Settings._values[&"graphics_quality"] = quality
+		apply_graphics()
 	if device == "gamepad":
 		InputDevice.current = Binding.Device.GAMEPAD
 		InputDevice.device_changed.emit(InputDevice.current)

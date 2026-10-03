@@ -80,6 +80,8 @@ func play() -> void:
 	_camera.name = "UltimateCamera"
 	_camera.fov = FOV
 	_camera.far = 3000.0
+	# Cinematic quality: the background melts away behind the close-up.
+	_camera.attributes = Graphics.shot_attributes(1.4)
 	_world.add_child(_camera)
 	_camera.current = true
 	_overlay = CutsceneOverlay.new()
@@ -177,6 +179,8 @@ func _release() -> void:
 
 
 func _wide_shot() -> void:
+	if _camera.attributes:
+		_camera.attributes = Graphics.shot_attributes(14.0)
 	var from := player.global_position
 	var mid := (from + target_point) * 0.5
 	var span := maxf(from.distance_to(target_point), 4.0)

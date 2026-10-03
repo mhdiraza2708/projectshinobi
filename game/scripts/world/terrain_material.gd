@@ -1,14 +1,25 @@
 class_name TerrainMaterial
 extends RefCounted
 ## The textured ground material (assets/shaders/terrain.gdshader): four
-## tileable layers from art/blender/textures.py, each tinted so its average
-## colour becomes the colour asked for (an island's palette).
+## layers, each tinted so its average colour becomes the colour asked for
+## (an island's palette). The layers are photo-scanned surfaces from Poly
+## Haven in GROUND (art/polyhaven/fetch.py; data/ground.json has each one's
+## real size), falling back to the procedural sets in TEX (art/blender/
+## textures.py) for any set that wasn't scanned.
 
 const SHADER := preload("res://assets/shaders/terrain.gdshader")
 const TEX := "res://assets/textures/"
+const GROUND := "res://assets/textures/ground/"
+const GROUND_DATA := "res://data/ground.json"
 const LAYERS: PackedStringArray = ["grass", "dirt", "rock", "sand"]
+## Metres per repeat of a procedural set.
+const PROCEDURAL_TILE := 4.0
+## How rough each kind of ground is (anything else: DEFAULT_ROUGHNESS).
+const ROUGHNESS := {"rock": 0.8, "sand": 0.88, "snow": 0.6}
+const DEFAULT_ROUGHNESS := 0.94
 
 static var _means: Dictionary = {}
+static var _sizes: Dictionary = {}
 
 
 ## `textures`: layer -> texture set name (e.g. {"grass": "snow"} on a snowy
@@ -17,10 +28,15 @@ static var _means: Dictionary = {}
 static func make(textures := {}, colors := {}, arena_radius := 0.0) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = SHADER
-	for layer in LAYERS:
+	var tiles := Vector4.ONE
+	var rough := Vector4.ONE
+	for i in LAYERS.size():
+		var layer := LAYERS[i]
 		var set_name: String = textures.get(layer, layer)
-		m.set_shader_parameter(StringName(layer + "_albedo"), load(TEX + set_name + "_albedo.png"))
-		m.set_shader_parameter(StringName(layer + "_normal"), load(TEX + set_name + "_normal.png"))
+		m.set_shader_parameter(StringName(layer + "_albedo"), load(albedo_path(set_name)))
+		m.set_shader_parameter(StringName(layer + "_normal"), load(normal_path(set_name)))
+		tiles[i] = tile_size(set_name)
+		rough[i] = ROUGHNESS.get(set_name, DEFAULT_ROUGHNESS)
 		var want: Variant = colors.get(layer)
 		if want is Color:
 			m.set_shader_parameter(StringName(layer + "_tint"), tint(set_name, want))
@@ -28,6 +44,8 @@ static func make(textures := {}, colors := {}, arena_radius := 0.0) -> ShaderMat
 			var want2: Variant = colors.get("grass2", want)
 			if want2 is Color:
 				m.set_shader_parameter(&"grass_tint2", tint(set_name, want2))
+	m.set_shader_parameter(&"tile_sizes", tiles)
+	m.set_shader_parameter(&"roughness", rough)
 	# What ray-traced reflections see: each layer's colour, in splat order.
 	var palette := PackedColorArray()
 	for layer in LAYERS:
@@ -38,6 +56,29 @@ static func make(textures := {}, colors := {}, arena_radius := 0.0) -> ShaderMat
 	m.set_shader_parameter(&"noise", load("res://assets/vfx/noise.png"))
 	m.set_shader_parameter(&"arena_radius", arena_radius)
 	return m
+
+
+static func scanned(set_name: String) -> bool:
+	return ResourceLoader.exists(GROUND + set_name + "_albedo.jpg")
+
+
+static func albedo_path(set_name: String) -> String:
+	return GROUND + set_name + "_albedo.jpg" if scanned(set_name) else TEX + set_name + "_albedo.png"
+
+
+static func normal_path(set_name: String) -> String:
+	return GROUND + set_name + "_normal.jpg" if scanned(set_name) else TEX + set_name + "_normal.png"
+
+
+## Metres per repeat: a scanned surface's real size.
+static func tile_size(set_name: String) -> float:
+	if _sizes.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(GROUND_DATA))
+		if parsed is Dictionary and (parsed as Dictionary).get("ground") is Dictionary:
+			for k: String in parsed["ground"]:
+				_sizes[k] = float(parsed["ground"][k].get("size", PROCEDURAL_TILE))
+		_sizes[&""] = 0.0  # loaded
+	return _sizes.get(set_name, PROCEDURAL_TILE) if scanned(set_name) else PROCEDURAL_TILE
 
 
 ## The multiplier that makes a texture set average out to `want`. The shader
@@ -52,7 +93,7 @@ static func tint(set_name: String, want: Color) -> Vector3:
 ## A texture set's average colour (cached), in sRGB like the image.
 static func mean_color(set_name: String) -> Color:
 	if not _means.has(set_name):
-		var tex: Texture2D = load(TEX + set_name + "_albedo.png")
+		var tex: Texture2D = load(albedo_path(set_name))
 		var img := tex.get_image()
 		if img == null:
 			_means[set_name] = Color(0.5, 0.5, 0.5)

@@ -8,7 +8,7 @@ SHOTS ?= screenshots
 # Any Python with numpy and scipy (pip install -r art/audio/requirements.txt).
 PYTHON ?= python3
 
-.PHONY: run editor import test assets animations sfx music voices vfx fonts screenshots
+.PHONY: run editor import test assets animations sfx music voices vfx fonts polyhaven screenshots
 
 run:
 	$(GODOT) --path game
@@ -53,6 +53,12 @@ voices:
 # Regenerate the particle/effect textures in game/assets/vfx/ (numpy + Pillow).
 vfx:
 	$(PYTHON) art/vfx/make_textures.py
+	$(MAKE) import
+
+# Re-download and re-pack the Poly Haven skies and scanned ground textures
+# (CC0; needs numpy + Pillow and access to polyhaven.com).
+polyhaven:
+	$(PYTHON) art/polyhaven/fetch.py
 	$(MAKE) import
 
 # Re-subset the Japanese UI fonts after adding kanji (needs fonttools).

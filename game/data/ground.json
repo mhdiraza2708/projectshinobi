@@ -1,0 +1,46 @@
+{
+	"ground": {
+		"grass": {
+			"asset": "forrest_ground_01",
+			"name": "Forest Ground 01",
+			"size": 2.0,
+			"authors": [
+				"Rob Tuytel"
+			]
+		},
+		"dirt": {
+			"asset": "forest_ground_04",
+			"name": "Forest Ground 04",
+			"size": 3.15,
+			"authors": [
+				"Rico Cilliers",
+				"Rob Tuytel"
+			]
+		},
+		"rock": {
+			"asset": "rock_face_03",
+			"name": "Rock Face 03",
+			"size": 2.7,
+			"authors": [
+				"Dario Barresi",
+				"Rico Cilliers"
+			]
+		},
+		"sand": {
+			"asset": "coast_sand_01",
+			"name": "Coast Sand 01",
+			"size": 15.0,
+			"authors": [
+				"Rob Tuytel"
+			]
+		},
+		"snow": {
+			"asset": "snow_02",
+			"name": "Snow 02",
+			"size": 2.0,
+			"authors": [
+				"Rob Tuytel"
+			]
+		}
+	}
+}

@@ -116,6 +116,15 @@ controls can be remapped.
   occlusion gives contact shadows under characters and props. Toggle it in
   Pause → Accessibility → Display. On other GPUs the option is greyed out
   and the game looks exactly as before.
+- **Photographed skies and scanned ground** (Poly Haven, CC0): every time
+  of day and weather is a real sky photograph, with the sun turned to
+  match the sun in the photo and the ambient light, reflections and fog
+  taken from it. The ground layers are photo-scanned surfaces at their
+  real size, blending by height (dirt settles into the hollows between
+  grass). **Graphics quality** (Pause → Accessibility → Display, Vulkan
+  only) adds real-time global illumination, volumetric fog and a filmic
+  tone curve (High), and depth of field in cinematics plus film grain
+  (Cinematic). Standard is the default.
 - **Pause menu:** rebind every action on both devices, accessibility
   options (hold/toggle weaving, seal timing window or no limit, seal hints,
   sensitivities, invert Y, deadzone, vibration, screen shake, UI scale), and
@@ -142,11 +151,11 @@ with IK (including the hand-seal pose) on any humanoid rig.
   hair and outfits. Their clothes are everyday outfits (a hoodie, uniforms,
   dresses) dyed dark, not ninja gear. Real ninja costumes need to be made in
   VRoid Studio or bought.
-- **Environment art is scripted, not hand-sculpted.** Every prop (torii,
-  lanterns, shrine, houses, trees, rocks) and every ground texture is built
-  by Blender scripts (`art/blender/build_assets.py`, `textures.py`). They're
-  detailed and textured but stylised; a bought kit or photo-scanned assets
-  would still look more real.
+- **Environment props are scripted, not hand-sculpted.** Every prop
+  (torii, lanterns, shrine, houses, trees, rocks) is built by Blender
+  scripts (`art/blender/build_assets.py`, `textures.py`). The skies and
+  ground are real photographs and scans now, but the props, the cone-shaped
+  pines and the anime characters are still stylised next to them.
 - **Ray tracing is untested on real ray tracing hardware.** It was built
   and checked on a software Vulkan driver (Mesa lavapipe), which runs the
   same ray tracing API but tells nothing about speed. Expect it to cost a
@@ -240,6 +249,9 @@ game/                  Godot project
   tests/               Headless test runner + unit/integration tests + fixtures
   assets/models/       Props and gear modelled by art/blender/build_assets.py (.gltf)
   assets/textures/     Tileable materials baked by art/blender/textures.py
+  assets/textures/ground/  Scanned ground (Poly Haven) packed by art/polyhaven/fetch.py
+  assets/skies/        Sky photographs (Poly Haven HDRIs) packed by art/polyhaven/fetch.py
 art/blender/           Scripted Blender asset pipeline
+art/polyhaven/         Downloads and packs the Poly Haven skies and ground (make polyhaven)
 docs/                  Design, controls, images
 ```

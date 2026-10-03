@@ -434,6 +434,15 @@ func _build_accessibility() -> Control:
 		rt.set_pressed_no_signal(false)
 		rt.text = "Needs a ray tracing GPU"
 	list.add_child(_option_row("Ray-traced shadows (RTAO)", rt))
+	var quality := OptionButton.new()
+	for l in Graphics.LEVELS:
+		quality.add_item(Graphics.LABELS[l])
+	quality.selected = Graphics.LEVELS.find(Graphics.level())
+	quality.item_selected.connect(func(i: int) -> void: Settings.set_value(&"graphics_quality", Graphics.LEVELS[i]))
+	if not Graphics.supported():
+		quality.disabled = true
+		quality.tooltip_text = "Needs the Vulkan renderer (Forward+)"
+	list.add_child(_option_row("Graphics quality", quality))
 
 	list.add_child(_section("Audio"))
 	list.add_child(_option_row("Master volume", _slider(&"master_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))

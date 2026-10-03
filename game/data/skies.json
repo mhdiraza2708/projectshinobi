@@ -1,0 +1,220 @@
+{
+	"skies": {
+		"day": {
+			"asset": "kloofendal_48d_partly_cloudy_puresky",
+			"name": "Kloofendal 48d Partly Cloudy (Pure Sky)",
+			"scale": 5.41926,
+			"sun_uv": [
+				0.59509,
+				0.23413
+			],
+			"sun_elevation": 47.86,
+			"sun_color": [
+				0.9844,
+				0.9554,
+				1.0
+			],
+			"sun_peak": 74608.8,
+			"horizon": [
+				0.0816,
+				0.0885,
+				0.1085
+			],
+			"zenith": [
+				0.0897,
+				0.0979,
+				0.1262
+			],
+			"ground": [
+				0.0301,
+				0.0369,
+				0.0572
+			],
+			"ambient": [
+				0.0781,
+				0.09,
+				0.1296
+			]
+		},
+		"dawn": {
+			"asset": "kloppenheim_06_puresky",
+			"name": "Kloppenheim 06 (Pure Sky)",
+			"scale": 5.2387,
+			"sun_uv": [
+				0.60706,
+				0.45532
+			],
+			"sun_elevation": 8.04,
+			"sun_color": [
+				1.0,
+				0.7045,
+				0.4812
+			],
+			"sun_peak": 46.2,
+			"horizon": [
+				0.2014,
+				0.1728,
+				0.1549
+			],
+			"zenith": [
+				0.0438,
+				0.0683,
+				0.1156
+			],
+			"ground": [
+				0.0876,
+				0.1053,
+				0.1302
+			],
+			"ambient": [
+				0.1254,
+				0.1577,
+				0.2109
+			]
+		},
+		"dusk": {
+			"asset": "table_mountain_1_puresky",
+			"name": "Table Mountain 1 (Pure Sky)",
+			"scale": 2.06346,
+			"sun_uv": [
+				0.63757,
+				0.42896
+			],
+			"sun_elevation": 12.79,
+			"sun_color": [
+				1.0,
+				0.9668,
+				0.7993
+			],
+			"sun_peak": 119240.1,
+			"horizon": [
+				0.2015,
+				0.2366,
+				0.2503
+			],
+			"zenith": [
+				0.0357,
+				0.0406,
+				0.0576
+			],
+			"ground": [
+				0.0587,
+				0.0654,
+				0.0806
+			],
+			"ambient": [
+				0.0724,
+				0.082,
+				0.1094
+			]
+		},
+		"night": {
+			"asset": "kloppenheim_02_puresky",
+			"name": "Kloppenheim 02 (Pure Sky)",
+			"scale": 1.5061,
+			"sun_uv": [
+				0.59924,
+				0.40503
+			],
+			"sun_elevation": 17.09,
+			"sun_color": [
+				0.7471,
+				0.895,
+				1.0
+			],
+			"sun_peak": 88126.8,
+			"horizon": [
+				0.2286,
+				0.2712,
+				0.3242
+			],
+			"zenith": [
+				0.0463,
+				0.0622,
+				0.0908
+			],
+			"ground": [
+				0.0682,
+				0.0852,
+				0.1133
+			],
+			"ambient": [
+				0.0875,
+				0.1117,
+				0.1548
+			]
+		},
+		"overcast": {
+			"asset": "overcast_soil_puresky",
+			"name": "Overcast Soil (Pure Sky)",
+			"scale": 3.0038,
+			"sun_uv": [
+				0.46741,
+				0.30737
+			],
+			"sun_elevation": 34.67,
+			"sun_color": [
+				1.0,
+				0.9647,
+				0.9264
+			],
+			"sun_peak": 5.3,
+			"horizon": [
+				0.2634,
+				0.2465,
+				0.2299
+			],
+			"zenith": [
+				0.6133,
+				0.6092,
+				0.6146
+			],
+			"ground": [
+				0.1839,
+				0.182,
+				0.1817
+			],
+			"ambient": [
+				0.4977,
+				0.4934,
+				0.4956
+			]
+		},
+		"snow": {
+			"asset": "snow_field_puresky",
+			"name": "Snow Field (Pure Sky)",
+			"scale": 2.1115,
+			"sun_uv": [
+				0.62,
+				0.40698
+			],
+			"sun_elevation": 16.74,
+			"sun_color": [
+				1.0,
+				0.8818,
+				0.6923
+			],
+			"sun_peak": 4.1,
+			"horizon": [
+				0.2954,
+				0.2914,
+				0.2771
+			],
+			"zenith": [
+				0.3412,
+				0.3423,
+				0.3375
+			],
+			"ground": [
+				0.1931,
+				0.1918,
+				0.1825
+			],
+			"ambient": [
+				0.3827,
+				0.3852,
+				0.3761
+			]
+		}
+	}
+}

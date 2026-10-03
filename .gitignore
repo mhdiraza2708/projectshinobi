@@ -28,3 +28,6 @@ screenshots/
 # redistributed from a public repo. Remove these lines if the repo is private.
 game/assets/animations/mixamo/*.fbx
 game/assets/animations/mixamo/*.fbx.import
+
+# Poly Haven downloads (art/polyhaven/fetch.py)
+art/polyhaven/.cache/
