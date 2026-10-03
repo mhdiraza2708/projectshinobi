@@ -452,6 +452,13 @@ func _place_prop(prop: Dictionary) -> Vector2:
 	node.rotation.y = deg_to_rad(float(prop.get("yaw", 0.0)))
 	node.position = Vector3(at.x, _ground_under(at, 1.5 * s), at.y)
 	add_child(node)
+	if open_world:
+		# Landmarks stay in view further than trees, but not across the map.
+		var far := SCENERY_RANGE * (1.8 if scene_name in ["dam", "shrine", "pillar", "gate"] else 1.2)
+		for mesh in node.find_children("*", "MeshInstance3D", true, false):
+			(mesh as MeshInstance3D).visibility_range_end = far
+			(mesh as MeshInstance3D).visibility_range_end_margin = 40.0
+			(mesh as MeshInstance3D).visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	for box: Array in COLLIDERS.get(scene_name, []):
 		var shape := BoxShape3D.new()
 		shape.size = box[1] * s

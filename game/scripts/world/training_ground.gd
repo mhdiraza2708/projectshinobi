@@ -1003,6 +1003,39 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			pause_menu._select_tab({"menu_jutsu": PauseMenu.TAB_JUTSU, "menu_graphics": PauseMenu.TAB_GRAPHICS,
 				"menu_accessibility": PauseMenu.TAB_ACCESSIBILITY}[demo])
 			await _frames(10)
+		"world_stats":
+			# The open world from four places, saved as <path>_<view>.png, with
+			# what the GPU is asked to draw at each printed as WORLD_STATS.
+			instant_world = true
+			await start_world()
+			var arch := world.archipelago
+			var views := [
+				["shore", Vector3(58, 4, -14), Vector3(440, 12, -170), false],
+				["sea", Vector3(230, 3, -320), Vector3(60, 30, -980), false],
+				["summit", Vector3(60, 34, -930), Vector3(0, 0, 0), false],
+				["play", Vector3.ZERO, Vector3.ZERO, true],
+			]
+			var cam := Camera3D.new()
+			cam.far = 3000.0
+			add_child(cam)
+			for v: Array in views:
+				hud.visible = v[3]
+				if v[3]:
+					cam.current = false
+					player.global_position = arch.on_island("emberwood", Vector2(26, -8)) + Vector3.UP * 0.2
+					player.camera_rig.yaw = deg_to_rad(-60.0)
+					player.camera_rig.snap()
+				else:
+					cam.current = true
+					cam.global_position = arch.to_global(v[1])
+					cam.look_at(arch.to_global(v[2]))
+				await _frames(12)
+				var info := "WORLD_STATS %s objects=%d primitives=%d draw_calls=%d" % [v[0],
+					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)]
+				print(info)
+				get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % v[0]))
 		_ when demo.begins_with("world"):
 			# The open world: --demo=world[:<island>[:x,z]] stands you there
 			# (a new game at Emberwood by default).
