@@ -73,7 +73,7 @@ func _ready() -> void:
 	add_child(RayTracing.new(self, world))
 	_relight()
 	Settings.value_changed.connect(func(key: StringName, _v: Variant) -> void:
-		if key == &"graphics_quality":
+		if key in [&"graphics_quality", &"ambient_occlusion", &"bloom", &"brightness"]:
 			apply_graphics())
 	hud = Hud.new()
 	add_child(hud)
@@ -826,9 +826,10 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				done = target
 				if i < times.size() - 1:
 					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
-		"menu_jutsu":
+		"menu_jutsu", "menu_graphics", "menu_accessibility":
 			pause_menu.open()
-			pause_menu._select_tab(2)
+			pause_menu._select_tab({"menu_jutsu": PauseMenu.TAB_JUTSU, "menu_graphics": PauseMenu.TAB_GRAPHICS,
+				"menu_accessibility": PauseMenu.TAB_ACCESSIBILITY}[demo])
 			await _frames(10)
 		"chapter_card":
 			start_story("ch3_vault")

@@ -130,10 +130,13 @@ controls can be remapped.
   match the sun in the photo and the ambient light, reflections and fog
   taken from it. The ground layers are photo-scanned surfaces at their
   real size, blending by height (dirt settles into the hollows between
-  grass). **Graphics quality** (Pause → Accessibility → Display, Vulkan
-  only) adds real-time global illumination, volumetric fog and a filmic
-  tone curve (High), and depth of field in cinematics plus film grain
-  (Cinematic). Standard is the default.
+  grass).
+- **Graphics settings** (Pause → Graphics): Low / Medium / High / Ultra
+  presets, window mode, VSync, frame rate cap, render resolution with FSR,
+  anti-aliasing (FXAA, MSAA, TAA), shadow quality, ambient occlusion,
+  bloom, brightness, field of view, ray tracing and the lighting tier
+  (High adds real-time global illumination and volumetric fog, Ultra adds
+  depth of field in cinematics and film grain).
 - **Pause menu:** rebind every action on both devices, accessibility
   options (hold/toggle weaving, seal timing window or no limit, seal hints,
   sensitivities, invert Y, deadzone, vibration, screen shake, UI scale), and

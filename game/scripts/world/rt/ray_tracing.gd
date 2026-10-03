@@ -59,11 +59,13 @@ func _apply() -> void:
 		_env.compositor = comp
 		# The traced occlusion replaces the screen-space kind.
 		_env.environment.ssao_enabled = false
+		_env.environment.set_meta(&"rt_active", true)
 		_sent.clear()
 		_rescan = 0.0
 	elif not on and effect != null:
 		_env.compositor = null
-		_env.environment.ssao_enabled = _ssao_default
+		_env.environment.remove_meta(&"rt_active")
+		_env.environment.ssao_enabled = _ssao_default and bool(Settings.get_value(&"ambient_occlusion"))
 		effect = null
 		_tracked.clear()
 		_sent.clear()
@@ -74,7 +76,8 @@ func _process(delta: float) -> void:
 		return
 	if effect.failed:
 		_env.compositor = null
-		_env.environment.ssao_enabled = _ssao_default
+		_env.environment.remove_meta(&"rt_active")
+		_env.environment.ssao_enabled = _ssao_default and bool(Settings.get_value(&"ambient_occlusion"))
 		effect = null
 		return
 	_rescan -= delta

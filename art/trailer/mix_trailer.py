@@ -34,6 +34,8 @@ def main() -> int:
 	p.add_argument("--audio", type=Path, required=True)
 	p.add_argument("--out", type=Path, required=True)
 	p.add_argument("--sfx-gain", type=float, default=0.55, help="level of the game's own sound under the music")
+	p.add_argument("--skip", type=float, default=0.0,
+		help="seconds of recording before the trailer starts (TRAILER_START_FRAME / fps from Godot's log)")
 	args = p.parse_args()
 	cues = json.loads((args.audio / "cues.json").read_text())
 	length = float(cues["seconds"])
@@ -53,9 +55,11 @@ def main() -> int:
 	chains.append(f"[1:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{length}[music]")
 	# The music steps back while someone speaks.
 	chains.append("[music][vo_key]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350:makeup=1[ducked]")
-	chains.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{length},volume={args.sfx_gain}[sfx]")
+	skip = args.skip
+	chains.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo,atrim={skip}:{skip + length},asetpts=PTS-STARTPTS,"
+		f"volume={args.sfx_gain}[sfx]")
 	chains.append("[ducked][sfx][vo_mix]amix=inputs=3:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[aout]")
-	chains.append(f"[0:v]trim=0:{length},setpts=PTS-STARTPTS,format=yuv420p[vout]")
+	chains.append(f"[0:v]trim={skip}:{skip + length},setpts=PTS-STARTPTS,format=yuv420p[vout]")
 	cmd = [ffmpeg(), "-y", *inputs, "-filter_complex", ";".join(chains), "-map", "[vout]", "-map", "[aout]",
 		"-c:v", "libx264", "-preset", "slow", "-crf", "18", "-movflags", "+faststart",
 		"-c:a", "aac", "-b:a", "192k", "-t", str(length), str(args.out)]

@@ -103,6 +103,21 @@ weave with the left hand (LT + D-pad + LB).
 If more than about a second passes between seals, the sequence breaks. You
 keep weaving and can start the sequence again without letting go.
 
+## Graphics (Pause → Graphics)
+
+| Option | What it does |
+|---|---|
+| Quality preset | Low, Medium (default), High or Ultra set everything under Quality; changing any of those makes it Custom. |
+| Window | Windowed, borderless fullscreen or exclusive fullscreen. |
+| VSync, frame rate cap | VSync on/off; cap at 30, 60, 120, 144 or 240 FPS, or unlimited. |
+| Brightness, field of view | Exposure 60–150%; camera field of view 55–100°. |
+| Render resolution | 50–100% of the window, upscaled with AMD FSR on the Vulkan renderer. |
+| Anti-aliasing | Off, FXAA, MSAA 2×/4× or TAA (the Compatibility renderer uses MSAA for FXAA/TAA). |
+| Shadows | Low, medium or high shadow resolution and softness. |
+| Lighting | Standard, High (global illumination, volumetric fog, filmic tone curve) or Cinematic (adds depth of field in cinematics and film grain). Needs the Vulkan renderer. |
+| Ambient occlusion, bloom | Contact shadows and glow on/off. |
+| Ray-traced shadows (RTAO) | Hardware ray-traced ambient occlusion, on GPUs that have it. |
+
 ## Accessibility options (Pause → Accessibility)
 
 | Option | What it does |
@@ -116,7 +131,6 @@ keep weaving and can start the sequence again without letting go.
 | Vibration | Controller rumble on/off. |
 | Screen shake | 0–100%. |
 | UI scale | Makes every menu and HUD element bigger or smaller. |
-| Graphics quality | Standard (fastest), High (global illumination, volumetric fog, filmic tone curve) or Cinematic (adds depth of field in cinematics and film grain). Needs the Vulkan renderer; greyed out otherwise. |
 | Master / Effects / Menu sounds volume | 0–100% each. 0 mutes that group. |
 | Remapping | Rebind any action on either device. If a key is already in use, the two actions swap, so nothing is left bound twice by accident. |
 

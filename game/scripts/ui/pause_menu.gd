@@ -7,7 +7,10 @@ extends CanvasLayer
 ## controller: D-pad/stick to move, A to select, B to back out, LB/RB to
 ## switch tabs.
 
-const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["巻", "Jutsu Scroll"]]
+const TABS := [["操作", "Controls"], ["設定", "Accessibility"], ["画", "Graphics"], ["巻", "Jutsu Scroll"]]
+const TAB_ACCESSIBILITY := 1
+const TAB_GRAPHICS := 2
+const TAB_JUTSU := 3
 
 signal customize_requested
 signal title_requested
@@ -15,6 +18,8 @@ signal title_requested
 var player: Player
 
 var _root: Control
+## HUDs hidden while the menu is open (to show again on close).
+var _hidden_huds: Array[CanvasLayer] = []
 var _tabs: TabContainer
 var _tab_buttons: Array[Button] = []
 var _tab_hint: HBoxContainer
@@ -51,6 +56,12 @@ func open() -> void:
 	Sfx.ui(&"ui_open")
 	_root.visible = true
 	get_tree().paused = true
+	# The HUD would show around the edges of the scroll.
+	_hidden_huds.clear()
+	for hud in get_tree().root.find_children("*", "Hud", true, false):
+		if (hud as CanvasLayer).visible:
+			(hud as CanvasLayer).visible = false
+			_hidden_huds.append(hud)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_tab_hint.visible = InputDevice.current == Binding.Device.GAMEPAD
 	_refresh_controls()
@@ -64,6 +75,10 @@ func close() -> void:
 		Sfx.ui(&"ui_close")
 	_root.visible = false
 	get_tree().paused = false
+	for hud in _hidden_huds:
+		if is_instance_valid(hud):
+			hud.visible = true
+	_hidden_huds.clear()
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -72,7 +87,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _capture.is_empty():
 		return
 	# During a cutscene or an ultimate, Pause is held to skip instead.
-	if (Cutscene.active != null or UltimateSequence.active != null) and not is_open():
+	if (Cutscene.active != null or UltimateSequence.active != null or EyeSequence.active != null) and not is_open():
 		return
 	if event.is_action_pressed(&"pause"):
 		if is_open():
@@ -175,6 +190,7 @@ func _build() -> void:
 	vbox.add_child(_tabs)
 	_tabs.add_child(_scroll("Controls", _build_controls()))
 	_tabs.add_child(_scroll("Accessibility", _build_accessibility()))
+	_tabs.add_child(_scroll("Graphics", _build_graphics()))
 	_tabs.add_child(_scroll("Jutsu Scroll", _build_jutsu()))
 	_select_tab(0)
 
@@ -195,10 +211,8 @@ func _build() -> void:
 		_notice.text = "Controls reset to defaults."))
 	buttons.add_child(_button("Reset options", func() -> void:
 		Settings.reset_values()
-		_tabs.get_child(1).queue_free()
-		var fresh := _scroll("Accessibility", _build_accessibility())
-		_tabs.add_child(fresh)
-		_tabs.move_child(fresh, 1)
+		_rebuild_tab(TAB_ACCESSIBILITY)
+		_rebuild_tab(TAB_GRAPHICS)
 		_notice.text = "Options reset to defaults."))
 	buttons.add_child(_button("Title screen", func() -> void:
 		close()
@@ -417,7 +431,7 @@ func _build_accessibility() -> Control:
 	list.add_child(_option_row("Seal hints while weaving", _toggle(&"seal_hints")))
 	list.add_child(_option_row("Quick-cast weave speed (s/seal)", _slider(&"auto_weave_seal_time", 0.08, 0.4, 0.02, "%.2fs")))
 
-	list.add_child(_section("Camera & controller"))
+	list.add_child(_section("Camera and controller"))
 	list.add_child(_option_row("Mouse sensitivity", _slider(&"mouse_sensitivity", 0.2, 3.0, 0.1, "%.1f")))
 	list.add_child(_option_row("Stick sensitivity", _slider(&"stick_sensitivity", 0.2, 3.0, 0.1, "%.1f")))
 	list.add_child(_option_row("Invert camera Y", _toggle(&"invert_y")))
@@ -427,22 +441,7 @@ func _build_accessibility() -> Control:
 	list.add_child(_section("Display"))
 	list.add_child(_option_row("Screen shake", _slider(&"screen_shake", 0.0, 1.0, 0.1, "%.0f%%", 100.0)))
 	list.add_child(_option_row("UI scale", _slider(&"ui_scale", 0.75, 1.5, 0.05, "%.2f×")))
-	var rt := _toggle(&"ray_tracing")
-	if not RayTracing.available():
-		# Shown off without saving it off: the same save may move to a PC that has one.
-		rt.disabled = true
-		rt.set_pressed_no_signal(false)
-		rt.text = "Needs a ray tracing GPU"
-	list.add_child(_option_row("Ray-traced shadows (RTAO)", rt))
-	var quality := OptionButton.new()
-	for l in Graphics.LEVELS:
-		quality.add_item(Graphics.LABELS[l])
-	quality.selected = Graphics.LEVELS.find(Graphics.level())
-	quality.item_selected.connect(func(i: int) -> void: Settings.set_value(&"graphics_quality", Graphics.LEVELS[i]))
-	if not Graphics.supported():
-		quality.disabled = true
-		quality.tooltip_text = "Needs the Vulkan renderer (Forward+)"
-	list.add_child(_option_row("Graphics quality", quality))
+	list.add_child(_hint_row("Resolution, quality and the window are under Graphics."))
 
 	list.add_child(_section("Audio"))
 	list.add_child(_option_row("Master volume", _slider(&"master_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
@@ -451,6 +450,112 @@ func _build_accessibility() -> Control:
 	list.add_child(_option_row("Music volume", _slider(&"music_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
 	list.add_child(_option_row("Voice volume", _slider(&"voice_volume", 0.0, 1.0, 0.05, "%.0f%%", 100.0)))
 	return list
+
+
+# --- Graphics tab ----------------------------------------------------------------
+
+func _build_graphics() -> Control:
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override(&"separation", 10)
+
+	list.add_child(_section("Preset"))
+	var preset := _choice(&"graphics_preset", Graphics.PRESET_ORDER,
+		["Low (fastest)", "Medium", "High", "Ultra (cinematic)", "Custom"], func(v: Variant) -> void:
+			if str(v) != "custom":
+				Graphics.apply_preset(str(v))
+				_rebuild_tab.call_deferred(TAB_GRAPHICS, true))
+	preset.name = "Preset"
+	list.add_child(_option_row("Quality preset", preset))
+	list.add_child(_hint_row("A preset sets everything under Quality. Change any of those and it becomes Custom."))
+
+	list.add_child(_section("Display"))
+	list.add_child(_option_row("Window", _choice(&"window_mode", Graphics.WINDOW_MODES,
+		["Windowed", "Borderless fullscreen", "Exclusive fullscreen"])))
+	list.add_child(_option_row("VSync", _toggle(&"vsync")))
+	var caps: Array = []
+	for c in Graphics.FPS_CAPS:
+		caps.append(c)
+	list.add_child(_option_row("Frame rate cap", _choice(&"max_fps", caps,
+		Graphics.FPS_CAPS.map(func(c: int) -> String: return "Unlimited" if c == 0 else "%d FPS" % c))))
+	list.add_child(_option_row("Brightness", _slider(&"brightness", 0.6, 1.5, 0.05, "%.0f%%", 100.0)))
+	list.add_child(_option_row("Field of view", _slider(&"fov", 55.0, 100.0, 1.0, "%.0f°")))
+
+	list.add_child(_section("Quality"))
+	var scale := _slider(&"render_scale", 0.5, 1.0, 0.05, "%.0f%%", 100.0)
+	scale.value_changed.connect(func(_v: float) -> void: _mark_custom())
+	list.add_child(_option_row("Render resolution (FSR)" if Graphics.supported() else "Render resolution", scale))
+	list.add_child(_option_row("Anti-aliasing", _quality_choice(&"anti_aliasing", Graphics.AA_MODES,
+		["Off", "FXAA (soft, fast)", "MSAA 2×", "MSAA 4×", "TAA (smoothest)"])))
+	list.add_child(_option_row("Shadows", _quality_choice(&"shadow_quality", Graphics.SHADOW_LEVELS, ["Low", "Medium", "High"])))
+	var lighting := _quality_choice(&"graphics_quality", Graphics.LEVELS,
+		Array(Graphics.LEVELS).map(func(l: String) -> String: return Graphics.LABELS[l]))
+	if not Graphics.supported():
+		lighting.disabled = true
+		lighting.tooltip_text = "Needs the Vulkan renderer (Forward+)"
+	list.add_child(_option_row("Lighting", lighting))
+	for pair in [[&"ambient_occlusion", "Ambient occlusion"], [&"bloom", "Bloom (glow)"]]:
+		var t := _toggle(pair[0])
+		t.toggled.connect(func(_on: bool) -> void: _mark_custom())
+		list.add_child(_option_row(pair[1], t))
+	var rt := _toggle(&"ray_tracing")
+	if not RayTracing.available():
+		# Shown off without saving it off: the same save may move to a PC that has one.
+		rt.disabled = true
+		rt.set_pressed_no_signal(false)
+		rt.text = "Needs a ray tracing GPU"
+	list.add_child(_option_row("Ray-traced shadows (RTAO)", rt))
+	return list
+
+
+## An OptionButton for `key` over `values` (shown as `labels`).
+func _choice(key: StringName, values: Array, labels: Array, on_change := Callable()) -> OptionButton:
+	var o := OptionButton.new()
+	for l: String in labels:
+		o.add_item(l)
+	o.selected = maxi(0, values.find(Settings.get_value(key)))
+	o.item_selected.connect(func(i: int) -> void:
+		Settings.set_value(key, values[i])
+		if on_change.is_valid():
+			on_change.call(values[i]))
+	return o
+
+
+## A choice under Quality: changing it makes the preset Custom (unless it
+## happens to match one).
+func _quality_choice(key: StringName, values: Array, labels: Array) -> OptionButton:
+	return _choice(key, values, labels, func(_v: Variant) -> void: _mark_custom())
+
+
+func _mark_custom() -> void:
+	Settings.set_value(&"graphics_preset", Graphics.matching_preset())
+	var tab := _tabs.get_child(TAB_GRAPHICS) if _tabs and _tabs.get_child_count() > TAB_GRAPHICS else null
+	var preset := tab.find_child("Preset", true, false) as OptionButton if tab else null
+	if preset:
+		preset.select(Graphics.PRESET_ORDER.find(str(Settings.get_value(&"graphics_preset"))))
+
+
+## Rebuilds tab `i` in place (after a reset or a preset changes its values).
+func _rebuild_tab(i: int, keep_focus := false) -> void:
+	var was := _tabs.current_tab
+	var old := _tabs.get_child(i)
+	var title := old.name
+	var fresh := _scroll(title, _build_graphics() if i == TAB_GRAPHICS else _build_accessibility())
+	_tabs.remove_child(old)
+	old.queue_free()
+	_tabs.add_child(fresh)
+	_tabs.move_child(fresh, i)
+	# Removing the open tab switches tabs: put the player back where they were.
+	_select_tab(was)
+	if keep_focus:
+		var preset := fresh.find_child("Preset", true, false) as Control
+		if preset:
+			preset.grab_focus.call_deferred()
+
+
+func _hint_row(text: String) -> Label:
+	var l := UiKit.label(text, 18, UiKit.INK_SOFT, &"body")
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l
 
 
 func _option_row(title: String, control: Control) -> HBoxContainer:

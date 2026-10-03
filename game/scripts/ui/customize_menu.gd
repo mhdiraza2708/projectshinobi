@@ -311,7 +311,7 @@ func _select_tab(i: int) -> void:
 
 func _build_look() -> Control:
 	var list := _list()
-	list.add_child(_section("Face & body"))
+	list.add_child(_section("Face and body"))
 	var current := player.model.loaded_path
 	var roster := CharacterModel.roster()
 	list.add_child(_pick_grid(roster.map(func(e: Dictionary) -> Array: return [e["name"], e["path"]]), current,

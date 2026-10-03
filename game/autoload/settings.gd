@@ -28,8 +28,29 @@ const DEFAULTS := {
 	&"ui_scale": 1.0,
 	# Hardware ray-traced ambient occlusion (only where the GPU supports it).
 	&"ray_tracing": true,
-	# "standard", "high" or "cinematic" (see Graphics).
+	# Graphics (see Graphics). The preset ("low", "medium", "high", "ultra" or
+	# "custom") sets the options below it except the window, frame rate,
+	# brightness and field of view, which are personal.
+	&"graphics_preset": "medium",
+	# Lighting tier: "standard", "high" (global illumination, volumetric
+	# fog) or "cinematic" (adds depth of field and film grain).
 	&"graphics_quality": "standard",
+	&"window_mode": "windowed",
+	&"vsync": true,
+	# Frames per second cap; 0 = none.
+	&"max_fps": 0,
+	# 3D resolution as a fraction of the window's (upscaled with FSR).
+	&"render_scale": 1.0,
+	# "off", "fxaa", "msaa2", "msaa4" or "taa".
+	&"anti_aliasing": "fxaa",
+	# "low", "medium" or "high".
+	&"shadow_quality": "medium",
+	&"ambient_occlusion": true,
+	&"bloom": true,
+	# Exposure multiplier.
+	&"brightness": 1.0,
+	# Gameplay camera's vertical field of view, degrees.
+	&"fov": 70.0,
 	# Linear 0-1 volumes for the Master, SFX, UI, Music and Voice audio buses.
 	&"master_volume": 1.0,
 	&"sfx_volume": 1.0,
@@ -85,6 +106,9 @@ func _apply_value(key: StringName) -> void:
 		&"ui_scale":
 			if is_inside_tree():
 				get_tree().root.content_scale_factor = float(get_value(key))
+		&"window_mode", &"vsync", &"max_fps", &"render_scale", &"anti_aliasing", &"shadow_quality":
+			if is_inside_tree():
+				Graphics.apply_display(get_tree().root)
 
 
 # --- Bindings ----------------------------------------------------------------

@@ -39,6 +39,11 @@ func _ready() -> void:
 	var probe := SphereShape3D.new()
 	probe.radius = 0.2
 	spring.shape = probe
+	# Field of view from Graphics settings.
+	camera.fov = float(Settings.get_value(&"fov"))
+	Settings.value_changed.connect(func(key: StringName, v: Variant) -> void:
+		if key == &"fov":
+			camera.fov = float(v))
 	if target:
 		yaw = target.global_rotation.y
 		snap()

@@ -38,6 +38,8 @@ const RANKS := {
 }
 
 const SPAWN_TIME := 0.9
+## When a spawning fighter shows through its smoke.
+const SPAWN_SHOW := 0.15
 const DODGE_SPEED := 15.0
 const DODGE_TIME := 0.22
 const STAGGER_TIME := 0.55
@@ -405,6 +407,10 @@ func _physics_process(delta: float) -> void:
 	match state:
 		State.SPAWNING:
 			_decelerate(delta)
+			# Hidden in the smoke until the animator has posed it (a freshly
+			# loaded model stands in a T-pose for its first frames).
+			if model:
+				model.visible = _state_time >= SPAWN_SHOW
 			if _state_time >= SPAWN_TIME:
 				_enter(State.FIGHT)
 		State.FIGHT: _fight(delta)

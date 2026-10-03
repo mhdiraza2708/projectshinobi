@@ -194,6 +194,9 @@ func _clear_cast() -> void:
 		if is_instance_valid(n):
 			(n as Node).queue_free()
 	_cast.clear()
+	# Earth and water walls outlast whoever raised them.
+	for wall in stage.find_children("*", "JutsuWall", true, false):
+		wall.queue_free()
 
 
 func _cast_now(id: StringName, target: Node3D) -> void:
@@ -222,7 +225,10 @@ func _opening() -> void:
 	tw.tween_interval(0.6)
 	tw.tween_property(motto, "modulate:a", 0.0, 0.4)
 	stage.use_island("emberwood")
-	stage.set_time_of_day("dawn")
+	stage.set_time_of_day("day")
+	# The training ground's dummies would follow onto the island.
+	for dummy in stage.find_children("*", "TrainingDummy", true, false):
+		dummy.free()
 	_place_player(_ground(0, 0), _ground(0, -10))
 	await _until(2.0)
 	motto.queue_free()
@@ -299,7 +305,7 @@ func _five_natures() -> void:
 ## 18-22 s: Asahi's lightning against your strikes.
 func _rival() -> void:
 	_clear_cast()
-	var asahi := _character("asahi", Element.LIGHTNING, _ground(0, -7), &"jonin", true)
+	var asahi := _character("asahi", Element.LIGHTNING, _ground(0, -5.5), &"jonin", true)
 	_place_player(_ground(0, 0), asahi.global_position)
 	player.lock_target = asahi
 	var acts := [[0.4, "dash"], [0.9, "strike"], [1.2, "strike"], [1.5, "strike"], [2.4, "kunai"], [3.0, "dash"], [3.4, "strike"]]
@@ -307,9 +313,10 @@ func _rival() -> void:
 	await _until(22.0, func(k: float) -> void:
 		var p := player.global_position
 		var a := asahi.global_position if is_instance_valid(asahi) else p + Vector3(0, 0, -5)
-		var mid := (p + a) * 0.5
-		var side := (a - p).cross(Vector3.UP).normalized()
-		_look(mid + side * (5.0 - k * 0.4) + Vector3.UP * 0.9, mid + Vector3.UP * 1.0)
+		var away := Vector3(p.x - a.x, 0.0, p.z - a.z).normalized()
+		var side := away.cross(Vector3.UP).normalized()
+		# Over the player's shoulder, so Asahi stays in frame wherever she goes.
+		_look(p + away * (3.0 - k * 0.25) + side * 1.1 + Vector3.UP * 1.7, a + Vector3.UP * 1.1)
 		if done < acts.size() and k >= float(acts[done][0]):
 			_place_player(p, a)
 			match str(acts[done][1]):
@@ -336,12 +343,12 @@ func _iwao() -> void:
 		iwao.rotation.y = atan2(-to_player.x, -to_player.z)
 		var side := to_player.cross(Vector3.UP).normalized()
 		_look(at + to_player * lerpf(4.2, 3.0, k / 4.0) + side * 1.4 + Vector3.UP * 0.5, at + Vector3.UP * 1.6)
-		if k >= 1.2 and not did[0]:
+		if k >= 1.4 and not did[0]:
 			did[0] = true
-			iwao.caster.cast(JutsuRegistry.get_jutsu(&"stone_bulwark"), player, true)
-		if k >= 2.6 and not did[1]:
+			iwao.caster.cast(JutsuRegistry.get_jutsu(&"quake_stomp"), player, true)
+		if k >= 2.9 and not did[1]:
 			did[1] = true
-			iwao.caster.cast(JutsuRegistry.get_jutsu(&"quake_stomp"), player, true))
+			iwao.caster.cast(JutsuRegistry.get_jutsu(&"granite_skin"), iwao, true))
 
 
 ## 26-30 s: night. Kagerou waits in the firelight.
@@ -387,6 +394,9 @@ func _awakening() -> void:
 		_look(eyes + fwd * lerpf(0.9, 0.7, k) + Vector3.UP * 0.02, eyes))
 
 
+var _nue: EnemyShinobi
+
+
 ## 36-42 s: Hearthfall.
 func _ultimate() -> void:
 	for i in 3:
@@ -400,6 +410,8 @@ func _ultimate() -> void:
 		t += get_process_delta_time()
 	cam.current = true
 	_caption("UNLEASH YOUR ULTIMATE", 42.0)
+	# The Nue waits out of shot until its moment (a fresh spawn T-poses).
+	_nue = _character("nue", Element.FIRE, _ground(24, 24), &"jonin", false, 1.8)
 	var start := t
 	await _until(42.0, func(k: float) -> void:
 		var p := player.global_position
@@ -409,9 +421,14 @@ func _ultimate() -> void:
 
 ## 42-46 s: the Nue, then three quick cuts.
 func _montage() -> void:
-	_clear_cast()
+	for n: Variant in _cast:
+		if is_instance_valid(n) and n != _nue:
+			(n as Node).queue_free()
+	_cast = [_nue] as Array[Node]
 	stage.set_time_of_day("night")
-	var nue := _character("nue", Element.FIRE, _ground(0, -7), &"jonin", false, 1.8)
+	var nue := _nue
+	nue.global_position = _ground(0, -7) + Vector3.UP * 0.2
+	nue.velocity = Vector3.ZERO
 	nue.add_child(Vfx.boss_aura(Color(0.55, 0.2, 0.75), 1.6))
 	_place_player(_ground(0, 2), nue.global_position)
 	await _until(43.0, func(k: float) -> void:
