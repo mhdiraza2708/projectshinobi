@@ -12,3 +12,6 @@
 *.ogg binary
 *.ttf binary
 *.otf binary
+*.mp4 binary
+*.webp binary
+*.gif binary

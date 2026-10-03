@@ -1,5 +1,13 @@
 # Project Shinobi
 
+<p align="center">
+  <a href="docs/media/shinobi_teaser.mp4"><img src="docs/media/teaser_preview.webp" width="720" alt="Teaser highlights: Emberwood from the air, weaving seals, mastering five natures, an eye art awakening in close-up, the Hearthfall ultimate, and the Project Shinobi title card"></a>
+  <br>
+  <b><a href="docs/media/shinobi_teaser.mp4">▶ Watch the 50-second teaser (with sound)</a></b>
+  <br>
+  <sub>Recorded in-engine. It predates the open world and the skill trees.</sub>
+</p>
+
 A third-person shinobi action game built around **weaving hand seals to cast
 jutsu**. It is fully playable on **keyboard + mouse and controller**, and all
 controls can be remapped.
