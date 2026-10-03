@@ -52,11 +52,6 @@ var voice_id := "":
 		set_process(value != "")
 
 var _base_scale := Vector3.ONE
-## Where the model stood last physics frame (to notice a teleport).
-var _last_at := Vector3.INF
-## A jump further than this in one frame is a teleport, not movement (no
-## dash covers it, even at 10 frames a second).
-const TELEPORT_DISTANCE := 3.0
 ## [mesh, blend shape index, weight] per mouth shape used for talking.
 var _mouth: Array = []
 var _mouth_open := 0.0
@@ -66,39 +61,38 @@ var _mouth_time := 0.0
 func _ready() -> void:
 	set_process(voice_id != "")
 	load_model(resolve_path())
-	set_physics_process(true)
 	if use_profile:
 		Profile.changed.connect(_on_profile_changed)
 
 
-func _physics_process(_delta: float) -> void:
-	if not is_inside_tree():
-		return
-	var at := global_position
-	if _last_at != Vector3.INF and at.distance_to(_last_at) > TELEPORT_DISTANCE:
-		settle_physics()
-	_last_at = at
 
 
-## Hair and cloth physics (VRM spring bones) start again from where the body
-## is now: after a teleport they would otherwise whip across the gap, long
-## strands standing out like rods for a moment.
-func settle_physics() -> void:
+## Hair and cloth physics (VRM spring bones) jump with the body: after a
+## teleport `from` -> `to` each strand's swing state (which the addon keeps
+## in world space) moves with it, so the hair hangs exactly as it did instead
+## of whipping across the gap. Called from inside the skeleton's modifier
+## pass, before the hair simulates (HumanoidPoser.teleported).
+func settle_physics(from: Transform3D, to: Transform3D) -> void:
 	if instance == null:
 		return
+	var jump := to * from.affine_inverse()
 	for node in instance.find_children("*", "", true, false):
 		var springs: Variant = node.get(&"spring_bones_internal")
-		if not springs is Array or not node.has_method(&"update_centers"):
+		if not springs is Array or node.get(&"default_springbone_center") != null:
 			continue
-		var skel: Skeleton3D = node.get(&"skel")
-		if skel == null:
-			continue
-		node.update_centers(skel.global_transform)
 		var centers: PackedInt32Array = node.get(&"springs_centers")
-		var inverse: Array = node.get(&"center_transforms_inv")
+		var center_bones: Array = node.get(&"center_bones")
+		var center_nodes: Array = node.get(&"center_nodes")
 		for i in (springs as Array).size():
-			if i < centers.size() and centers[i] < inverse.size():
-				springs[i].setup(inverse[centers[i]], true)
+			if i >= centers.size():
+				continue
+			var c := centers[i]
+			# Only chains simulated in world space (no centre of their own).
+			if c >= center_bones.size() or center_bones[c] != -1 or center_nodes[c] != null:
+				continue
+			for verlet in springs[i].verlets:
+				verlet.current_tail = jump * verlet.current_tail
+				verlet.prev_tail = jump * verlet.prev_tail
 
 
 func _process(delta: float) -> void:
@@ -223,6 +217,7 @@ func load_model(path: String) -> void:
 	poser = HumanoidPoser.new()
 	poser.name = "HumanoidPoser"
 	skeleton.add_child(poser)
+	poser.teleported.connect(settle_physics)
 	var humanoid := poser.setup(skeleton)
 	if humanoid:
 		_face_forward()

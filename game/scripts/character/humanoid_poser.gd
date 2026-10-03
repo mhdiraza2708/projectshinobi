@@ -14,6 +14,14 @@ extends SkeletonModifier3D
 
 enum Pose { LOCOMOTION, WEAVE, CHARGE, GUARD, DASH }
 
+## The body jumped further than any movement in one update (a teleport).
+## Sent from inside the skeleton's modifier pass, before the hair and cloth
+## physics (a later modifier) simulate it, so they can be settled first.
+signal teleported(from: Transform3D, to: Transform3D)
+## A jump further than this between updates is a teleport, not movement (no
+## dash covers it, even at 10 frames a second).
+const TELEPORT_DISTANCE := 3.0
+
 const BLEND_RATE := 14.0
 const THROW_TIME := 0.28
 
@@ -49,6 +57,8 @@ var _flick_t := 0.0
 var _cast_t := 0.0
 var _flinch_t := 0.0
 var _cur: Dictionary = {}               # smoothed pose parameters
+var _last_xform := Transform3D.IDENTITY
+var _has_last := false
 ## A sword in the right hand: the arm holds it while moving and strikes are
 ## cuts (set by CharacterAnimator from the gear).
 var sword_drawn := false
@@ -493,6 +503,12 @@ func _sword_keys(p: Dictionary, keys: Array, t: float) -> void:
 # --- Solve ---------------------------------------------------------------------
 
 func _process_modification_with_delta(delta: float) -> void:
+	if _skel:
+		var now := _skel.global_transform
+		if _has_last and now.origin.distance_to(_last_xform.origin) > TELEPORT_DISTANCE:
+			teleported.emit(_last_xform, now)
+		_last_xform = now
+		_has_last = true
 	if not _ready_for_pose:
 		return
 	_time += delta

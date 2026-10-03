@@ -302,7 +302,8 @@ func test_a_teleport_does_not_whip_the_hair() -> void:
 	await seconds(1.0)
 	var before := _tip_places(tips)
 	model.global_position += Vector3(20, 0, -14)
-	await _frames(3)
+	# One frame: settled before the skeleton draws it, not a frame later.
+	await _frames(1)
 	var after := _tip_places(tips)
 	var worst := 0.0
 	for i in before.size():
