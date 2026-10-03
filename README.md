@@ -1,9 +1,10 @@
 # Project Shinobi
 
 <p align="center">
-  <a href="docs/media/shinobi_teaser.mp4"><img src="docs/media/teaser_preview.webp" width="720" alt="Teaser highlights: Emberwood from the air, weaving seals, mastering five natures, an eye art awakening in close-up, the Hearthfall ultimate, and the Project Shinobi title card"></a>
+  <a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@74a9ee0b1de8ca4807d849cbf60e81c6fb06189d/docs/media/shinobi_teaser.mp4"><img src="docs/media/teaser_preview.webp" width="720" alt="Teaser highlights: Emberwood from the air, weaving seals, mastering five natures, an eye art awakening in close-up, the Hearthfall ultimate, and the Project Shinobi title card"></a>
   <br>
-  <b><a href="docs/media/shinobi_teaser.mp4">▶ Watch the 50-second teaser (with sound)</a></b>
+  <b><a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@74a9ee0b1de8ca4807d849cbf60e81c6fb06189d/docs/media/shinobi_teaser.mp4">▶ Watch the 50-second teaser (with sound)</a></b>
+  · <a href="docs/media/shinobi_teaser.mp4">download</a>
   <br>
   <sub>Recorded in-engine. It predates the open world and the skill trees.</sub>
 </p>
