@@ -37,9 +37,13 @@ const FOCUS_CHAKRA := 10.0
 ## A guard raised this recently blocks everything (Still Eye).
 const PERFECT_GUARD_WINDOW := 0.25
 
+## Seconds an eye art rests after closing, if the data doesn't say.
+const EYE_COOLDOWN := 25.0
+
 static var errors: Array[String] = []
 static var _clans: Array[Dictionary] = []
 static var _arts: Array[Dictionary] = []
+static var _eye_settings: Dictionary = {}
 static var _loaded := false
 
 
@@ -47,7 +51,27 @@ static func reload() -> void:
 	_loaded = false
 	errors = []
 	_clans = _load("clans", CLANS_FILE, ["id", "name", "kanji", "element", "color", "blurb", "perks", "eye_arts"])
-	_arts = _load("eye_arts", EYE_ARTS_FILE, ["id", "name", "kanji", "color", "blurb", "perks"])
+	_arts = _load("eye_arts", EYE_ARTS_FILE, ["id", "name", "kanji", "color", "blurb", "perks", "pattern", "active", "awakened"])
+	var arts_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(EYE_ARTS_FILE))
+	_eye_settings = {}
+	if arts_file is Dictionary:
+		_eye_settings = {"awaken_after": str(arts_file.get("awaken_after", "")),
+			"cooldown": float(arts_file.get("cooldown", EYE_COOLDOWN))}
+	for art in _arts:
+		if not EyePattern.PATTERNS.has(str(art["pattern"])):
+			errors.append("eye art %s: unknown pattern '%s'" % [art["id"], art["pattern"]])
+		for form_key: String in ["active", "awakened"]:
+			var f: Variant = art[form_key]
+			if not f is Dictionary or not (f as Dictionary).has("name") or not (f as Dictionary).get("perks") is Dictionary:
+				errors.append("eye art %s: %s needs a name and perks" % [art["id"], form_key])
+				continue
+			if float(f.get("seconds", 0)) <= 0.0 or float(f.get("cost", -1)) < 0.0:
+				errors.append("eye art %s: %s needs seconds and a cost" % [art["id"], form_key])
+			for key: String in f["perks"]:
+				if not PERK_TEXT.has(key) and not key.begins_with("damage_"):
+					errors.append("eye art %s: %s has unknown perk '%s'" % [art["id"], form_key, key])
+		if not (art["awakened"] as Dictionary).has("kanji"):
+			errors.append("eye art %s: the awakened form needs a kanji" % art["id"])
 	var art_ids := _arts.map(func(a: Dictionary) -> String: return a["id"])
 	var seen := {}
 	for clan in _clans:
@@ -140,13 +164,28 @@ static func active_eye_art() -> Dictionary:
 	return eye_art(id) if allowed.any(func(a: Dictionary) -> bool: return a["id"] == id) else {}
 
 
-## Total of a perk across the player's clan and eye art.
+## Total of a perk across the player's clan and eye art (and the eye art's
+## open form, while it's open: EyeArtMode).
 static func value(key: StringName) -> float:
 	var total := 0.0
-	var sources: Array[Dictionary] = [clan(Profile.get_value(&"clan")), active_eye_art()]
+	var sources: Array[Dictionary] = [clan(Profile.get_value(&"clan")), active_eye_art(), {"perks": EyeArtMode.boost}]
 	for source in sources:
 		total += float((source.get("perks", {}) as Dictionary).get(String(key), 0.0))
 	return total
+
+
+## The chapter whose clearing awakens every eye art ("" never).
+static func awaken_after() -> String:
+	if not _loaded:
+		reload()
+	return str(_eye_settings.get("awaken_after", ""))
+
+
+## Seconds an eye art rests after it closes.
+static func eye_cooldown() -> float:
+	if not _loaded:
+		reload()
+	return float(_eye_settings.get("cooldown", EYE_COOLDOWN))
 
 
 ## What a hit of `element` is multiplied by: 1 plus the clan's general and

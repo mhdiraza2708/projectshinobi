@@ -22,6 +22,7 @@ automatically. Prompts switch the moment you touch the other device.
 | Guard (hold) | E | RB |
 | Charge chakra (hold) | R | Y |
 | Ultimate (when the meter is full) | V | B |
+| Open your eye art | Ctrl + R | Hold LB, press Y |
 | Lock on | Tab or middle mouse | R3 |
 | **Weave seals** | **Right mouse (or F)** | **LT** |
 | Quick-cast slots 1–4 | 1 2 3 4 | D-pad ↑ → ↓ ← |

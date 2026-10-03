@@ -42,7 +42,6 @@ var _struck := false
 var _skip_held := 0.0
 var _aura: Node3D
 var _shades: Array[CharacterModel] = []
-var _hidden_tags: Array = []
 
 
 ## Starts `u` for `p`. Returns the running sequence.
@@ -224,52 +223,12 @@ func _finish() -> void:
 # --- Title card --------------------------------------------------------------
 
 func _show_card() -> void:
-	_card = CanvasLayer.new()
-	_card.layer = 31
-	add_child(_card)
-	var root := Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_card.add_child(root)
-	var box := VBoxContainer.new()
-	box.anchor_left = 0.5
-	box.anchor_right = 1.0
-	box.anchor_top = 0.5
-	box.anchor_bottom = 0.5
-	box.offset_top = -190
-	box.offset_bottom = 190
-	box.offset_right = -70
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override(&"separation", -14)
-	root.add_child(box)
-	var tag := UiKit.label("奥義  ULTIMATE", 30, UiKit.GOLD, &"display", 10)
-	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	box.add_child(tag)
-	var kanji := UiKit.label(str(ult["kanji"]), 190, color.lightened(0.25), &"brush", 26)
-	kanji.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	box.add_child(kanji)
-	var title := UiKit.label(str(ult["name"]).to_upper(), 54, UiKit.PAPER, &"display", 14)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	box.add_child(title)
-	# Slams in from the right, holds, then fades as the blow lands.
-	box.modulate.a = 0.0
-	box.pivot_offset = Vector2(600, 190)
-	box.scale = Vector2(1.35, 1.35)
-	var tw := box.create_tween().set_parallel()
-	tw.tween_property(box, "modulate:a", 1.0, 0.18)
-	tw.tween_property(box, "scale", Vector2.ONE, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.chain().tween_interval(CLOSE_TIME - 0.55)
-	tw.chain().tween_property(box, "modulate:a", 0.0, 0.25)
+	_card = CinematicKit.title_card(self, "奥義  ULTIMATE", str(ult["kanji"]), str(ult["name"]), color, CLOSE_TIME)
 
 
 ## The title card's text, for tests.
 func card_text() -> String:
-	if not is_instance_valid(_card):
-		return ""
-	var parts := PackedStringArray()
-	for l in _card.find_children("*", "Label", true, false):
-		parts.append((l as Label).text)
-	return " ".join(parts)
+	return CinematicKit.card_text(_card)
 
 
 # --- The techniques ------------------------------------------------------------
@@ -630,44 +589,13 @@ func _look_follow(point: Vector3, weight: float) -> void:
 	_cam_base.basis = _cam_base.basis.slerp(want.basis, weight * 0.06).orthonormalized()
 
 
-## Stops every fighter and projectile where it is: time stands still for
-## everyone but the player.
 func _freeze_world() -> void:
-	var stopped: Array[Node] = []
-	stopped.append_array(_world.find_children("*", "EnemyShinobi", true, false))
-	stopped.append_array(_world.find_children("*", "JutsuProjectile", true, false))
-	stopped.append_array(_world.find_children("*", "TrainingDummy", true, false))
-	for n in stopped:
-		_frozen[n] = [n.process_mode, (n as CollisionObject3D).disable_mode if n is CollisionObject3D else 0]
-		# Frozen, but still there to be hit (a disabled body otherwise leaves
-		# the physics world).
-		if n is CollisionObject3D:
-			(n as CollisionObject3D).disable_mode = CollisionObject3D.DISABLE_MODE_KEEP_ACTIVE
-		n.process_mode = Node.PROCESS_MODE_DISABLED
-	# Name tags and health numbers would clutter the shots.
-	for tag in _world.find_children("*", "Label3D", true, false):
-		if (tag as Label3D).visible:
-			tag.visible = false
-			_hidden_tags.append(tag)
+	_frozen = CinematicKit.freeze(_world)
 
 
 func _unfreeze_world() -> void:
-	# Untyped: the blow may have finished some of them off.
-	for n: Variant in _frozen.keys():
-		if is_instance_valid(n):
-			(n as Node).process_mode = _frozen[n][0]
-			if n is CollisionObject3D:
-				(n as CollisionObject3D).disable_mode = _frozen[n][1]
-	_frozen.clear()
-	for tag: Variant in _hidden_tags:
-		if not is_instance_valid(tag):
-			continue
-		# Not over someone the blow just defeated.
-		var owner_node := (tag as Node).get_parent()
-		if not (owner_node.has_method(&"is_defeated") and owner_node.is_defeated()):
-			(tag as Label3D).visible = true
-	_hidden_tags.clear()
+	CinematicKit.thaw(_frozen)
 
 
 func frozen_count() -> int:
-	return _frozen.size()
+	return (_frozen.get("nodes", {}) as Dictionary).size()

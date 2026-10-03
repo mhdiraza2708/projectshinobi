@@ -105,6 +105,15 @@ controls can be remapped.
   slower, your own seals fly faster) and **Still Eye** (a guard raised at the
   last instant blocks a blow completely). Each clan can awaken only some of
   them, and your eyes change colour with the one you pick.
+- **Opening your eye art in battle** (hold LB, press Y / Ctrl + R): for
+  25 chakra your eye art opens for 12 seconds, drawing its own animated
+  pattern in your irises (a slit pupil and feather marks, two facing
+  crescents, a ring of twelve seal marks or a lotus) and strengthening its
+  perks. The first time in each area plays a close-up cinematic; after that
+  it just flashes. Clearing Part One **awakens** it: a second pattern
+  (Sky Roc Eye, Twin Mirror Eye, Star Seal Eye, Lotus Eye), stronger perks
+  and its own awakening cinematic. All four patterns are original.
+- **The ultimate meter keeps its charge** from one fight to the next.
 - **Character customization** (Pause → Customize): pick from your
   VRoid roster, tint hair/eyes/skin/outfit, add ninja gear fitted to the
   character's measured head and body (headband or hachigane, mask, scarf,

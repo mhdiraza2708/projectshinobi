@@ -17,6 +17,9 @@ var _health_text: Label
 var _chakra_bar: InkBar
 var _ult_bar: InkBar
 var _ult_text: Label
+var _eye_row: Control
+var _eye_bar: InkBar
+var _eye_text: Label
 ## Hidden while an ultimate's cinematic plays.
 var _hidden_for_ult := false
 var _chakra_text: Label
@@ -122,6 +125,12 @@ func _build() -> void:
 	_ult_text = UiKit.label("", 20, UiKit.INK, &"bold")
 	bars.add_child(_vital_row("奥", "ULTIMATE", _ult_text))
 	bars.add_child(_ult_bar)
+	_eye_bar = InkBar.new()
+	_eye_bar.seed = 19.0
+	_eye_text = UiKit.label("", 20, UiKit.INK, &"bold")
+	_eye_row = _vital_row("眼", "EYE ART", _eye_text)
+	bars.add_child(_eye_row)
+	bars.add_child(_eye_bar)
 	_buffs = UiKit.label("", 17, UiKit.CRIMSON_DARK, &"bold")
 	bars.add_child(_buffs)
 
@@ -333,7 +342,11 @@ func _vital_row(kanji: String, title: String, value_label: Label) -> HBoxContain
 func _process(_delta: float) -> void:
 	if player == null:
 		return
-	if _hidden_for_ult and UltimateSequence.active == null:
+	# Out of the way while a cinematic (ultimate or eye art) plays.
+	if EyeSequence.active != null and visible:
+		_hidden_for_ult = true
+		visible = false
+	if _hidden_for_ult and UltimateSequence.active == null and EyeSequence.active == null:
 		_hidden_for_ult = false
 		visible = true
 	if player.ultimate_ready():
@@ -344,6 +357,7 @@ func _process(_delta: float) -> void:
 		_ult_bar.modulate = Color.WHITE
 	if player.weaver.is_weaving:
 		_fuse.ratio = player.weaver.window_remaining()
+	_refresh_eye()
 	_refresh_slots()
 	_refresh_buffs()
 	var cam := get_viewport().get_camera_3d()
@@ -532,6 +546,30 @@ func _refresh_weave(force := false) -> void:
 
 func _refresh_loadout_name() -> void:
 	_loadout_label.text = str(Loadouts.active()["name"])
+
+
+## The eye art row: ready (and how to open it), open (time left) or
+## recovering. Hidden without an eye art.
+func _refresh_eye() -> void:
+	var art := EyeArtMode.art()
+	var mode := player.eye_mode
+	_eye_row.visible = not art.is_empty() and mode != null
+	_eye_bar.visible = _eye_row.visible
+	if not _eye_row.visible:
+		return
+	var c := Color(str(art["color"]))
+	_eye_bar.ink_color = c.darkened(0.15)
+	_eye_bar.set_ratio_instant(mode.ratio())
+	match mode.phase:
+		EyeArtMode.Phase.ACTIVE:
+			_eye_text.text = "%s  %ds" % [EyeArtMode.form().get("name", art["name"]), ceili(mode.time_left)]
+			_eye_bar.modulate = Color(1, 1, 1).lerp(Color(1.4, 1.4, 1.4), 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.01))
+		EyeArtMode.Phase.RECOVERING:
+			_eye_text.text = "resting %ds" % ceili(mode.time_left)
+			_eye_bar.modulate = Color(1, 1, 1, 0.55)
+		_:
+			_eye_text.text = "%s  %s + %s" % [art["name"], InputDevice.glyph(&"quick_shift"), InputDevice.glyph(&"charge_chakra")]
+			_eye_bar.modulate = Color.WHITE
 
 
 func _refresh_slots() -> void:

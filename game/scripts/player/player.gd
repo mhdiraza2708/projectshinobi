@@ -80,6 +80,8 @@ var ult_charge := 0.0:
 	set(value):
 		ult_charge = value
 		Game.set_ult_charge(value)
+## The eye art, opened in battle (EyeArtMode).
+var eye_mode: EyeArtMode
 ## Disable to freeze player control (cutscenes, menus, tests).
 var input_enabled := true
 ## While input is off, a cutscene can walk you (horizontal velocity) and pose
@@ -129,6 +131,8 @@ func _ready() -> void:
 		"guard": guard_damage_multiplier, "health": stats.max_health, "chakra_regen": stats.chakra_regen}
 	_apply_perks()
 	_load_loadout()
+	eye_mode = EyeArtMode.new()
+	add_child(eye_mode)
 	# Whatever the meter held at the end of the last fight.
 	ult_charge = clampf(Game.ult_charge(), 0.0, Ultimates.MAX_CHARGE)
 	Profile.changed.connect(func(key: StringName) -> void:
@@ -245,7 +249,11 @@ func _state_free(delta: float) -> void:
 		return
 	if not Input.is_action_pressed(&"evade"):
 		_sprinting = false
-	if Input.is_action_pressed(&"charge_chakra") and is_on_floor():
+	# Page shift + Charge opens the eye art instead of charging.
+	if Input.is_action_pressed(&"quick_shift"):
+		if Input.is_action_just_pressed(&"charge_chakra"):
+			eye_mode.try_open()
+	elif Input.is_action_pressed(&"charge_chakra") and is_on_floor():
 		_enter(State.CHARGING)
 		return
 	if Input.is_action_pressed(&"guard"):
@@ -676,6 +684,11 @@ func _update_animator() -> void:
 
 
 # --- Clan and eye art perks ----------------------------------------------------
+
+## Re-reads the perks (after the eye art opens or closes).
+func refresh_perks() -> void:
+	_apply_perks()
+
 
 ## Re-reads the player's clan and eye art into the numbers they change.
 func _apply_perks() -> void:

@@ -480,8 +480,14 @@ func _build_eyes() -> Control:
 	list.add_child(_card("無", UiKit.INK_SOFT, "No eye art", "Plain eyes", "Nothing awakened: you rely on your clan and your hands.",
 		PackedStringArray(), current == "", _pick_eye.bind("")))
 	for art in Perks.arts_for(clan_id):
+		var lines := Perks.describe(art["perks"])
+		# Opened in battle, and the form it awakens into.
+		lines.append("Open in battle (%s + %s): %s" % [InputDevice.glyph(&"quick_shift"),
+			InputDevice.glyph(&"charge_chakra"), art["active"]["name"]])
+		lines.append(("Awakened: %s" if EyeArtMode.awakening_unlocked() else "Awakens after Part One: %s")
+			% art["awakened"]["name"])
 		list.add_child(_card(art["kanji"], Color(art["color"]), art["name"], "Eye art", art["blurb"],
-			Perks.describe(art["perks"]), art["id"] == current, _pick_eye.bind(art["id"])))
+			lines, art["id"] == current, _pick_eye.bind(art["id"])))
 	list.add_child(_hint("Your eyes change colour with your eye art. Eye arts are original to this game: they sharpen how you aim, dodge, guard or read seals."))
 	return list
 

@@ -794,6 +794,35 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				done = target
 				if i < times.size() - 1:
 					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
+		_ when demo.begins_with("eye:"):
+			# An eye art opening: --demo=eye:hawk_eye:0.9,1.4[:awakened] (seconds
+			# after it starts; earlier times also saved as <path>_<t>.png).
+			var parts := demo.split(":")
+			for clan in Perks.clans():
+				if (clan["eye_arts"] as Array).has(parts[1]):
+					Profile.set_value(&"clan", clan["id"])
+					break
+			Profile.set_value(&"eye_art", parts[1])
+			if parts.size() > 3 and parts[3] == "awakened":
+				Game.mark_chapter_done(Perks.awaken_after())
+			var e := EnemyShinobi.new()
+			e.rank = &"genin"
+			add_child(e)
+			e.global_position = player.global_position + Vector3(0.0, 0.1, -9.0)
+			for f in 40:
+				await get_tree().physics_frame
+			player.stats.chakra = player.stats.max_chakra
+			EyeArtMode.reset_seen()
+			player.eye_mode.try_open()
+			var fps := float(_user_args().get("fps", "60"))
+			var times := parts[2].split(",") if parts.size() > 2 else PackedStringArray(["1.0"])
+			var done := 0
+			for i in times.size():
+				var target := ceili(float(times[i]) * fps) + 1
+				await _frames(target - done)
+				done = target
+				if i < times.size() - 1:
+					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
 		"menu_jutsu":
 			pause_menu.open()
 			pause_menu._select_tab(2)

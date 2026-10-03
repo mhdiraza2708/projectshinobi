@@ -1,24 +1,42 @@
 {
+	"awaken_after": "ch5_kagerou",
+	"cooldown": 25,
 	"eye_arts": [
 		{
-			"id": "hawk_eye", "name": "Hawk Eye", "kanji": "鷹", "color": "#e3a23a",
+			"id": "hawk_eye", "name": "Hawk Eye", "kanji": "鷹", "color": "#e3a23a", "pattern": "hawk",
 			"blurb": "You see targets from far off, and your techniques curve to meet them. Natures show who is weak to you.",
-			"perks": {"lock_range": 0.6, "homing": 0.5, "reads_natures": 1}
+			"perks": {"lock_range": 0.6, "homing": 0.5, "reads_natures": 1},
+			"active": {"name": "Talon Sight", "seconds": 12, "cost": 25,
+				"perks": {"lock_range": 0.5, "homing": 0.8, "damage": 0.15}},
+			"awakened": {"name": "Sky Roc Eye", "kanji": "鵬", "seconds": 15, "cost": 35,
+				"perks": {"lock_range": 1.0, "homing": 1.5, "damage": 0.3, "move_speed": 0.1}}
 		},
 		{
-			"id": "mirror_eye", "name": "Mirror Eye", "kanji": "鏡", "color": "#8fb8e8",
+			"id": "mirror_eye", "name": "Mirror Eye", "kanji": "鏡", "color": "#8fb8e8", "pattern": "mirror",
 			"blurb": "A dash that slips through a blow slows the world for a heartbeat and steadies your chakra.",
-			"perks": {"dodge_focus": 1}
+			"perks": {"dodge_focus": 1},
+			"active": {"name": "Still Surface", "seconds": 12, "cost": 25,
+				"perks": {"dash_cooldown": -0.4, "chakra_regen": 0.5, "move_speed": 0.15}},
+			"awakened": {"name": "Twin Mirror Eye", "kanji": "鑑", "seconds": 15, "cost": 35,
+				"perks": {"dash_cooldown": -0.6, "chakra_regen": 1.0, "move_speed": 0.25, "damage": 0.15}}
 		},
 		{
-			"id": "seal_eye", "name": "Seal Eye", "kanji": "印", "color": "#9a6fe0",
+			"id": "seal_eye", "name": "Seal Eye", "kanji": "印", "color": "#9a6fe0", "pattern": "seal",
 			"blurb": "You read hands as they move. Rivals' seals come slower, and your own fly faster.",
-			"perks": {"enemy_seal_slow": 0.4, "cast_speed": 0.25}
+			"perks": {"enemy_seal_slow": 0.4, "cast_speed": 0.25},
+			"active": {"name": "Reading Hands", "seconds": 12, "cost": 25,
+				"perks": {"cast_speed": 0.5, "cost": -0.3, "enemy_seal_slow": 0.3}},
+			"awakened": {"name": "Star Seal Eye", "kanji": "星", "seconds": 15, "cost": 35,
+				"perks": {"cast_speed": 0.8, "cost": -0.5, "enemy_seal_slow": 0.5, "damage": 0.15}}
 		},
 		{
-			"id": "still_eye", "name": "Still Eye", "kanji": "静", "color": "#4fbf9a",
+			"id": "still_eye", "name": "Still Eye", "kanji": "静", "color": "#4fbf9a", "pattern": "still",
 			"blurb": "A guard raised at the very last instant turns a blow aside completely, and pays you back in chakra.",
-			"perks": {"perfect_guard": 1}
+			"perks": {"perfect_guard": 1},
+			"active": {"name": "Calm Water", "seconds": 12, "cost": 25,
+				"perks": {"guard": 0.3, "heal": 0.5, "chakra_regen": 0.3}},
+			"awakened": {"name": "Lotus Eye", "kanji": "蓮", "seconds": 15, "cost": 35,
+				"perks": {"guard": 0.5, "heal": 1.0, "chakra_regen": 0.6, "damage": 0.15}}
 		}
 	]
 }

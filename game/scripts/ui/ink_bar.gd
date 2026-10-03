@@ -47,6 +47,13 @@ func set_ratio(value: float) -> void:
 	_push()
 
 
+## Sets the fill without the trailing ghost (for timers that drain smoothly).
+func set_ratio_instant(value: float) -> void:
+	ratio = clampf(value, 0.0, 1.0)
+	_trail = ratio
+	_push()
+
+
 func _process(delta: float) -> void:
 	if _trail <= ratio:
 		return
@@ -64,5 +71,6 @@ func _fit() -> void:
 
 func _push() -> void:
 	if _mat:
+		_mat.set_shader_parameter(&"ink_color", ink_color)
 		_mat.set_shader_parameter(&"value", ratio)
 		_mat.set_shader_parameter(&"trail", maxf(_trail, ratio))
