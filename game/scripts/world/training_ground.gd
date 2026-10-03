@@ -794,6 +794,9 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				done = target
 				if i < times.size() - 1:
 					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
+		"trailer":
+			# The 50-second teaser (see TrailerDirector; record with --write-movie).
+			await TrailerDirector.run(self).play()
 		_ when demo.begins_with("eye:"):
 			# An eye art opening: --demo=eye:hawk_eye:0.9,1.4[:awakened] (seconds
 			# after it starts; earlier times also saved as <path>_<t>.png).
