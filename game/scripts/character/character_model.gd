@@ -52,6 +52,11 @@ var voice_id := "":
 		set_process(value != "")
 
 var _base_scale := Vector3.ONE
+## Where the model stood last physics frame (to notice a teleport).
+var _last_at := Vector3.INF
+## A jump further than this in one frame is a teleport, not movement (no
+## dash covers it, even at 10 frames a second).
+const TELEPORT_DISTANCE := 3.0
 ## [mesh, blend shape index, weight] per mouth shape used for talking.
 var _mouth: Array = []
 var _mouth_open := 0.0
@@ -61,8 +66,39 @@ var _mouth_time := 0.0
 func _ready() -> void:
 	set_process(voice_id != "")
 	load_model(resolve_path())
+	set_physics_process(true)
 	if use_profile:
 		Profile.changed.connect(_on_profile_changed)
+
+
+func _physics_process(_delta: float) -> void:
+	if not is_inside_tree():
+		return
+	var at := global_position
+	if _last_at != Vector3.INF and at.distance_to(_last_at) > TELEPORT_DISTANCE:
+		settle_physics()
+	_last_at = at
+
+
+## Hair and cloth physics (VRM spring bones) start again from where the body
+## is now: after a teleport they would otherwise whip across the gap, long
+## strands standing out like rods for a moment.
+func settle_physics() -> void:
+	if instance == null:
+		return
+	for node in instance.find_children("*", "", true, false):
+		var springs: Variant = node.get(&"spring_bones_internal")
+		if not springs is Array or not node.has_method(&"update_centers"):
+			continue
+		var skel: Skeleton3D = node.get(&"skel")
+		if skel == null:
+			continue
+		node.update_centers(skel.global_transform)
+		var centers: PackedInt32Array = node.get(&"springs_centers")
+		var inverse: Array = node.get(&"center_transforms_inv")
+		for i in (springs as Array).size():
+			if i < centers.size() and centers[i] < inverse.size():
+				springs[i].setup(inverse[centers[i]], true)
 
 
 func _process(delta: float) -> void:

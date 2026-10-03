@@ -266,3 +266,45 @@ func test_a_jutsu_released_from_the_weave_plays_the_cast() -> void:
 	anim.pose = HumanoidPoser.Pose.LOCOMOTION
 	await _frames(2)
 	assert_eq(anim.current_clip(), &"cast", "the weave ends in the palms-out release")
+
+
+## Markers on the hair's tips (spring bone chains), as finally posed.
+func _hair_tips() -> Array[BoneAttachment3D]:
+	var tips: Array[BoneAttachment3D] = []
+	for node in model.instance.find_children("*", "", true, false):
+		var springs: Variant = node.get(&"spring_bones")
+		if not springs is Array:
+			continue
+		for sb in springs:
+			if sb == null or sb.joint_nodes.size() < 2:
+				continue
+			var tip: String = sb.joint_nodes[sb.joint_nodes.size() - 2]
+			if tip != "" and model.skeleton.find_bone(tip) >= 0:
+				var marker := BoneAttachment3D.new()
+				marker.bone_name = tip
+				model.skeleton.add_child(marker)
+				tips.append(marker)
+	return tips
+
+
+## Each tip's place relative to the model (so moving the model moves it).
+func _tip_places(tips: Array[BoneAttachment3D]) -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	for t in tips:
+		out.append(model.to_local(t.global_position))
+	return out
+
+
+func test_a_teleport_does_not_whip_the_hair() -> void:
+	_model("res://assets/characters/roster/vivi.vrm")
+	var tips := _hair_tips()
+	assert_true(tips.size() > 0, "the model has hair physics")
+	await seconds(1.0)
+	var before := _tip_places(tips)
+	model.global_position += Vector3(20, 0, -14)
+	await _frames(3)
+	var after := _tip_places(tips)
+	var worst := 0.0
+	for i in before.size():
+		worst = maxf(worst, before[i].distance_to(after[i]))
+	assert_true(worst < 0.12, "the hair hangs where it did (a tip strayed %.2f m)" % worst)
