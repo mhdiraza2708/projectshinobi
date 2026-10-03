@@ -1047,6 +1047,33 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 					print("SWORD %s blade=%s edge=%s want_blade=%s want_edge=%s" % [states[i],
 						blade.snappedf(0.01), edge.snappedf(0.01), (p.get("thumb_R", Vector3.ZERO) as Vector3).snappedf(0.01),
 						(p.get("hand_R", Vector3.ZERO) as Vector3).snappedf(0.01)])
+		_ when demo.begins_with("cast:"):
+			# Story characters side by side, built as the story builds them:
+			# --demo=cast:kagerou,hisame (--yaw turns them).
+			hud.visible = false
+			player.visible = false
+			if story == null:
+				story = Story.load_all()
+			var ids := demo.trim_prefix("cast:").split(",")
+			for i in ids.size():
+				var info: Dictionary = story.characters[ids[i]]
+				var npc := StoryNpc.new()
+				npc.who = ids[i]
+				npc.display_name = str(info["name"])
+				npc.element = info["element"]
+				npc.style = info["style"]
+				npc.model_name = info["model"]
+				npc.quiet = true
+				npc.position = Vector3((i - (ids.size() - 1) * 0.5) * 1.3, 0.0, -3.0)
+				npc.rotation.y = float(_user_args().get("yaw", "0.0"))
+				add_child(npc)
+				npc.show_tag(false)
+			var cam := Camera3D.new()
+			add_child(cam)
+			cam.position = Vector3(0.0, 1.2, float(_user_args().get("cam_z", "0.2")))
+			cam.look_at(Vector3(0.0, 1.0, -3.0))
+			cam.current = true
+			await _frames(40)
 		_ when demo.begins_with("ult:"):
 			# An ultimate partway through: --demo=ult:hearthfall:0.6,2.2 (seconds
 			# after it starts; earlier times also saved as <path>_<t>.png).
