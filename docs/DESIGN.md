@@ -195,6 +195,20 @@ wrong trade.
 - **Day and night:** `OpenWorld.clock` runs a `DAY_LENGTH` day through
   `PHASES`; a change calls `transition_time()`, which crossfades the sky
   shader (`prev_panorama` + `blend`) and eases the sun, ambient and fog.
+  Each sky's `LOOKS` entry (`skies.gd`) also grades it to the hour: a sun
+  colour and height of its own (dusk's is low and orange), a `tint` over
+  the whole sky and a `horizon_tint` near the horizon, the sun's halo and
+  the fog colour. The shader lowers the photo's sun to the game's with a
+  vertical squeeze (`elevations`), so the disc, the clouds around it and
+  the light agree.
+- **Ambient life:** `Ambience` (a child of the game scene) is told the
+  island under the player, the hour and the weather every frame
+  (`ambient_island()` is the story island, or the one underfoot in free
+  roam) and keeps one or two particle emitters in a box around the player:
+  embers and ash, leaves, snow, mist, wind, pollen and petals, and
+  fireflies at night. Sets fade over `FADE` seconds, start over after a
+  jump (fast travel, a chapter shifting the world), and shrink with the
+  graphics preset (`Ambience.density()`: none on Low).
 - **Map and travel:** `WorldMap` paints a chart from every island's real
   heights once per world (4 m a pixel). Islands are `discovered` when you
   set foot on them (saved in records); `fast_travel()` uses the summoning
