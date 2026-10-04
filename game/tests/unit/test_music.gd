@@ -3,11 +3,10 @@ extends TestCase
 ## mode and story beat plays.
 
 const Scene := preload("res://scenes/training_ground.tscn")
-const TRACKS: Array[StringName] = [&"title", &"calm", &"battle", &"boss"]
 
 
 func test_every_track_is_a_long_seamless_loop() -> void:
-	for track in TRACKS:
+	for track in Music.TRACKS:
 		assert_true(Music.has_track(track), "%s.ogg exists" % track)
 		var stream: AudioStream = load(Music.DIR + track + ".ogg")
 		assert_true(stream is AudioStreamOggVorbis, "%s is Ogg Vorbis" % track)
@@ -82,6 +81,101 @@ func test_story_beats_choose_the_music() -> void:
 	assert_eq(Music.current, &"boss")
 	d._score("task")
 	assert_eq(Music.current, &"calm")
+
+
+func test_missions_name_their_music() -> void:
+	var d := StoryDirector.new()
+	root.add_child(d)
+	d.chapter = {"number": 7, "island": "frozen_road", "music": "tension"}
+	d._score("say")
+	assert_eq(Music.current, &"tension", "a mission's own music for talking")
+	d._score("task")
+	assert_eq(Music.current, &"tension", "and for lessons")
+	d._score("say", {"music": "sorrow"})
+	assert_eq(Music.current, &"sorrow", "a beat can name its own")
+	d._score("boss")
+	assert_eq(Music.current, &"boss", "bosses keep their theme")
+	d.chapter = {"number": 8, "island": "frozen_road"}
+	d._score("say")
+	assert_eq(Music.current, &"frozen_road", "without a name, the island's theme")
+	d._score("survive")
+	assert_eq(Music.current, &"battle2", "even-numbered missions fight to the second battle theme")
+	d.chapter = {"number": 9, "island": "old_dam"}
+	d._score("fight")
+	assert_eq(Music.current, &"battle", "and odd-numbered ones to the first")
+	d.queue_free()
+	var story := Story.load_all()
+	assert_eq(story.errors, [] as Array[String])
+	var kagerou := story.chapter("ch5_kagerou")
+	assert_eq(kagerou["music"], "tension")
+	assert_true(kagerou["beats"].any(func(b: Dictionary) -> bool: return b.get("music", "") == "sorrow"), "Kagerou's defeat is sad")
+	var scroll := story.chapter("m15_scroll_remembers")
+	assert_eq(scroll["music"], "sorrow")
+	assert_true(scroll["beats"].any(func(b: Dictionary) -> bool: return b["do"] == "task" and b.get("music", "") == "tension"), "the seal is tense")
+	assert_eq(story.chapter("ch1_graduation")["music"], "", "most missions leave it to the island")
+
+
+func test_the_story_checks_music_names() -> void:
+	var s := Story.new()
+	var chapter := {"id": "t", "number": 1, "title": "T", "location": "L", "time": "day", "music": "polka",
+		"beats": [{"do": "banner", "text": "x"}]}
+	s._parse_chapter("t.json", chapter)
+	assert_true("\n".join(s.errors).contains("unknown music 'polka'"), "a chapter names a track that doesn't exist")
+	s.errors.clear()
+	chapter["music"] = "tension"
+	assert_eq(s._parse_chapter("t.json", chapter)["music"], "tension")
+	assert_eq(s.errors, [] as Array[String])
+	s._parse_beat("beat", {"do": "say", "lines": [["player", "hi"]], "music": "polka"}, {})
+	s._parse_beat("beat", {"do": "task", "text": "t", "goal": "dash", "music": "polka"}, {})
+	assert_eq(s.errors.size(), 2, "say and task beats are checked too")
+	s.errors.clear()
+	s._parse_beat("beat", {"do": "fight", "waves": [{"element": "fire", "enemies": ["genin"]}], "music": "battle2"}, {})
+	assert_true("\n".join(s.errors).contains("unknown key 'music'"), "only talking and lessons take a track")
+
+
+func test_every_track_is_listed_and_every_name_in_code_and_data_exists() -> void:
+	var on_disk := Music.tracks()
+	for track in Music.TRACKS:
+		assert_true(on_disk.has(String(track)), "%s.ogg exists" % track)
+	for file in on_disk:
+		assert_true(Music.TRACKS.has(StringName(file)), "%s.ogg is listed in Music.TRACKS" % file)
+	var named: Array[StringName] = []
+	named.append_array(Music.BATTLES)
+	named.append_array([OpenWorld.SEA_TRACK, OpenWorld.NIGHT_TRACK])
+	for id: String in Island.PRESETS:
+		assert_true(Music.ISLAND_THEMES.has(id), "%s has a theme" % id)
+	for theme: StringName in Music.ISLAND_THEMES.values():
+		named.append(theme)
+	# Every Music.play(&"name") in the scripts.
+	var literal := RegEx.create_from_string("Music\\.play\\(&\"([a-z0-9_]+)\"")
+	for dir in ["res://scripts", "res://autoload"]:
+		for path in _scripts_under(dir):
+			for m in literal.search_all(FileAccess.get_file_as_string(path)):
+				named.append(StringName(m.get_string(1)))
+	# Every track the story names, in a chapter, a beat or a scene.
+	var story := Story.load_all()
+	for c in story.chapters:
+		if c["music"] != "":
+			named.append(StringName(c["music"]))
+		for b: Dictionary in c["beats"]:
+			if b.has("music"):
+				named.append(StringName(b["music"]))
+			for step: Dictionary in b.get("steps", []):
+				if step.get("track", "none") != "none":
+					named.append(StringName(step["track"]))
+	assert_true(named.size() > 20, "found the names (%d)" % named.size())
+	for track in named:
+		assert_true(Music.has_track(track), "the track named '%s' exists in assets/audio/music" % track)
+
+
+func _scripts_under(dir: String) -> Array[String]:
+	var out: Array[String] = []
+	for f in DirAccess.get_files_at(dir):
+		if f.ends_with(".gd"):
+			out.append(dir.path_join(f))
+	for d in DirAccess.get_directories_at(dir):
+		out.append_array(_scripts_under(dir.path_join(d)))
+	return out
 
 
 func test_audio_pack_preset_lists_every_track() -> void:

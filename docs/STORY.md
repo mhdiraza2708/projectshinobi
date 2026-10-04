@@ -98,6 +98,8 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
   and it plays where you stand. A replay from the title's chapter list
   teleports you there by a summoning seal instead, and away again when it
   ends. See **Islands** below.
+- `music`: the track for the mission's talking and lessons (see **Music**
+  below). Left out, they play the island's own theme.
 - `dummies`: keep the training dummies (default false).
 - Positions are `[x, z]` in metres. Every island has a flat clearing about
   40 m across, centred on `[0, 0]`, and an invisible wall about 38 m out.
@@ -132,8 +134,8 @@ A new island is a new entry in `PRESETS`: colours, `hills` (height), `coast`
 |---|---|---|
 | `enter` | `who`, `at` | The character appears in a puff of smoke and faces you. |
 | `exit` | `who` | They leave in a puff of smoke. |
-| `say` | `lines` | Dialogue. Each line is `[who, text]` or `[who, text, mood]`. The mood is one of neutral, angry, happy, relaxed or sad. Speakers must be on stage (or `player`). |
-| `task` | `text`, `goal`, optional `count`, `jutsu`, `enemies` | A tutorial objective. The goal is one of `kunai_hit`, `strike_hit`, `jutsu_hit`, `weak_hit`, `cast` (optionally a specific `jutsu`), `guard`, `dash`, `charge`, `lock_on` or `interrupt`. `enemies` adds practice clones that only weave, slowly, so you can interrupt them; they come back if they fall. |
+| `say` | `lines`, optional `music` | Dialogue. Each line is `[who, text]` or `[who, text, mood]`. The mood is one of neutral, angry, happy, relaxed or sad. Speakers must be on stage (or `player`). |
+| `task` | `text`, `goal`, optional `count`, `jutsu`, `enemies`, `music` | A tutorial objective. The goal is one of `kunai_hit`, `strike_hit`, `jutsu_hit`, `weak_hit`, `cast` (optionally a specific `jutsu`), `guard`, `dash`, `charge`, `lock_on` or `interrupt`. `enemies` adds practice clones that only weave, slowly, so you can interrupt them; they come back if they fall. |
 | `fight` | `waves`, optional `text` | Waves of clones: `[{"element": "wind", "enemies": ["genin", "chunin"]}]`. |
 | `boss` | `who`, `rank`, `health`, optional `element`, `taunt`, `at`, `phases`, `size` (1.35 = oversized), `aura` (colour) | A named boss fight with a health bar. If the character is on stage, they step into the fight from where they stand. |
 | `ally` | `who`, `rank`, optional `health`, `at` | The character fights beside you, hunting the nearest enemy, until an `exit` (or until you talk to them again). If they're beaten they retreat; a retried fight brings them back. |
@@ -198,6 +200,40 @@ Its clones vanish when it falls.
 
 **Defeat** in a fight or boss shows a panel, and **Retry fight** restarts
 that fight, not the chapter.
+
+## Music
+
+The game picks the music for each beat (`game/scripts/story/story_director.gd`):
+
+- `fight` and `survive` play a battle theme. Missions take turns: odd-numbered
+  missions get `battle`, even-numbered ones `battle2`. `boss` always plays
+  `boss`.
+- `say` and `task` play the beat's own `music`, else the mission's `music`,
+  else the island's theme: `calm` for Emberwood, and `autumn_wood`,
+  `ashen_pass`, `old_dam`, `frozen_road` or `five_winds` for the others.
+- Entrances, exits, banners and waits keep what is playing, and a `scene`
+  can change it with a `{"music": "..."}` step.
+
+Name a track in `music` (a chapter, a `say` or a `task`; a scene step also
+takes `"none"` for silence) to colour a moment: `tension` is a low, uneasy
+cue; `sorrow` a slow lament. The two Kagerou chapters and the night before
+the finale use both. In free roam the music follows the place and the hour
+instead: the island's theme, `sea` between islands and `night` after dark.
+
+| Track | Where it plays |
+|---|---|
+| `title` | The title screen |
+| `calm` | Emberwood, and the training ground |
+| `autumn_wood`, `ashen_pass`, `old_dam`, `frozen_road`, `five_winds` | Exploring that island |
+| `sea` | Running across the water between islands |
+| `night` | Free roam after dark, anywhere |
+| `battle`, `battle2` | Fights: the trial plays `battle`, quest fights take turns, story fights go by mission |
+| `boss` | Boss fights |
+| `tension`, `sorrow` | Story moments, chosen with `music` |
+
+A new track is a new function in `art/audio/make_music.py` (add it to
+`TRACKS`, run `make music`) and a line in `Music.TRACKS`
+(`game/autoload/music.gd`); the tests fail if the two disagree.
 
 ## Voices
 

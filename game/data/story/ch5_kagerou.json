@@ -7,6 +7,7 @@
 	"location": "Abandoned shrine, Ashen Pass",
 	"time": "night",
 	"island": "ashen_pass",
+	"music": "tension",
 	"summary": "The thief and all five natures.",
 	"player_at": [0, 6],
 	"beats": [
@@ -52,7 +53,7 @@
 		{"do": "enter", "who": "kagerou", "at": [0, -5]},
 		{"do": "enter", "who": "hisame", "at": [-3, 3]},
 		{"do": "enter", "who": "asahi", "at": [3, 3]},
-		{"do": "say", "lines": [
+		{"do": "say", "music": "sorrow", "lines": [
 			["kagerou", "...Five natures. And you still beat me.", "sad"],
 			["player", "You had five natures. I had the circle."],
 			["hisame", "The scroll, Kagerou."],

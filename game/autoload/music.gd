@@ -8,10 +8,26 @@ extends Node
 ##   Music.duck(true)        # quieter while someone speaks
 ## A track that comes back picks up where it left off. Exported builds ship
 ## the music in audio_1.pck; without it the game is simply silent.
+##
+## Which track suits which place is decided here too: island_theme() for
+## exploring and battle_for() for fights. The open world adds the sea and the
+## night (OpenWorld.track_for) and the story its own picks (docs/STORY.md).
 
 signal changed(track: StringName)
 
 const DIR := "res://assets/audio/music/"
+## Every track the game can ask for, one Ogg each in DIR (a test checks).
+const TRACKS: Array[StringName] = [
+	&"title", &"calm", &"battle", &"boss", &"autumn_wood", &"ashen_pass", &"old_dam", &"frozen_road",
+	&"five_winds", &"night", &"sea", &"battle2", &"tension", &"sorrow",
+]
+## What plays while you explore each island (Emberwood's is "calm").
+const ISLAND_THEMES := {
+	"emberwood": &"calm", "autumn_wood": &"autumn_wood", "ashen_pass": &"ashen_pass",
+	"old_dam": &"old_dam", "frozen_road": &"frozen_road", "five_winds": &"five_winds",
+}
+## The two fight themes: fight number 0 gets the first, 1 the second, and so on.
+const BATTLES: Array[StringName] = [&"battle", &"battle2"]
 const FADE := 1.4
 const SILENT_DB := -50.0
 ## How far music drops under a voice line.
@@ -41,6 +57,16 @@ func _ready() -> void:
 
 func has_track(track: StringName) -> bool:
 	return ResourceLoader.exists(DIR + track + ".ogg")
+
+
+## The exploration theme of an island (calm for one without a theme of its own).
+func island_theme(island: String) -> StringName:
+	return ISLAND_THEMES.get(island, &"calm")
+
+
+## The battle theme for the `count`th fight, so fights take turns.
+func battle_for(count: int) -> StringName:
+	return BATTLES[absi(count) % BATTLES.size()]
 
 
 func tracks() -> PackedStringArray:

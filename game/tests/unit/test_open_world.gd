@@ -90,6 +90,55 @@ func test_every_island_stands_in_one_sea() -> void:
 	Input.action_release(&"move_forward")
 
 
+func test_music_follows_the_island_the_sea_and_the_night() -> void:
+	# The choice itself: night beats all, then the sea, then the island's theme.
+	for id: String in Island.PRESETS:
+		assert_eq(OpenWorld.track_for(id, "day"), Music.island_theme(id), "%s has its theme by day" % id)
+		assert_eq(OpenWorld.track_for(id, "night"), &"night", "and the night piece after dark")
+	assert_eq(OpenWorld.track_for("emberwood", "dawn"), &"calm", "Emberwood keeps calm")
+	assert_eq(OpenWorld.track_for("ashen_pass", "dusk"), &"ashen_pass")
+	assert_eq(OpenWorld.track_for("", "day"), &"sea")
+	assert_eq(OpenWorld.track_for("", "night"), &"night", "night over the water too")
+	# In the world.
+	await _load()
+	assert_eq(Music.current, &"calm", "a new game starts on Emberwood in the morning")
+	for id: String in ["autumn_wood", "ashen_pass", "old_dam", "frozen_road", "five_winds", "emberwood"]:
+		await _stand_at(world.archipelago.on_island(id, OpenWorld.TRAVEL_POINT))
+		assert_eq(Music.current, Music.island_theme(id), "%s plays its own music" % id)
+	var sea := world.archipelago.to_global(Vector3(220.0, Archipelago.SEA_LEVEL + 1.0, -90.0))
+	await _stand_at(sea)
+	assert_eq(Music.current, &"sea", "out on the water")
+	world.clock = 0.8 * OpenWorld.DAY_LENGTH
+	await physics_frames(2)
+	assert_eq(world.phase(), "night")
+	assert_eq(Music.current, &"night", "night falls over the sea")
+	await _stand_at(world.archipelago.on_island("old_dam", OpenWorld.TRAVEL_POINT))
+	assert_eq(Music.current, &"night", "and over the islands")
+	world.clock = 0.3 * OpenWorld.DAY_LENGTH
+	await physics_frames(2)
+	assert_eq(Music.current, &"old_dam", "morning brings the island's theme back")
+
+
+func test_island_music_holds_a_little_way_past_the_shore() -> void:
+	await _load()
+	# Distances from the coast: the name card shows within 18 m; the music keeps
+	# going until SHORE_HOLD further out, and only returns inside the 18.
+	var coast := float(Island.PRESETS["emberwood"]["coast"])
+	var out_to := func(metres: float) -> Vector3:
+		return world.archipelago.to_global(Vector3(coast + metres, Archipelago.SEA_LEVEL + 1.0, 0.0))
+	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD * 0.5))
+	assert_eq(Music.current, &"calm", "past the name card's reach the island's music holds")
+	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD + 6.0))
+	assert_eq(Music.current, &"sea", "further out it gives way to the sea")
+	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD * 0.5))
+	assert_eq(Music.current, &"sea", "and does not flicker back at the same spot")
+	await _stand_at(out_to.call(18.0 - 4.0))
+	assert_eq(Music.current, &"calm", "it returns once you are properly inside")
+	world.busy = true
+	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD + 6.0))
+	assert_eq(Music.current, &"calm", "a fight or chapter keeps its own music")
+
+
 func test_the_story_waits_at_a_pillar_and_plays_in_place() -> void:
 	await _load()
 	var o := world.objective()
@@ -164,6 +213,7 @@ func test_a_defeat_quest_starts_at_its_spot_with_mixed_natures() -> void:
 	var q := Quests.quest("pier_bandits")
 	await _stand_at(world.archipelago.on_island("emberwood", Vector2(q["at"][0], q["at"][1])))
 	assert_true(is_instance_valid(world._fight), "reaching the spot starts the fight")
+	assert_eq(Music.current, &"battle", "the first quest fight plays the first battle theme")
 	await seconds(TrialDirector.ANNOUNCE_TIME + 0.3)
 	var natures := world._fight.alive.map(func(e: EnemyShinobi) -> int: return e.element)
 	assert_eq(natures, [Element.FIRE, Element.WATER], "each bandit keeps its own nature")
@@ -179,6 +229,8 @@ func test_a_duel_turns_the_giver_into_the_foe() -> void:
 	await _skip_dialogue()
 	await physics_frames(2)
 	assert_true(is_instance_valid(world._duelist), "Kurogane draws")
+	assert_eq(Music.current, &"battle", "a duel is a fight too")
+	assert_eq(world._fights, 1)
 	assert_eq(world._duelist.title_override, "Kurogane")
 	assert_false(world._givers.has("kurogane"), "he isn't standing there as well")
 	await seconds(EnemyShinobi.SPAWN_TIME + 0.2)
@@ -187,6 +239,7 @@ func test_a_duel_turns_the_giver_into_the_foe() -> void:
 	await _skip_dialogue()
 	assert_eq(Quests.status("ash_duelist"), Quests.DONE)
 	assert_true(Game.xp() - xp >= int(Quests.quest("ash_duelist")["xp"]))
+	assert_eq(Music.current, Music.island_theme(world.archipelago.island_near(player.global_position)), "back to exploring")
 
 
 func test_the_quest_log_lists_and_tracks() -> void:

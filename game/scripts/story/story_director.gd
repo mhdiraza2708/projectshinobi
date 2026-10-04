@@ -107,7 +107,7 @@ func _next() -> void:
 		return
 	var b: Dictionary = beats[beat_index]
 	beat_started.emit(beat_index, b)
-	_score(b["do"])
+	_score(b["do"], b)
 	match b["do"]:
 		"enter":
 			add_npc(b["who"], b["at"])
@@ -152,16 +152,20 @@ func _next() -> void:
 			_next.call_deferred()
 
 
-## Music follows the beat: battle for fights, the boss theme for bosses, calm
-## for talking and lessons. Entrances, banners and waits keep what's playing.
-func _score(kind: String) -> void:
+## Music follows the beat: a battle theme for fights (missions take turns:
+## the first gets "battle", the second "battle2"...), the boss theme for
+## bosses, and for talking and lessons the beat's own "music", else the
+## mission's, else the island's theme. Entrances, banners and waits keep
+## what's playing.
+func _score(kind: String, beat := {}) -> void:
 	match kind:
 		"fight", "survive":
-			Music.play(&"battle")
+			Music.play(Music.battle_for(int(chapter.get("number", 1)) - 1))
 		"boss":
 			Music.play(&"boss")
 		"say", "task":
-			Music.play(&"calm")
+			var named := str(beat.get("music", chapter.get("music", "")))
+			Music.play(StringName(named) if named != "" else Music.island_theme(str(chapter.get("island", ""))))
 		# Scenes set their own music (or keep what's playing).
 
 

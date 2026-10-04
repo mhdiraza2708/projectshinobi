@@ -221,7 +221,7 @@ func start_story(chapter_id: String, skip_card := false) -> void:
 		return
 	mode = Game.Mode.STORY
 	_leave_title()
-	Music.play(&"calm")
+	Music.play(Music.island_theme(chapter["island"]))
 	_quick = skip_card
 	if not chapter["dummies"]:
 		for dummy in find_children("*", "TrainingDummy", true, false):
@@ -269,10 +269,10 @@ func _open_chapter(chapter: Dictionary, skip_card: bool) -> void:
 func start_world() -> void:
 	mode = Game.Mode.WORLD
 	_leave_title()
-	Music.play(&"calm")
 	if story == null:
 		story = Story.load_all()
 	if world != null:
+		world.update_music()
 		return
 	for path in ["Ground", "Scenery"]:
 		var old := get_node_or_null(path)
@@ -293,6 +293,7 @@ func start_world() -> void:
 	for dummy in find_children("*", "TrainingDummy", true, false):
 		if dummy.get_parent() != world.archipelago:
 			dummy.reparent(world.archipelago)
+	world.update_music()
 
 
 ## Plays a chapter where its pillar stands: the world shifts to put its island
@@ -358,7 +359,7 @@ func return_to_world() -> void:
 	world.set_people_visible(true)
 	world.refresh()
 	Game.save_records()
-	Music.play(&"calm")
+	world.update_music()
 	if DisplayServer.get_name() != "headless":
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 

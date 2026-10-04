@@ -37,6 +37,12 @@ const ISLAND_KANJI := {
 	"emberwood": "燠", "ashen_pass": "灰", "autumn_wood": "楓",
 	"old_dam": "堰", "frozen_road": "凍", "five_winds": "風",
 }
+## Music for the open sea and for the night (an island's own is
+## Music.island_theme). An island's music reaches this much further out than
+## its name card, so it doesn't flicker at the shore.
+const SEA_TRACK := &"sea"
+const NIGHT_TRACK := &"night"
+const SHORE_HOLD := 14.0
 
 var player: Player
 var hud: Hud
@@ -58,6 +64,8 @@ var _fight_quest := ""
 var _duelist: EnemyShinobi
 var _interact: Dictionary = {}     # {kind, id, node}
 var _island := ""
+var _music_island := ""
+var _fights := 0                   # quest fights begun (they take turns at the battle themes)
 var _save_left := SAVE_EVERY
 var _ripple_left := 0.0
 ## Seconds into the day (saved with the slot).
@@ -80,6 +88,24 @@ func phase(at := -1.0) -> String:
 		if k >= float(p[0]):
 			out = p[1]
 	return out
+
+
+## The music for a place at a time of day: night beats everything, then the
+## open sea, then the island's own theme. `island` is "" out at sea.
+static func track_for(island: String, day_phase: String) -> StringName:
+	if day_phase == "night":
+		return NIGHT_TRACK
+	return SEA_TRACK if island == "" else Music.island_theme(island)
+
+
+## Crossfades to the music for where you stand and what time it is. It waits
+## while a fight or chapter has the stage (they choose their own music).
+func update_music() -> void:
+	if busy or not placed or player == null or get_parent().get(&"mode") != Game.Mode.WORLD:
+		return
+	var reach := 18.0 + (SHORE_HOLD if _music_island != "" else 0.0)
+	_music_island = archipelago.island_near(player.global_position, reach)
+	Music.play(track_for(_music_island, phase()))
 
 
 func _process(delta: float) -> void:
@@ -374,6 +400,7 @@ func _physics_process(delta: float) -> void:
 	if not _interact.is_empty() and player.input_enabled and Input.is_action_just_pressed(&"interact"):
 		_use_interact()
 	_check_island()
+	update_music()
 	_save_left -= delta
 	if _save_left <= 0.0:
 		_save_left = SAVE_EVERY
@@ -525,6 +552,8 @@ func _finish_quest(id: String, outro: Array) -> void:
 func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	_fight_quest = q["id"]
 	busy = true
+	var battle := Music.battle_for(_fights)
+	_fights += 1
 	if q["type"] == "duel":
 		var npc: StoryNpc = _givers.get(str(q["giver"]))
 		var foe: Dictionary = q["foe"]
@@ -546,7 +575,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 		_duelist = e
 		hud.show_boss(e, "%s  %s" % [e.kanji_override, e.title_override])
 		hud.show_banner("Duel:  %s" % e.title_override, &"cast")
-		Music.play(&"battle")
+		Music.play(battle)
 		e.defeated.connect(func(_x: EnemyShinobi) -> void:
 			hud.hide_boss()
 			_end_fight(true))
@@ -572,7 +601,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 		hud.show_banner("%s  ·  wave %d / %d" % [q["name"], index + 1, total], &"cast")
 		tracker.refresh())
 	_fight.finished.connect(func(won: bool, _s: float, _r: bool) -> void: _end_fight(won))
-	Music.play(&"battle")
+	Music.play(battle)
 	_fight.start(player)
 
 
@@ -584,7 +613,7 @@ func _end_fight(won: bool) -> void:
 	_duelist = null
 	_fight_quest = ""
 	busy = false
-	Music.play(&"calm")
+	update_music()
 	if won:
 		_finish_quest(id, Quests.quest(id).get("outro", []))
 	else:
@@ -613,7 +642,7 @@ func _on_player_defeated() -> void:
 		return
 	player.revive()
 	hud.show_banner("You come to. %s" % ("The fight waits for you." if was_fight else ""), &"fail")
-	Music.play(&"calm")
+	update_music()
 	refresh()
 
 

@@ -7,10 +7,12 @@
 	"location": "Emberwood Academy yard",
 	"time": "night",
 	"island": "emberwood",
+	"music": "sorrow",
 	"summary": "The night before the new moon, Hisame opens the scroll to its oldest technique, and everyone says what they've been carrying.",
 	"player_at": [0, 6],
 	"beats": [
 		{"do": "scene", "steps": [
+			{"music": "sorrow"},
 			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
 			{"enter": "hisame", "at": [0, -1], "puff": false},
 			{"cam": "close", "on": "hisame", "seconds": 4},
@@ -25,7 +27,7 @@
 			["hisame", "Tomorrow you'll weave it while the Nue screams at you. Tonight you'll weave it while I watch. Twice."]
 		]},
 		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Tiger, Dragon, Snake, Boar (hold {weave}; {charge_chakra} charges chakra)",
-			"goal": "cast", "jutsu": "five_nature_seal", "count": 2},
+			"goal": "cast", "jutsu": "five_nature_seal", "count": 2, "music": "tension"},
 		{"do": "say", "lines": [
 			["hisame", "...The founders would have liked you. They were stubborn too.", "happy"]
 		]},

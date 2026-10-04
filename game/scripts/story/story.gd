@@ -13,8 +13,8 @@ const PARTS_FILE := "parts.json"
 const BEATS := {
 	"enter": [["who", "at"], []],
 	"exit": [["who"], []],
-	"say": [["lines"], []],
-	"task": [["text", "goal"], ["count", "jutsu", "enemies"]],
+	"say": [["lines"], ["music"]],
+	"task": [["text", "goal"], ["count", "jutsu", "enemies", "music"]],
 	"fight": [["waves"], ["text"]],
 	"survive": [["seconds", "enemies"], ["text", "max_alive"]],
 	"ally": [["who", "rank"], ["health", "at"]],
@@ -65,7 +65,7 @@ const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_
 const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
 const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
 const CHAPTER_REQUIRED: PackedStringArray = ["id", "number", "title", "location", "time", "beats"]
-const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part", "island", "objective"]
+const CHAPTER_OPTIONAL: PackedStringArray = ["summary", "dummies", "player_at", "weather", "part", "island", "objective", "music"]
 const CHARACTER_KEYS: PackedStringArray = ["name", "title", "kanji", "element", "model", "voice", "style"]
 ## A character's recorded voice (see art/audio/make_voices.py): a Kokoro
 ## voice (or blend), a speed, and an optional effect.
@@ -336,6 +336,14 @@ func _parse_style(label: String, raw: Variant) -> Dictionary:
 	return style
 
 
+## A music track named in a chapter, a beat or a scene: one of Music.TRACKS.
+func _track(label: String, value: Variant) -> String:
+	var track := str(value)
+	if not Music.TRACKS.has(StringName(track)):
+		errors.append("%s: unknown music '%s' (one of %s)" % [label, track, Music.TRACKS])
+	return track
+
+
 func _parse_chapter(file: String, data: Dictionary) -> Dictionary:
 	var start := errors.size()
 	for key: String in data:
@@ -357,6 +365,7 @@ func _parse_chapter(file: String, data: Dictionary) -> Dictionary:
 		"island": str(data.get("island", "emberwood")),
 		"part": int(data.get("part", 1)),
 		"objective": str(data.get("objective", "")),
+		"music": _track(file, data["music"]) if data.has("music") else "",
 		"player_at": _vec2(file, data.get("player_at", [0, 4])),
 		"beats": [],
 	}
@@ -407,6 +416,8 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 				errors.append("%s: '%s' exits without having entered" % [label, b["who"]])
 			present.erase(b["who"])
 		"say":
+			if raw.has("music"):
+				b["music"] = _track(label, raw["music"])
 			b["lines"] = []
 			if not raw["lines"] is Array or raw["lines"].is_empty():
 				errors.append("%s: lines must be a non-empty list" % label)
@@ -423,6 +434,8 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 						errors.append("%s: unknown mood '%s'" % [label, mood])
 					b["lines"].append({"who": who, "text": str(line[1]), "mood": mood})
 		"task":
+			if raw.has("music"):
+				b["music"] = _track(label, raw["music"])
 			b["text"] = str(raw["text"])
 			b["goal"] = str(raw["goal"])
 			b["count"] = int(raw.get("count", 1))
@@ -699,8 +712,8 @@ func _parse_step(label: String, raw: Variant, present: Dictionary) -> Dictionary
 			s["seconds"] = float(raw.get("seconds", 1.0))
 		"music":
 			s["track"] = str(v)
-			if s["track"] != "none" and not Music.has_track(StringName(s["track"])):
-				errors.append("%s: unknown music '%s' (or \"none\")" % [label, v])
+			if s["track"] != "none":
+				_track(label, v)
 		"sfx":
 			s["sound"] = str(v)
 			if not ResourceLoader.exists("res://assets/audio/sfx/%s.wav" % s["sound"]):

@@ -8,6 +8,7 @@
 	"time": "dusk",
 	"island": "frozen_road",
 	"weather": "snow",
+	"music": "tension",
 	"summary": "Kagerou finds you alone and tells you why.",
 	"player_at": [0, 5],
 	"beats": [
@@ -41,7 +42,7 @@
 		]},
 		{"do": "exit", "who": "kagerou"},
 		{"do": "enter", "who": "hisame", "at": [-2, 3]},
-		{"do": "say", "lines": [
+		{"do": "say", "music": "sorrow", "lines": [
 			["hisame", "You found him."],
 			["player", "He told me about the accident."],
 			["hisame", "The friend was me.", "sad"],
