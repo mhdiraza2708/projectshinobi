@@ -59,6 +59,8 @@ var _flash: ColorRect
 ## "none", "rain", "storm", "snow" or "leaves".
 var weather := "none"
 var weather_particles: CPUParticles3D
+## Life in the air that goes with the island and the hour (see Ambience).
+var ambience: Ambience
 var _next_flash := 0.0
 
 var _customize_from_title := false
@@ -82,6 +84,9 @@ func _ready() -> void:
 	_base_fog = world.environment.fog_density
 	add_child(RayTracing.new(self, world))
 	_relight()
+	ambience = Ambience.new()
+	ambience.follow = player
+	add_child(ambience)
 	Settings.value_changed.connect(func(key: StringName, _v: Variant) -> void:
 		if key in [&"graphics_quality", &"ambient_occlusion", &"bloom", &"brightness"]:
 			apply_graphics())
@@ -573,6 +578,16 @@ func time_of_day() -> String:
 	return _mood
 
 
+## The island whose air the player is in: the story island, or in free roam
+## the one they stand on ("" at sea, on the training ground, at the title).
+func ambient_island() -> String:
+	if island:
+		return island.id
+	if mode == Game.Mode.WORLD and world:
+		return world.current_island()
+	return ""
+
+
 ## The lantern props: the island's, the open world's, or the training ground's.
 func lanterns() -> Array[Node3D]:
 	if island:
@@ -736,6 +751,8 @@ func _refresh_objective() -> void:
 func _process(delta: float) -> void:
 	if director and director.running:
 		_refresh_objective()
+	if ambience:
+		ambience.set_context(ambient_island(), _mood, weather)
 	if weather == "storm":
 		_next_flash -= delta
 		if _next_flash <= 0.0:
@@ -1370,6 +1387,7 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			rig.pitch = deg_to_rad(-6.0)
 			rig.snap()
 			await _frames(45)
+	ambience.settle()
 	await RenderingServer.frame_post_draw
 	var err := get_viewport().get_texture().get_image().save_png(path)
 	if err != OK:
