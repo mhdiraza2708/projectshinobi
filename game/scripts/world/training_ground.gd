@@ -539,17 +539,19 @@ func transition_time(time: String, seconds := 8.0) -> void:
 	var sun := $Sun as DirectionalLight3D
 	var old_sky := Skies.material(env)
 	var from := {"sun": sun.quaternion, "energy": sun.light_energy, "color": sun.light_color,
-		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy}
+		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy,
+		"scatter": env.fog_sun_scatter}
 	set_time_of_day(time)
 	if seconds <= 0.0:
 		return
 	var to := {"sun": sun.quaternion, "energy": sun.light_energy, "color": sun.light_color,
-		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy}
+		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy,
+		"scatter": env.fog_sun_scatter}
 	var new_sky := Skies.material(env)
 	if old_sky and new_sky and old_sky != new_sky:
-		new_sky.set_shader_parameter(&"prev_panorama", old_sky.get_shader_parameter(&"panorama"))
-		new_sky.set_shader_parameter(&"prev_scale", old_sky.get_shader_parameter(&"scale"))
-		new_sky.set_shader_parameter(&"prev_to_panorama", old_sky.get_shader_parameter(&"to_panorama"))
+		# The old sky keeps its picture and its grade while it fades out.
+		for param: StringName in [&"panorama", &"scale", &"to_panorama", &"tint", &"horizon_tint", &"elevations"]:
+			new_sky.set_shader_parameter(StringName("prev_" + param), old_sky.get_shader_parameter(param))
 	if _time_tween and _time_tween.is_valid():
 		_time_tween.kill()
 	_time_tween = create_tween()
@@ -561,6 +563,7 @@ func transition_time(time: String, seconds := 8.0) -> void:
 		env.ambient_light_energy = lerpf(from["ambient"], to["ambient"], e)
 		env.fog_light_color = (from["fog"] as Color).lerp(to["fog"], e)
 		env.fog_light_energy = lerpf(from["fog_energy"], to["fog_energy"], e)
+		env.fog_sun_scatter = lerpf(from["scatter"], to["scatter"], e)
 		if new_sky:
 			new_sky.set_shader_parameter(&"blend", e), 0.0, 1.0, seconds)
 
