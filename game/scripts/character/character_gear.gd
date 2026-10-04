@@ -35,6 +35,8 @@ var scabbard: Node3D
 var sheathed_hilt: Node3D
 var sword: Node3D
 var hilt_grip: Node3D
+## The ribbon and glint on the drawn blade (a child of `sword`).
+var blade_trail: BladeTrail
 var _drawn := false
 
 
@@ -314,6 +316,7 @@ func clear() -> void:
 	sheathed_hilt = null
 	sword = null
 	hilt_grip = null
+	blade_trail = null
 
 
 # --- The ninjato -----------------------------------------------------------------
@@ -387,6 +390,8 @@ func _build_ninjato(k: float) -> void:
 	var blade := _mesh(_blade_mesh(), BLADE_COLOR, true, true)
 	blade.name = "Blade"
 	sword.add_child(blade)
+	blade_trail = BladeTrail.new()
+	sword.add_child(blade_trail)
 	sword.transform = _grip_in_hand(scale)
 	_attach(&"RightHand", sword)
 	set_drawn(_drawn)

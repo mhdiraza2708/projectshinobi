@@ -354,6 +354,13 @@ static func sparks(parent: Node, position: Vector3, color: Color, count := 14, s
 		"colors": gradient([Color(1, 1, 0.85), color, Color(color.darkened(0.2), 0.0)], [0.0, 0.35, 1.0])})
 
 
+## A blade cutting through something: a tight, fast spray of sparks along the
+## line of the swing (`direction`) and a few strays, thrown from `position`.
+static func blade_sparks(parent: Node, position: Vector3, direction: Vector3, size := 1.0, color := Color(1.0, 0.82, 0.5)) -> void:
+	sparks(parent, position, color, int(10 * size + 4), 12.0, direction, 20.0, -9.0)
+	sparks(parent, position, color, int(4 * size + 2), 5.0, direction, 70.0, -14.0)
+
+
 ## Chunks of rock flung out and falling.
 static func debris(parent: Node, position: Vector3, color: Color, count := 10, speed := 6.0, size := 1.0) -> void:
 	var chunk := BoxMesh.new()
@@ -383,8 +390,8 @@ static func bolt(parent: Node, a: Vector3, b: Vector3, color: Color, width := 0.
 
 ## A crescent slash swept across the front of `origin` (sword strikes,
 ## wind blades): a coloured edge with a white-hot inner arc. `tilt` rolls
-## the arc round the direction of the swing.
-static func slash(parent: Node, origin: Transform3D, color: Color, size := 1.6, tilt := 0.0, duration := 0.18) -> void:
+## the arc round the direction of the swing. `strength` scales its opacity.
+static func slash(parent: Node, origin: Transform3D, color: Color, size := 1.6, tilt := 0.0, duration := 0.18, strength := 1.0) -> void:
 	var forward := -origin.basis.z.normalized()
 	var flat := Basis.looking_at(forward, Vector3.UP) * Basis(Vector3.RIGHT, -PI * 0.5)
 	var basis := Basis(forward, tilt) * flat
@@ -392,7 +399,7 @@ static func slash(parent: Node, origin: Transform3D, color: Color, size := 1.6, 
 		var quad := QuadMesh.new()
 		quad.size = Vector2(2.0, 1.0)
 		var m := surface_material(tex(&"slash"), layer == 1)
-		m.albedo_color = color if layer == 0 else Color(1, 1, 1, 0.9)
+		m.albedo_color = Color(color, color.a * strength) if layer == 0 else Color(1, 1, 1, 0.9 * strength)
 		var mi := MeshInstance3D.new()
 		mi.mesh = quad
 		mi.material_override = m

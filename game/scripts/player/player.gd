@@ -182,6 +182,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	Sfx.stop_loop(&"charge")
+	HitStop.release()
 	if _focus_active:
 		Engine.time_scale = 1.0
 
@@ -526,7 +527,8 @@ func _strike() -> void:
 	if is_instance_valid(lock_target):
 		_face_now(lock_target.global_position - global_position)
 	# With a sword at the hip the first blow draws it in a level cut.
-	var drawing := animator != null and animator.has_sword() and not animator.sword_drawn()
+	var armed := animator != null and animator.has_sword()
+	var drawing := armed and not animator.sword_drawn()
 	if animator:
 		animator.strike(_strike_combo)
 	Sfx.play(&"strike_whoosh", -2.0, 0.1)
@@ -536,7 +538,12 @@ func _strike() -> void:
 	var center := global_position + forward * strike_reach * reach + Vector3.UP * 1.1
 	# The blade's arc: each blow of the combo cuts at a different angle.
 	var tilt: float = 0.05 if drawing else [0.7, -0.7, 1.35][_strike_combo]
-	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1), Color(0.3, 0.55, 1.0), 2.2, tilt)
+	# The blade has its own trail: the arc stays for the finisher, and is
+	# only a faint echo on the other cuts.
+	var finisher := _strike_combo == 2 and not drawing
+	var echo := armed and not finisher
+	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1), Color(0.3, 0.55, 1.0),
+		1.8 if echo else 2.2, tilt, 0.18, 0.35 if echo else 1.0)
 	var damage := strike_damage * (1.0 + 0.25 * _strike_combo) * (1.0 + stats.modifier(&"attack_power")) \
 		* (1.0 + Perks.value(&"strike_damage"))
 	if _strike_combo == 2:
@@ -559,8 +566,15 @@ func _strike() -> void:
 			# On the struck body's near side, where the blow lands.
 			var at := (victim as Node3D).global_position + Vector3.UP * 1.1 - forward * 0.4 if victim is Node3D else center
 			Vfx.hit_spark(get_parent(), at, Color(1.0, 0.62, 0.15), 1.0, forward)
+			if armed:
+				# Steel sparks thrown along the line of the cut, a little forward.
+				var along := global_basis * (HumanoidPoser.cut_direction(-1 if drawing else _strike_combo) \
+					+ Vector3(0.0, 0.0, -0.35))
+				Vfx.blade_sparks(get_parent(), at, along.normalized(), 1.0 if finisher else 0.8)
 	if landed:
 		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
+		if armed:
+			HitStop.freeze(get_tree(), 0.07 if finisher else 0.05)
 		camera_rig.add_shake(0.25)
 		InputDevice.rumble(0.3, 0.2, 0.08)
 		# Drinking Steel: a landed cut feeds the chakra.

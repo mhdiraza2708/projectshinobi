@@ -261,6 +261,8 @@ func _update_sword(delta: float) -> void:
 		_swap_left -= delta
 		if _swap_left < 0.0:
 			gear.set_drawn(_swap_to)
+			if _swap_to:
+				_glint()
 	elif gear.is_drawn():
 		if pose == HumanoidPoser.Pose.WEAVE or pose == HumanoidPoser.Pose.CHARGE:
 			# Seals and charging need both hands: home at once.
@@ -271,6 +273,16 @@ func _update_sword(delta: float) -> void:
 			_swap_left = HumanoidPoser.SHEATHE_TIME * HumanoidPoser.SHEATHE_HOME
 			_swap_to = false
 	poser.sword_drawn = gear.is_drawn()
+	if is_instance_valid(gear.blade_trail):
+		gear.blade_trail.emitting = gear.is_drawn() and (poser.is_cutting() or poser.is_drawing())
+
+
+## The blade is out: a glint runs up it, and it sings.
+func _glint() -> void:
+	if is_instance_valid(gear.blade_trail):
+		gear.blade_trail.glint()
+	if gear.sword.is_inside_tree():
+		Sfx.play_at(&"kunai_throw", gear.sword.global_position, -4.0, 0.06)
 
 
 ## Leg lengths per second the character is covering.
