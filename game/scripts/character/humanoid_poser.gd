@@ -154,6 +154,11 @@ func is_drawing() -> bool:
 	return _draw_t > 0.0
 
 
+## A cut is under way.
+func is_cutting() -> bool:
+	return _cut_t > 0.0
+
+
 func is_sheathing() -> bool:
 	return _sheathe_t > 0.0
 
@@ -399,6 +404,15 @@ const SHEATHE_KEYS := [
 	[Vector3(-0.22, -0.48, -0.72), Vector3(-0.95, -0.2, -0.25), 0.3],
 	[Vector3(-0.3, -0.62, -0.55), -SCABBARD, 0.4],
 ]
+
+
+## The way the blade travels across the front in cut `index`, or in the draw
+## (-1): a unit vector in the canonical frame (facing -Z, right +X), without
+## the depth. Where sparks and the like should fly.
+static func cut_direction(index: int) -> Vector3:
+	var keys: Array = DRAW_CUT.slice(1) if index < 0 else [CUT_DOWN, CUT_UP, CUT_OVERHEAD][posmod(index, 3)]
+	var d: Vector3 = keys[-1][0] - keys[0][0]
+	return Vector3(d.x, d.y, 0.0).normalized()
 
 
 func _sword(p: Dictionary) -> void:

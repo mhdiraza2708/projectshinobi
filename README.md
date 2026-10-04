@@ -93,7 +93,10 @@ controls can be remapped.
   A few quiet seconds and it goes home to the scabbard; weaving seals puts
   it away at once (you need both hands). The Kenjutsu tree sharpens all of
   it. Jonin and anyone else wearing a sword fight the same way; take the
-  sword off in Customize and you fight with your fists.
+  sword off in Customize and you fight with your fists. The blade leaves a
+  ribbon of light in the draw and every cut, a glint runs up it as it comes
+  out, and a landed cut holds the world for a heartbeat and throws sparks
+  along its line.
 - **Motion-captured animation** on every character: walk, jog and sprint
   played at the speed the character is really moving (measured stride, so
   feet don't skate), jumps and landings, jab-cross punches (unarmed), a palms-out

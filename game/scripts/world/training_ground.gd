@@ -867,7 +867,7 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			player.toggle_lock()
 			await _frames(30)
 			player._strike()
-			await _frames(14)
+			await _frames(int(_user_args().get("gap", "14")))
 			player._strike()
 			if _user_args().has("front"):
 				# From in front, to see the blade (--front=<frame offset>).
