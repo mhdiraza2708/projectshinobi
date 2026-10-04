@@ -123,3 +123,41 @@ func test_buff_aura_lasts_its_duration() -> void:
 	assert_true(player.get_node_or_null(^"Aura") != null, "the mantle shows")
 	await seconds(j.duration + 1.0)
 	assert_true(player.get_node_or_null(^"Aura") == null, "and fades when the buff ends")
+
+
+func test_an_armed_strike_throws_steel_sparks_and_a_fainter_arc() -> void:
+	await _load()
+	player.toggle_lock()
+	await physics_frames(2)
+	player.global_position = player.lock_target.global_position + Vector3(0, 0, 1.6)
+	await physics_frames(2)
+	assert_true(player.animator.has_sword(), "a sword at the hip")
+	var before := scene.get_child_count()
+	player._strike()
+	var added := scene.get_children().slice(before)
+	var arcs := added.filter(func(n: Node) -> bool:
+		return n is MeshInstance3D and (n.material_override as BaseMaterial3D).albedo_texture.resource_path.get_file() == "slash.png")
+	assert_eq(arcs.size(), 2, "the arc is two layers")
+	assert_true((arcs[0].material_override as BaseMaterial3D).albedo_color.a < 0.5, "faint, the blade has its own trail")
+	var streaks := added.filter(func(n: Node) -> bool: return n is CPUParticles3D and (n as CPUParticles3D).particle_flag_align_y)
+	assert_true(streaks.size() >= 3, "sparks along the cut (%d emitters)" % streaks.size())
+
+
+func test_the_quest_pillar_is_a_soft_additive_beam() -> void:
+	var beacon := QuestBeacon.new()
+	root.add_child(beacon)
+	await physics_frames(2)
+	var beams := beacon.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D and n.mesh is CylinderMesh)
+	assert_eq(beams.size(), 2, "a wide soft beam and a bright core")
+	for b: MeshInstance3D in beams:
+		var m := b.material_override as ShaderMaterial
+		assert_true(m != null and m.shader.code.contains("blend_add"), "light, not a solid tube")
+		assert_true(m.shader.code.contains("near_fade"), "and it fades away up close")
+		assert_true((b.mesh as CylinderMesh).height >= 100.0, "tall enough to find from across the sea")
+		assert_eq(b.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
+	var motes := beacon.get_node_or_null(^"Motes") as CPUParticles3D
+	assert_true(motes != null and motes.emitting, "motes drifting up")
+	assert_true(motes.initial_velocity_min > 0.0 and motes.direction.y > 0.9, "upward")
+	var ground := beacon.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D and n.mesh is PlaneMesh)
+	assert_eq(ground.size(), 1, "a glow on the ground")
+	beacon.queue_free()
