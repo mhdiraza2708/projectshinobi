@@ -25,7 +25,7 @@ controls can be remapped.
 
 | | |
 |---|---|
-| ![Emberwood's academy yard: lanterns, practice dummies and the pillar of light where the next mission waits](docs/images/world_emberwood.jpg) | ![Out at sea between islands, Autumn Wood and the Frozen Road on the horizon](docs/images/world_islands.jpg) |
+| ![Emberwood's academy yard at dusk: lanterns, practice dummies and the pillar of light where the next mission waits](docs/images/world_emberwood.jpg) | ![Out at sea between islands, Autumn Wood and the Frozen Road on the horizon](docs/images/world_islands.jpg) |
 | ![Pause → Map: the islands charted, found ones named and travelled to](docs/images/world_map.jpg) | ![Pause → Quests: the story mission, a side quest under way, one on offer and two done](docs/images/world_quests.jpg) |
 | ![The Kenjutsu skill tree beside your shinobi on a lit stage, katana drawn](docs/images/skills_kenjutsu.jpg) | ![The Dojutsu skill tree: the camera pushes in on your face with your eyes open](docs/images/skills_dojutsu.jpg) |
 
