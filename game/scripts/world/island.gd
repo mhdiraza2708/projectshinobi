@@ -174,6 +174,8 @@ var preset: Dictionary = {}
 var open_world := false
 ## How far scenery stays drawn in the open world (metres).
 const SCENERY_RANGE := 520.0
+## And the surf along its coast.
+const FOAM_RANGE := 1500.0
 ## Lantern props, for the night lights.
 var lanterns: Array[Node3D] = []
 var water_level := -1.0
@@ -217,6 +219,7 @@ func build(island_id: String) -> void:
 	add_child(_body)
 	_build_terrain()
 	_build_water()
+	_build_foam()
 	if not open_world:
 		_build_wall()
 	var avoid: Array[Vector2] = []
@@ -422,6 +425,17 @@ func _build_water() -> void:
 		mi.position = Vector3(f["at"][0], float(f["bottom"]) + height * 0.5, f["at"][1])
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mi)
+
+
+## The surf: a band of white foam along the waterline all the way round,
+## following the coast as the height map draws it (see ShoreFoam).
+func _build_foam() -> void:
+	# A summit's cliffs go straight into the sea: the surf climbs them a little.
+	var lift := 1.1 if float(preset.get("plateau", 0.0)) > 0.0 else 0.0
+	var foam := ShoreFoam.make(ShoreFoam.trace_coast(height_at, water_level), water_level, Vector2.ZERO, ShoreFoam.REACH, lift)
+	if open_world:
+		foam.visibility_range_end = FOAM_RANGE
+	add_child(foam)
 
 
 ## An invisible ring that keeps fighters near the clearing.
