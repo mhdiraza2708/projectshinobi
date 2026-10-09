@@ -10,7 +10,7 @@ extends Node3D
 ## story_boss, story_menu, chapter_card, night, chapter:<id>, island:<id> (from
 ## the air), title_saves, slots_load, slots_new, confirm_overwrite (the title with
 ## fake saves), creation, creation_eyes, creation_identity, creation_jutsu,
-## menu_jutsu, menu_skills[:<tree>|:tab], world[:<island>[:x,z]], scene:<id>:<beat>:<seconds> (a cutscene partway through, best
+## menu_jutsu, menu_skills[:<tree>|:tab], sea_views (the sea's life; world_stats --sea=1 adds them), world[:<island>[:x,z]], scene:<id>:<beat>:<seconds> (a cutscene partway through, best
 ## with --fixed-fps 60), teleport, teleport_night, and the close-up character
 ## views portrait, portrait_weave, portrait_guard, portrait_charge.
 
@@ -626,6 +626,8 @@ func lanterns() -> Array[Node3D]:
 		var all: Array[Node3D] = []
 		for isl: Island in world.archipelago.islands.values():
 			all.append_array(isl.lanterns)
+		if world.archipelago.islets:
+			all.append_array(world.archipelago.islets.lanterns)
 		return all
 	var out: Array[Node3D] = []
 	var scenery := get_node_or_null("Scenery")
@@ -1202,6 +1204,13 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)]
 				print(info)
 				get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % v[0]))
+			# --sea=1 goes on to the views of the sea's own life.
+			if _user_args().has("sea"):
+				await _sea_views(path)
+		"sea_views":
+			instant_world = true
+			await start_world()
+			await _sea_views(path)
 		"world_map", "world_quests":
 			# The pause menu's Map or Quests tab partway through the story.
 			instant_world = true
@@ -1513,6 +1522,58 @@ func _close_camera(ahead: float) -> void:
 	cam.position = at + forward.cross(Vector3.UP) * 8.0 + Vector3.UP * 1.8
 	cam.look_at(at)
 	cam.current = true
+
+
+## The life on the sea from the water, saved as <path>_<view>.png with each
+## view's draw calls printed as SEA_VIEWS: the shrine islet, clusters of
+## stacks, the watch-tower at dusk, the surf on Emberwood's beach and below
+## Five Winds' cliffs, gulls, and the night. --views=a,b picks some.
+func _sea_views(path: String) -> void:
+	var arch := world.archipelago
+	var tower := Vector2.ZERO
+	var shrine := Vector2.ZERO
+	for o: Dictionary in Islets.outcrops(arch.islets.plan_data):
+		if o["feature"] == "watchtower":
+			tower = o["at"]
+		elif o["feature"] == "shrine":
+			shrine = o["at"]
+	var stacks: Vector2 = arch.islets.plan_data[4]["at"]
+	var ashen: Vector2 = arch.islets.plan_data[3]["at"]
+	var lane := func(at: Vector2, dist: float, up: float) -> Vector3:
+		var p: Vector2 = at + Islets.toward_lane(at) * dist
+		return Vector3(p.x, Archipelago.SEA_LEVEL + up, p.y)
+	var spot := func(at: Vector2, up: float) -> Vector3:
+		return Vector3(at.x, Archipelago.SEA_LEVEL + up, at.y)
+	# [name, hour, camera, target], in the archipelago's space.
+	var views := [
+		["shrine", "day", lane.call(shrine, 62.0, 4.5), spot.call(shrine, 8.0)],
+		["stacks", "day", lane.call(stacks, 85.0, 3.0), spot.call(stacks, 9.0)],
+		["ashen", "day", lane.call(ashen, 70.0, 3.5), spot.call(ashen, 7.0)],
+		["tower", "dusk", lane.call(tower, 120.0, 4.0), spot.call(tower, 11.0)],
+		["beach", "day", Vector3(0, 24.0, 96), Vector3(0, -1, 58)],
+		["cliffs", "day", Vector3(60, Archipelago.SEA_LEVEL + 3.5, -880), Vector3(60, 14, -924)],
+		["gulls", "day", Vector3(12, Archipelago.SEA_LEVEL + 2.0, 105), Vector3(0, 24, 58)],
+		["night", "night", lane.call(tower, 95.0, 4.0), spot.call(tower, 10.0)],
+	]
+	var only := str(_user_args().get("views", "")).split(",", false)
+	var cam := Camera3D.new()
+	cam.far = 3000.0
+	add_child(cam)
+	cam.current = true
+	hud.visible = false
+	for v: Array in views:
+		if not only.is_empty() and not only.has(v[0]):
+			continue
+		set_time_of_day(v[1])
+		arch.islets.set_lamp(v[1] != "day")
+		arch.birds.set_night(v[1] == "night", true)
+		cam.global_position = arch.to_global(v[2])
+		cam.look_at(arch.to_global(v[3]))
+		await _frames(14)
+		print("SEA_VIEWS %s objects=%d draw_calls=%d" % [v[0],
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+			RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
+		get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % v[0]))
 
 
 func _frames(n: int) -> void:

@@ -42,10 +42,15 @@ const LEAP_TOP := 40.0
 var islands: Dictionary = {}
 var player: Node3D
 var ready_islands := 0
+## The rocky islets and stacks between the islands, and the gulls over it all.
+var islets: Islets
+var birds: Seabirds
 
 var _sea: MeshInstance3D
 var _far_sea: MeshInstance3D
 var _water: StaticBody3D
+var _hour := ""
+var _hour_check := 0.0
 
 
 func _init() -> void:
@@ -100,6 +105,7 @@ func build(near := Vector3.ZERO) -> void:
 		ready_islands += 1
 		await get_tree().process_frame
 	_build_leap_stones()
+	_build_sea_life()
 	built.emit()
 
 
@@ -111,6 +117,7 @@ func build_now() -> void:
 		_build_island(id)
 	ready_islands = LAYOUT.size()
 	_build_leap_stones()
+	_build_sea_life()
 	built.emit()
 
 
@@ -173,13 +180,63 @@ func on_water(body: CharacterBody3D) -> bool:
 	return false
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_hour_check -= delta
+	if _hour_check <= 0.0:
+		_hour_check = 1.0
+		_follow_the_hour()
 	if player == null or _sea == null:
 		return
 	# The detailed sea stays under you; the far sea reaches the horizon.
 	var p := to_local(player.global_position)
 	_sea.position = Vector3(snappedf(p.x, SEA_STEP), SEA_LEVEL, snappedf(p.z, SEA_STEP))
 	_far_sea.position = Vector3(snappedf(p.x, SEA_STEP), SEA_LEVEL - 0.08, snappedf(p.z, SEA_STEP))
+
+
+# --- Life on the sea ----------------------------------------------------------------
+
+## Islets and stacks between the islands (Islets) and gulls circling over
+## every island and cluster of them (Seabirds).
+func _build_sea_life() -> void:
+	if islets != null:
+		return
+	islets = Islets.new()
+	add_child(islets)
+	islets.build()
+	birds = Seabirds.new()
+	add_child(birds)
+	for id: String in LAYOUT:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash(id + "gulls")
+		var at := offset_of(id)
+		# Wheeling over the shore, above the hills.
+		var middle := Vector3(at.x, at.y + rng.randf_range(15.0, 24.0), at.z)
+		birds.add_flock(middle, float(Island.PRESETS[id]["coast"]) * rng.randf_range(0.55, 0.9), rng.randi_range(6, 8), rng.randi())
+	for c: Dictionary in islets.plan_data:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = hash("gulls%d" % int(c["index"]))
+		var at: Vector2 = c["at"]
+		var top := float((c["outcrops"][0] as Dictionary)["height"])
+		birds.add_flock(Vector3(at.x, SEA_LEVEL + top + rng.randf_range(9.0, 15.0), at.y), rng.randf_range(22.0, 38.0),
+			rng.randi_range(3, 4), rng.randi())
+	birds.commit()
+	_hour = ""
+	_follow_the_hour()
+
+
+## The gulls roost at night and the watch-tower's lamp burns from dusk,
+## following the game scene's hour (a test scene has none).
+func _follow_the_hour() -> void:
+	var scene := get_parent()
+	if islets == null or birds == null or scene == null or not scene.has_method(&"time_of_day"):
+		return
+	var hour: String = scene.time_of_day()
+	if hour == _hour:
+		return
+	var first := _hour == ""
+	_hour = hour
+	birds.set_night(hour == "night", first)
+	islets.set_lamp(hour == "dusk" or hour == "night")
 
 
 # --- Five Winds' leap stones ------------------------------------------------------
