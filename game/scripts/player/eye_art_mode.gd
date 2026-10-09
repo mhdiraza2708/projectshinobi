@@ -357,8 +357,14 @@ func _iris_point(i: int) -> Vector3:
 	return skel.global_transform * (skel.get_bone_global_pose(head) * _irises_in_head[i])
 
 
+## Where the eyes sit up a model's head (and hair) when it has no irises
+## to measure.
+const EYE_LINE := 0.42
+
+
 ## Where the irises are relative to the Head bone at rest: [between them,
-## the one on the character's left]; ZERO where unknown.
+## the one on the character's left]; ZERO where unknown. A model without
+## irises gets its eye line estimated from the head's measured bounds.
 func _measure_irises(skel: Skeleton3D) -> Array[Vector3]:
 	var none: Array[Vector3] = [Vector3.ZERO, Vector3.ZERO]
 	var head := skel.find_bone(&"Head")
@@ -394,7 +400,18 @@ func _measure_irises(skel: Skeleton3D) -> Array[Vector3]:
 				* (skel.global_transform.affine_inverse() * mi.global_transform)
 			var out: Array[Vector3] = [to_head * mid, to_head * one]
 			return out
-	return none
+	# No irises to find (a Tripo model): the eye line from the head's
+	# measured bounds, a little under halfway up the head and hair, at the
+	# front of the face (canonical space faces -Z).
+	var gear := player.model.gear
+	var box := gear.region(&"Head")
+	if box.size == Vector3.ZERO:
+		return none
+	var face := gear.face_or(box)
+	var eye := Vector3(face.get_center().x, box.position.y + box.size.y * EYE_LINE, box.position.z + box.size.z * 0.1)
+	var at := skel.get_bone_global_rest(head).affine_inverse() * (player.model.poser.canonical_frame() * eye)
+	var guessed: Array[Vector3] = [at, at]
+	return guessed
 
 
 func _on_model_loaded() -> void:
