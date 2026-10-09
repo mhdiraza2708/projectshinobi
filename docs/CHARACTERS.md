@@ -150,6 +150,27 @@ Colour slots are found from material names. VRoid tags them (`_HAIR`,
 If a model's naming isn't recognised, it gets a single whole-model
 **Body** colour instead.
 
+### Masked rivals (Tripo models)
+
+The rank and file of each nature can wear a masked rival made in Tripo
+instead of a VRoid face. Genin and chunin of that nature wear it. Jonin and
+story characters keep their VRoid faces, because only VRoid models have
+the talking mouths, expressions, eye patterns and hair physics.
+
+1. Generate the character in a T-pose, then rig it in Tripo with the
+   **Mixamo** skeleton preset.
+2. Export it as **GLB** with the skeleton. You don't need Tripo's animations.
+3. Save it as `game/assets/characters/rivals/<nature>_<name>.glb`, where
+   `<nature>` is `fire`, `wind`, `lightning`, `earth` or `water`, for example
+   `fire_raider.glb`.
+4. Run `make rivals`. It maps the skeleton to Godot's humanoid bones the
+   same way as Mixamo clips.
+
+The game sizes rivals to shinobi height and gives them cel shading and an
+ink outline. Rivals keep their own colours and gear, so no headband, mask
+or scarf is added. To see them beside the VRoid cast:
+`--demo=anim:idle:0.3 --rigs=rivals`.
+
 ## Animations
 
 Every character is animated by motion-captured clips from Quaternius'

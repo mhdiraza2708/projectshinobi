@@ -162,8 +162,16 @@ func _ready() -> void:
 	model.name = "Model"
 	model.use_profile = clone_of != null
 	if clone_of == null:
-		model.model_path = model_path if model_path != "" else pick_model()
-		model.style = (style_override if not style_override.is_empty() else style_for(element, rank)).duplicate()
+		var rivals: Array[String] = []
+		if model_path == "" and style_override.is_empty() and rank != &"jonin":
+			rivals = rival_models(element)
+		if not rivals.is_empty():
+			# The rank and file of a nature wear its masked rival.
+			model.model_path = rivals.pick_random()
+			model.style = RIVAL_STYLE.duplicate()
+		else:
+			model.model_path = model_path if model_path != "" else pick_model()
+			model.style = (style_override if not style_override.is_empty() else style_for(element, rank)).duplicate()
 		model.style["height"] = float(model.style.get("height", 1.0)) * size
 	model.voice_id = voice_id
 	add_child(model)
@@ -234,6 +242,28 @@ static func jutsu_for(nature: int, max_cost: float) -> Array[JutsuDefinition]:
 			out.append(j)
 	if out.is_empty() and JutsuRegistry.get_jutsu(&"chakra_bolt"):
 		out.append(JutsuRegistry.get_jutsu(&"chakra_bolt"))
+	return out
+
+
+## Masked rivals made for the game: "<nature>_<name>.glb" in RIVAL_DIR
+## (Tripo models, see docs/CHARACTERS.md). Genin and chunin of that nature
+## wear one; jonin and story characters keep a face.
+const RIVAL_DIR := "res://assets/characters/rivals"
+## Rivals come dressed: their own colours, mask and gear.
+const RIVAL_STYLE := {"tints": {}, "headband": "none", "mask": false, "scarf": false,
+	"back": "none", "pouch": false}
+
+
+static func rival_models(nature: int) -> Array[String]:
+	var out: Array[String] = []
+	if nature <= Element.NONE or nature >= Element.NAMES.size() or not DirAccess.dir_exists_absolute(RIVAL_DIR):
+		return out
+	var prefix := Element.NAMES[nature] + "_"
+	var files := Array(ResourceLoader.list_directory(RIVAL_DIR))
+	files.sort()
+	for file: String in files:
+		if file.begins_with(prefix) and file.get_extension().to_lower() in ["glb", "vrm", "fbx"]:
+			out.append(RIVAL_DIR.path_join(file))
 	return out
 
 

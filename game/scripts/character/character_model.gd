@@ -17,6 +17,8 @@ const ROSTER_DIR := "res://assets/characters/roster"
 const DEFAULT_MODEL := "res://assets/characters/roster/hairsample_male.vrm"
 ## The low-poly Godette (CC-BY), kept as a light fallback.
 const PLACEHOLDER_MODEL := "res://assets/characters/default/godette.vrm"
+## Ink outline width (metres) on models that aren't VRoid's.
+const OUTLINE := 0.004
 
 ## Force a specific model (used by tests); empty = follow the profile.
 @export_file("*.vrm", "*.glb", "*.gltf", "*.fbx", "*.tscn") var model_path := ""
@@ -244,6 +246,11 @@ func load_model(path: String) -> void:
 		_face_forward()
 	_normalize_height()
 	_base_scale = instance.scale
+	# A model from outside VRoid (a Tripo rival) brings plain PBR materials:
+	# it gets the game's cel shading and a fine ink outline to stand beside
+	# the VRoid cast.
+	if path.get_extension().to_lower() != "vrm":
+		Toon.apply(instance, OUTLINE / maxf(_base_scale.x, 0.01))
 
 	animator = CharacterAnimator.new()
 	animator.name = "CharacterAnimator"

@@ -55,6 +55,25 @@ func test_enemy_is_a_styled_lockable_fighter() -> void:
 		assert_eq(j.element, Element.WIND)
 
 
+func test_fire_genin_wear_the_masked_raider_and_jonin_keep_a_face() -> void:
+	await _load()
+	var raider := EnemyShinobi.RIVAL_DIR.path_join("fire_raider.glb")
+	assert_true(EnemyShinobi.rival_models(Element.FIRE).has(raider))
+	var genin := _spawn(&"genin", Element.FIRE, player.global_position + Vector3(-2, 0, -8))
+	var jonin := _spawn(&"jonin", Element.FIRE, player.global_position + Vector3(2, 0, -8))
+	await _await_fight(genin)
+	var m := genin.model
+	assert_eq(m.loaded_path, raider)
+	assert_true(m.poser.active and m.animator.clips != null, "the game's poses and clips drive it")
+	assert_near(m.measure_height(), m.target_height, 0.05, "at shinobi height")
+	assert_true(m.gear.attachments().is_empty(), "it comes with its own mask and gear")
+	var body := m.instance.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	var mat := body.get_active_material(0) as BaseMaterial3D
+	assert_eq(mat.diffuse_mode, BaseMaterial3D.DIFFUSE_TOON, "cel-shaded like the VRoid cast")
+	assert_true(mat.next_pass != null, "with an ink outline")
+	assert_false(jonin.model.loaded_path.begins_with(EnemyShinobi.RIVAL_DIR), "a jonin keeps a face")
+
+
 func test_weave_shows_seals_then_casts() -> void:
 	await _load()
 	var e := _spawn(&"genin", Element.FIRE, player.global_position + Vector3(0, 0, -8))

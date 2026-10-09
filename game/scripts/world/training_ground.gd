@@ -1013,6 +1013,13 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			player.visible = false
 			var rigs := CharacterModel.roster().filter(func(e: Dictionary) -> bool:
 				return e["path"] != CharacterModel.PLACEHOLDER_MODEL)
+			if _user_args().get("rigs", "") == "rivals":
+				# --rigs=rivals: the masked rivals first, VRoid faces beside them.
+				var rivals: Array = []
+				for nature in Element.NAMES.size():
+					for rival in EnemyShinobi.rival_models(nature):
+						rivals.append({"path": rival})
+				rigs = rivals + rigs
 			var models: Array[CharacterModel] = []
 			for i in mini(rigs.size(), 5):
 				var m := CharacterModel.new()
