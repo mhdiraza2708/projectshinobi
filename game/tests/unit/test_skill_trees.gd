@@ -317,10 +317,14 @@ func test_second_look_and_the_unclosing_eye() -> void:
 	_with_eye_art()
 	await _load()
 	var mode := player.eye_mode
-	EyeArtMode._seen["%d:%s" % [mode._area_id(), "active"]] = true
 	Game.set_skill_ranks({"second_look": 1, "unclosing_eye": 1})
 	player.stats.chakra = player.stats.max_chakra
 	assert_true(mode.try_open())
+	# Past the opening close-up (it plays every time).
+	if EyeSequence.active:
+		EyeSequence.active.skip()
+		await physics_frames(3)
+	player.stats.chakra = player.stats.max_chakra
 	var left := mode.time_left
 	for i in 20:
 		player.notify_hit(null, &"jutsu")

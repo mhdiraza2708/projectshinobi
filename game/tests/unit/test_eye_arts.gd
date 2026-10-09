@@ -91,7 +91,7 @@ func test_opening_costs_chakra_adds_perks_and_plays_the_close_up() -> void:
 	assert_eq(player.eye_mode.phase, EyeArtMode.Phase.ACTIVE)
 
 
-func test_later_openings_skip_the_close_up_then_it_closes_and_rests() -> void:
+func test_every_opening_plays_the_close_up_then_it_closes_and_rests() -> void:
 	await _load("mirror_eye")
 	var run := player.run_speed
 	assert_true(player.eye_mode.try_open())
@@ -109,7 +109,8 @@ func test_later_openings_skip_the_close_up_then_it_closes_and_rests() -> void:
 	assert_eq(player.eye_mode.phase, EyeArtMode.Phase.READY)
 	player.stats.chakra = player.stats.max_chakra
 	assert_true(player.eye_mode.try_open())
-	assert_true(EyeSequence.active == null, "the second opening in an area just flashes")
+	assert_true(EyeSequence.active != null, "the second opening plays the close-up too")
+	EyeSequence.active.skip()
 
 
 func test_it_needs_chakra_and_an_eye_art() -> void:

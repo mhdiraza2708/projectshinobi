@@ -7,8 +7,8 @@ extends Node
 ## chapter named by "awaken_after" the eye opens in its awakened form
 ## instead: its own pattern, name and stronger perks.
 ##
-## The first opening in each area plays a close-up cinematic (EyeSequence);
-## later ones just flash, so a fight isn't interrupted every time.
+## Every opening plays the close-up cinematic (EyeSequence); holding Pause
+## skips it, as with every cinematic.
 
 signal changed
 
@@ -127,11 +127,8 @@ func try_open() -> bool:
 	_set_pattern(0.0, 1.0 if awakened else 0.0, 0.0)
 	_add_glow(Color(str(a["color"])))
 	var key := "%d:%s" % [_area_id(), "awakened" if awakened else "active"]
-	if not _seen.has(key):
-		_seen[key] = true
-		EyeSequence.begin(player, self)
-	else:
-		_quick_open()
+	_seen[key] = true
+	EyeSequence.begin(player, self)
 	changed.emit()
 	return true
 
