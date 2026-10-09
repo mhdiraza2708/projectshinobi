@@ -346,3 +346,13 @@ func test_a_save_made_at_dusk_continues_at_dusk() -> void:
 	await _load()
 	assert_eq(world.phase(), "dusk")
 	assert_eq(scene.time_of_day(), "dusk", "the world is lit for the saved time")
+
+
+func test_continuing_at_night_finds_the_lanterns_lit() -> void:
+	# The time is set before the islands are built: the lanterns must still
+	# be lit once they exist.
+	Game.set_record("world", "clock", 0.85 * OpenWorld.DAY_LENGTH)
+	await _load()
+	assert_eq(scene.time_of_day(), "night")
+	assert_true(scene.lantern_lights.size() > 6, "lanterns lit across the archipelago")
+	assert_near(_lantern_glow(), scene.LANTERN_GLOW, 0.01, "their paper glowing")

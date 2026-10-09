@@ -292,6 +292,7 @@ func start_world() -> void:
 	set_time_of_day(world.phase())
 	set_weather("none")
 	await world.start(instant_world)
+	update_lanterns()
 	if not is_inside_tree():
 		return
 	# The Academy's practice dummies belong to Emberwood now.
@@ -499,13 +500,20 @@ func set_time_of_day(time: String) -> void:
 		return
 	_mood = time
 	_relight()
+	update_lanterns()
+
+
+## Lights the lanterns for the time of day (or puts them out). Also called
+## once the open world's islands exist: they're built after the time is set.
+func update_lanterns() -> void:
+	var lit: bool = TIMES[_mood]["lanterns"]
 	# Day puts the lanterns out again (the open world's clock turns).
-	if not TIMES[time]["lanterns"]:
+	if not lit:
 		for light in lantern_lights:
 			if is_instance_valid(light):
 				light.queue_free()
 		lantern_lights.clear()
-	if TIMES[time]["lanterns"] and lantern_lights.is_empty():
+	if lit and lantern_lights.is_empty():
 		for node in lanterns():
 			var light := OmniLight3D.new()
 			light.light_color = Color(1.0, 0.68, 0.36)
@@ -515,7 +523,7 @@ func set_time_of_day(time: String) -> void:
 			light.position = Vector3(0, 1.3, 0)
 			node.add_child(light)
 			lantern_lights.append(light)
-	_glow_lanterns(TIMES[time]["lanterns"])
+	_glow_lanterns(lit)
 
 
 const LANTERN_GLOW := 5.0
