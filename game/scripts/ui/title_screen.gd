@@ -75,7 +75,7 @@ func show_main() -> void:
 	var slot := SaveSlots.active
 	if slot > 0:
 		_first = _entry("続", "Continue", _slot_summary(slot), continue_chosen.emit.bind(slot))
-	_entry("新", "New Game", "" if slot > 0 else "Choose your clan, dojutsu, look and jutsu, then begin the story.",
+	_entry("新", "New Game", "" if slot > 0 else "Choose your clan, dojutsu, name and jutsu, then begin the story.",
 		show_slots.bind(true))
 	if _first == null or slot == 0:
 		_first = _menu.get_child(0) as Button
@@ -87,7 +87,7 @@ func show_main() -> void:
 	_entry("試", "Trial of the Five Natures", "Best time %s" % Game.format_time(best) if best > 0.0 else "", trial_chosen.emit)
 	_entry("修", "Training Ground", "", training_chosen.emit)
 	if slot > 0:
-		_entry("装", "Customize", "", customize_chosen.emit)
+		_entry("身", "Customize", "", customize_chosen.emit)
 	if OS.get_name() != "Web":
 		_entry("退", "Quit", "", func() -> void: get_tree().quit())
 	_focus_later(_first)
