@@ -48,6 +48,18 @@ func _skip_dialogue() -> void:
 		await physics_frames(1)
 
 
+## How brightly the lanterns' paper glows.
+func _lantern_glow() -> float:
+	for node in scene.lanterns():
+		for mesh in node.find_children("*", "MeshInstance3D", true, false):
+			var mi := mesh as MeshInstance3D
+			for i in mi.mesh.get_surface_count():
+				var m := mi.get_active_material(i) as BaseMaterial3D
+				if m and m.emission_enabled:
+					return m.emission_energy_multiplier
+	return -1.0
+
+
 func _stand_at(at: Vector3) -> void:
 	player.global_position = at + Vector3.UP * 0.3
 	player.velocity = Vector3.ZERO
@@ -284,8 +296,10 @@ func test_the_day_turns_and_the_sky_crossfades() -> void:
 	# Night lights the lanterns on every island; dawn puts them out.
 	scene.transition_time("night", 0.0)
 	assert_true(scene.lantern_lights.size() > 6, "lanterns across the archipelago")
+	assert_near(_lantern_glow(), scene.LANTERN_GLOW, 0.01, "and their paper glows")
 	scene.transition_time("dawn", 0.0)
 	assert_eq(scene.lantern_lights.size(), 0)
+	assert_near(_lantern_glow(), scene.LANTERN_GLOW_DAY, 0.01, "dim again by day")
 	world.save_position()
 	assert_near(float(Game.record("world", "clock", 0.0)), world.clock, 0.01, "the time is saved")
 

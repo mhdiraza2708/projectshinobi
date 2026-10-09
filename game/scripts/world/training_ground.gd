@@ -508,12 +508,33 @@ func set_time_of_day(time: String) -> void:
 	if TIMES[time]["lanterns"] and lantern_lights.is_empty():
 		for node in lanterns():
 			var light := OmniLight3D.new()
-			light.light_color = Color(1.0, 0.7, 0.38)
-			light.light_energy = 2.2
-			light.omni_range = 7.0
+			light.light_color = Color(1.0, 0.68, 0.36)
+			# Bright enough to pool warm light against the moonlit ground.
+			light.light_energy = 3.2
+			light.omni_range = 9.0
 			light.position = Vector3(0, 1.3, 0)
 			node.add_child(light)
 			lantern_lights.append(light)
+	_glow_lanterns(TIMES[time]["lanterns"])
+
+
+const LANTERN_GLOW := 5.0
+const LANTERN_GLOW_DAY := 0.4
+
+## Paper lanterns glow when they're lit (and only faintly by day). The
+## paper material is shared by every lantern, so this lights them all.
+func _glow_lanterns(lit: bool) -> void:
+	for node in lanterns():
+		var found := false
+		for mesh in node.find_children("*", "MeshInstance3D", true, false):
+			var mi := mesh as MeshInstance3D
+			for i in mi.mesh.get_surface_count() if mi.mesh else 0:
+				var m := mi.get_active_material(i) as BaseMaterial3D
+				if m and m.emission_enabled:
+					m.emission_energy_multiplier = LANTERN_GLOW if lit else LANTERN_GLOW_DAY
+					found = true
+		if found:
+			return
 
 
 ## Lights the world for the time of day and the weather together, from
