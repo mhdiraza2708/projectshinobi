@@ -2,6 +2,8 @@ class_name ArcCluster
 extends Node3D
 ## Little arcs of lightning crackling round a point (lightning jutsu) or up
 ## a body (storm auras). Each arc jumps to new ends several times a second.
+## With a `tail`, one more bolt streams back from the point along the node's
+## +Z, so a fast jutsu leaves a line of lightning behind it.
 
 var radius := 0.4
 ## Vertical span the arcs wander over (0 for a point).
@@ -9,8 +11,11 @@ var height := 0.0
 var count := 3
 var width := 0.045
 var color := Color(1.0, 0.9, 0.35)
+## Length of the bolt streaming behind (0 for none).
+var tail := 0.0
 
 var _bolts: Array[VfxBolt] = []
+var _tail_bolt: VfxBolt
 var _ends: Array = []   # [local a, local b] per bolt
 var _retarget := 0.0
 
@@ -31,6 +36,14 @@ func _ready() -> void:
 		add_child(b)
 		_bolts.append(b)
 		_ends.append([Vector3.ZERO, Vector3.UP])
+	if tail > 0.0:
+		_tail_bolt = VfxBolt.new()
+		_tail_bolt.lifetime = 0.0
+		_tail_bolt.width = width * 1.6
+		_tail_bolt.color = color
+		_tail_bolt.chaos = 0.12
+		_tail_bolt.branches = 3
+		add_child(_tail_bolt)
 	_pick()
 
 
@@ -43,6 +56,9 @@ func _process(delta: float) -> void:
 	for i in _bolts.size():
 		_bolts[i].a = global_transform * _ends[i][0]
 		_bolts[i].b = global_transform * _ends[i][1]
+	if _tail_bolt:
+		_tail_bolt.a = global_transform * Vector3(0, 0, tail)
+		_tail_bolt.b = global_position
 
 
 func _pick() -> void:

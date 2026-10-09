@@ -282,6 +282,39 @@ static func trail(color: Color, width: float, lifetime := 0.25, additive := fals
 	return t
 
 
+## Ribbons winding round the node's +Y (turn it to aim): wind curling off a
+## blade, a whirlwind, the twist of a water lance. See VfxSpiral.
+static func spiral(color: Color, length: float, radius_base: float, radius_tip: float, turns := 1.5,
+		spin := 8.0, ribbons := 3, width := 0.14, additive := false, lifetime := 0.0) -> VfxSpiral:
+	var s := VfxSpiral.new()
+	s.color = color
+	s.length = length
+	s.radius_base = radius_base
+	s.radius_tip = radius_tip
+	s.turns = turns
+	s.spin = spin
+	s.ribbons = ribbons
+	s.width = width
+	s.additive = additive
+	s.lifetime = lifetime
+	return s
+
+
+## A soft camera-facing glare that stays where it's put (the flare at the
+## head of a projectile): a `glow` or `star` quad `size` across.
+static func glare(texture: StringName, color: Color, size: float, additive := true) -> MeshInstance3D:
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE * size
+	var m := surface_material(tex(texture), additive)
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	m.albedo_color = color
+	var mi := MeshInstance3D.new()
+	mi.mesh = quad
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
+
 # --- One-shot effects -------------------------------------------------------------
 
 ## A bright flash that pops and fades (hits, casts, impacts).
@@ -324,6 +357,27 @@ static func shockwave(parent: Node, position: Vector3, color: Color, radius := 3
 	var tw := mi.create_tween().set_parallel(true)
 	tw.tween_property(mi, "scale", Vector3.ONE * radius, duration).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	tw.tween_property(m, "albedo_color:a", 0.0, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+
+## A patch pressed into the ground that fades away: a scorch from a bolt, a
+## wet stain from a splash.
+static func ground_mark(parent: Node, position: Vector3, color: Color, radius := 1.2, duration := 1.4) -> void:
+	var quad := QuadMesh.new()
+	quad.size = Vector2.ONE * 2.0
+	quad.orientation = PlaneMesh.FACE_Y
+	var m := surface_material(tex(&"glow"), false)
+	m.albedo_color = color
+	var mi := MeshInstance3D.new()
+	mi.mesh = quad
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	if _spawn(parent, mi, position + Vector3.UP * 0.04, duration + 0.05) == null:
+		return
+	mi.scale = Vector3.ONE * radius * 0.5
+	var tw := mi.create_tween().set_parallel(true)
+	tw.tween_property(mi, "scale", Vector3.ONE * radius, 0.15).set_ease(Tween.EASE_OUT)
+	# It holds for a while, then fades.
+	tw.tween_property(m, "albedo_color:a", 0.0, duration * 0.6).set_delay(duration * 0.4)
 
 
 ## The ninja's puff of smoke: arrivals, exits, clones popping.
@@ -375,7 +429,7 @@ static func debris(parent: Node, position: Vector3, color: Color, count := 10, s
 
 
 ## A bolt of lightning from a to b.
-static func bolt(parent: Node, a: Vector3, b: Vector3, color: Color, width := 0.08, duration := 0.2) -> VfxBolt:
+static func bolt(parent: Node, a: Vector3, b: Vector3, color: Color, width := 0.08, duration := 0.2, branches := 2) -> VfxBolt:
 	if parent == null or not parent.is_inside_tree():
 		return null
 	var v := VfxBolt.new()
@@ -384,6 +438,7 @@ static func bolt(parent: Node, a: Vector3, b: Vector3, color: Color, width := 0.
 	v.color = color
 	v.width = width
 	v.lifetime = duration
+	v.branches = branches
 	parent.add_child(v)
 	return v
 
@@ -415,25 +470,87 @@ static func slash(parent: Node, origin: Transform3D, color: Color, size := 1.6, 
 		tw.tween_property(m, "albedo_color:a", 0.0, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 
 
-## A flying crescent cut (Kenjutsu's Crescent Moon): the slash arc lying flat
-## across the flight, with a white core. Points along -Z like other
-## projectile visuals.
-static func crescent(color: Color, size := 2.0) -> Node3D:
+## A flat crescent: a bow of `radius` curving round toward -Z, `thickness`
+## at its fullest and tapering to a point at each tip, lying in the XZ
+## plane. The outer (leading) edge takes `outer` and the inner one `inner`,
+## so it can be a hard bright edge fading toward its trailing side.
+static func crescent_mesh(radius: float, thickness: float, outer: Color, inner: Color, half_arc := 1.15) -> ArrayMesh:
+	var steps := 20
+	var center := Vector3(0, 0, radius * 0.55)
+	var out_pts := PackedVector3Array()
+	var in_pts := PackedVector3Array()
+	for i in steps + 1:
+		var a := lerpf(-half_arc, half_arc, float(i) / steps)
+		var dir := Vector3(sin(a), 0.0, -cos(a))
+		var t := thickness * pow(maxf(cos(a * PI * 0.5 / half_arc), 0.0), 0.8)
+		out_pts.append(center + dir * radius)
+		in_pts.append(center + dir * (radius - t))
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in steps:
+		for v: Array in [[out_pts[i], outer], [in_pts[i], inner], [out_pts[i + 1], outer],
+				[in_pts[i], inner], [in_pts[i + 1], inner], [out_pts[i + 1], outer]]:
+			st.set_color(v[1])
+			st.add_vertex(v[0])
+	return st.commit()
+
+
+## Solid crescents of wind, one for each of `arcs` ([scale, roll]: the roll in
+## degrees round the line of flight). Crossing arcs mean one or the other
+## shows from any side. Each is three layers: a darker edge that shows
+## against bright sky, the body in `color` and a white-hot core.
+static func _crescent_blades(color: Color, size: float, arcs: Array) -> Node3D:
 	var root := Node3D.new()
+	var dark := color.darkened(0.5)
+	# [radius, thickness, leading edge, trailing edge, additive]
+	var layers: Array = [[1.06, 0.4, Color(dark, 0.95), Color(dark, 0.5), false],
+		[1.0, 0.3, Color(color, 1.0), Color(color, 0.55), false],
+		[0.99, 0.16, Color(1, 1, 1, 0.95), Color(1, 1, 1, 0.0), true]]
+	for arc: Array in arcs:
+		var pivot := Node3D.new()
+		pivot.rotation.z = deg_to_rad(arc[1])
+		root.add_child(pivot)
+		for layer: Array in layers:
+			var mi := MeshInstance3D.new()
+			mi.mesh = crescent_mesh(size * arc[0] * layer[0], size * arc[0] * layer[1], layer[2], layer[3])
+			mi.material_override = surface_material(null, layer[4])
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			pivot.add_child(mi)
+	return root
+
+
+## Where wind blades land: crossed crescent cuts hanging in the air for a
+## moment, swelling as they fade.
+static func _wind_cut(parent: Node, position: Vector3, color: Color, size: float, duration := 0.3) -> void:
+	var cut := _crescent_blades(color, size, [[1.0, 55.0], [0.8, -35.0]])
+	if _spawn(parent, cut, position, duration + 0.05) == null:
+		return
+	cut.rotation.y = randf() * TAU
+	cut.scale = Vector3.ONE * 0.5
+	var tw := cut.create_tween().set_parallel(true)
+	tw.tween_property(cut, "scale", Vector3.ONE * 1.15, duration).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	for mi: MeshInstance3D in cut.find_children("*", "MeshInstance3D", true, false):
+		var m := mi.material_override as StandardMaterial3D
+		tw.tween_property(m, "albedo_color:a", 0.0, duration * 0.7).set_delay(duration * 0.3)
+
+
+## A flying crescent cut (Kenjutsu's Crescent Moon): two solid crescents
+## crossing round the line of flight, air corkscrewing off them, with
+## streaks and ribbons behind. Points along -Z like other projectile visuals.
+static func crescent(color: Color, size := 2.0) -> Node3D:
+	var root := _crescent_blades(color, size, [[1.0, 50.0], [0.7, -40.0]])
 	root.name = "Crescent"
-	for layer in 2:
-		var quad := QuadMesh.new()
-		quad.size = Vector2(2.0, 1.0) * size * (1.0 if layer == 0 else 0.8)
-		var m := surface_material(tex(&"slash"), layer == 1)
-		m.albedo_color = color if layer == 0 else Color(1, 1, 1, 0.95)
-		var mi := MeshInstance3D.new()
-		mi.mesh = quad
-		mi.material_override = m
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		# Flat, its arc bowing forward along the flight.
-		mi.basis = Basis(Vector3.RIGHT, -PI * 0.5)
-		root.add_child(mi)
-	root.add_child(trail(Color(color, 0.5), size * 0.35, 0.18, true))
+	# Air winding back from the tips: +Y turned round to +Z, wide where it
+	# leaves the blade and drawing in behind.
+	var curl := spiral(Color(color.lightened(0.1), 0.85), size * 2.4, size * 0.9, size * 0.12, 1.4, -14.0, 3, size * 0.16)
+	curl.rotation.x = PI * 0.5
+	curl.position.z = size * 0.1
+	root.add_child(curl)
+	root.add_child(particles({"mesh": streak_mesh(0.8, 0.05), "align": true, "amount": 18, "lifetime": 0.3,
+		"size": [0.7, 1.3], "radius": size * 0.7, "speed": [0.1, 0.4],
+		"colors": gradient([Color(0.95, 1.0, 0.95, 0.9), Color(color, 0.0)])}))
+	root.add_child(trail(Color(color, 0.5), size * 0.5, 0.22))
+	root.add_child(trail(Color(1, 1, 1, 0.5), size * 0.2, 0.15, true))
 	return root
 
 
@@ -471,15 +588,46 @@ static func projectile_visual(element: int, radius: float) -> Node3D:
 			root.add_child(trail(Color(1.0, 0.45, 0.1, 0.8), radius * 2.0, 0.22))
 			root.add_child(light(Color(1.0, 0.55, 0.2), radius * 10.0 + 3.0, 2.5))
 		Element.WATER:
-			var lance := sphere(radius, energy_material(Color(0.15, 0.45, 1.0), 2.6, 0.7, 1.4))
-			lance.scale = Vector3(0.85, 0.85, 2.4)
+			# A spear of water: a pointed body (tip forward) with a rounded
+			# swell behind it, a bright core, and streams winding back.
+			var tip := CylinderMesh.new()
+			tip.top_radius = 0.0
+			tip.bottom_radius = radius * 0.75
+			tip.height = radius * 8.0
+			tip.radial_segments = 16
+			var lance := MeshInstance3D.new()
+			lance.mesh = tip
+			lance.material_override = energy_material(Color(0.12, 0.42, 1.0), 2.6, 0.7, 1.3)
+			lance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			# +Y (the point) turned to -Z, the way it flies.
+			lance.basis = Basis(Vector3.RIGHT, -PI * 0.5)
+			lance.position.z = -radius * 0.2
 			root.add_child(lance)
-			var core := sphere(radius * 0.6, energy_material(Color(0.75, 0.92, 1.0), 1.2, 1.0, 1.2, true))
-			core.scale = Vector3(1, 1, 2.2)
+			var swell := sphere(radius * 0.75, energy_material(Color(0.12, 0.42, 1.0), 2.4, 0.7, 1.3))
+			swell.scale = Vector3(1, 1, 2.0)
+			swell.position.z = radius * 3.9
+			root.add_child(swell)
+			var core := sphere(radius * 0.4, energy_material(Color(0.8, 0.95, 1.0), 1.4, 1.0, 1.2, true))
+			core.scale = Vector3(1, 1, 5.0)
+			core.position.z = radius * 0.5
 			root.add_child(core)
-			root.add_child(particles({"texture": &"glow", "amount": 36, "lifetime": 0.5,
-				"size": [0.12, 0.28], "radius": radius * 0.9, "speed": [0.6, 2.2], "gravity": Vector3(0, -8, 0),
-				"colors": gradient([Color(0.55, 0.8, 1.0, 0.95), Color(0.15, 0.45, 1.0, 0.0)])}))
+			root.add_child(glare(&"glow", Color(0.55, 0.85, 1.0, 0.8), radius * 6.0))
+			# Streams of water twisting back off the body.
+			var streams := spiral(Color(0.5, 0.82, 1.0, 0.9), radius * 9.0, radius * 1.1, radius * 2.4, 1.6, 15.0, 2, radius * 0.6)
+			streams.rotation.x = PI * 0.5
+			streams.position.z = radius * 3.0
+			root.add_child(streams)
+			var foam := spiral(Color(0.95, 0.98, 1.0, 0.85), radius * 6.0, radius * 1.0, radius * 1.9, 1.2, -19.0, 2, radius * 0.35)
+			foam.rotation.x = PI * 0.5
+			foam.position.z = radius * 3.0
+			root.add_child(foam)
+			# Drops shaken off and streaks of spray.
+			root.add_child(particles({"texture": &"glow", "amount": 24, "lifetime": 0.5,
+				"size": [0.1, 0.22], "radius": radius * 0.9, "speed": [0.6, 2.2], "gravity": Vector3(0, -9, 0),
+				"colors": gradient([Color(0.95, 0.98, 1.0, 0.95), Color(0.3, 0.62, 1.0, 0.8), Color(0.15, 0.45, 1.0, 0.0)], [0, 0.4, 1.0])}))
+			root.add_child(particles({"mesh": streak_mesh(0.5, 0.06), "align": true, "amount": 12, "lifetime": 0.3,
+				"size": [0.7, 1.2], "radius": radius * 1.1, "speed": [0.2, 0.8],
+				"colors": gradient([Color(0.95, 0.98, 1.0, 0.9), Color(0.4, 0.7, 1.0, 0.0)])}))
 			root.add_child(particles({"texture": &"smoke", "atlas": true, "amount": 10, "lifetime": 0.4,
 				"size": [radius * 1.2, radius * 2.0], "radius": radius * 0.5, "speed": [0.2, 0.6],
 				"colors": gradient([Color(0.8, 0.92, 1.0, 0.5), Color(0.8, 0.92, 1.0, 0.0)])}))
@@ -487,31 +635,13 @@ static func projectile_visual(element: int, radius: float) -> Node3D:
 			root.add_child(trail(Color(0.85, 0.95, 1.0, 0.9), radius * 0.8, 0.18, true))
 			root.add_child(light(Color(0.4, 0.7, 1.0), radius * 8.0 + 2.0, 1.5))
 		Element.WIND:
-			var blade := MeshInstance3D.new()
-			var quad := QuadMesh.new()
-			quad.size = Vector2(radius * 7.0, radius * 3.5)
-			quad.orientation = PlaneMesh.FACE_Y
-			blade.mesh = quad
-			var m := surface_material(tex(&"slash"), false)
-			m.albedo_color = Color(0.3, 0.85, 0.5)
-			blade.material_override = m
-			blade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			var blade2 := blade.duplicate() as MeshInstance3D
-			blade2.scale = Vector3(0.75, 1, 0.75)
-			blade2.position.z = radius * 0.7
-			var glow_m := surface_material(tex(&"slash"), true)
-			glow_m.albedo_color = Color(0.8, 1.0, 0.85, 0.8)
-			var blade3 := blade.duplicate() as MeshInstance3D
-			blade3.material_override = glow_m
-			blade3.scale = Vector3(0.9, 1, 0.9)
-			# The blades whirl round the line of flight so they show from any side.
+			# Solid crescents crossing and whirling round the line of flight,
+			# so they show from any side.
 			var spinner := Spinner.new()
 			spinner.axis = Vector3.BACK
 			spinner.speed = 14.0
 			root.add_child(spinner)
-			spinner.add_child(blade)
-			spinner.add_child(blade2)
-			spinner.add_child(blade3)
+			spinner.add_child(_crescent_blades(Color(0.35, 0.9, 0.58), radius * 3.8, [[1.0, 50.0], [0.75, -40.0]]))
 			# A ring of wind facing back along the flight, for the view from behind.
 			var vortex := MeshInstance3D.new()
 			var ring_quad := QuadMesh.new()
@@ -523,6 +653,14 @@ static func projectile_visual(element: int, radius: float) -> Node3D:
 			vortex.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			vortex.position.z = radius * 0.8
 			root.add_child(vortex)
+			# Air corkscrewing back from the blades, and a darker twist so it
+			# shows against bright sky.
+			var curl := spiral(Color(0.4, 0.9, 0.62, 0.8), radius * 8.0, radius * 2.2, radius * 0.4, 1.5, -15.0, 3, radius * 0.35)
+			curl.rotation.x = PI * 0.5
+			root.add_child(curl)
+			var curl_edge := spiral(Color(0.12, 0.55, 0.38, 0.55), radius * 6.0, radius * 2.0, radius * 0.5, 1.2, 11.0, 2, radius * 0.3)
+			curl_edge.rotation.x = PI * 0.5
+			root.add_child(curl_edge)
 			root.add_child(particles({"mesh": streak_mesh(0.7, 0.05), "align": true, "amount": 24,
 				"lifetime": 0.3, "size": [0.7, 1.3], "radius": radius * 1.8, "speed": [0.1, 0.3],
 				"colors": gradient([Color(0.5, 0.95, 0.65, 0.9), Color(0.3, 0.8, 0.5, 0.0)])}))
@@ -534,12 +672,19 @@ static func projectile_visual(element: int, radius: float) -> Node3D:
 			var hot := sphere(radius * 0.8, energy_material(Color(1.0, 0.97, 0.8), 2.0, 1.0, 1.2, true))
 			hot.scale = Vector3(0.7, 0.7, 3.4)
 			root.add_child(hot)
-			var arcs := ArcCluster.new(radius * 4.0)
-			arcs.count = 4
-			arcs.width = 0.07
+			# A flare at the tip, arcs jumping round it and a bolt streaming
+			# back down the line it flew.
+			root.add_child(glare(&"star", Color(1.0, 0.95, 0.65), radius * 12.0))
+			root.add_child(glare(&"glow", Color(1.0, 0.8, 0.25, 0.7), radius * 9.0))
+			var arcs := ArcCluster.new(radius * 4.5)
+			arcs.count = 5
+			arcs.width = 0.08
+			arcs.tail = radius * 16.0
 			root.add_child(arcs)
-			root.add_child(trail(Color(1.0, 0.85, 0.2, 0.9), radius * 2.4, 0.14))
+			root.add_child(trail(Color(1.0, 0.85, 0.2, 0.9), radius * 2.6, 0.14))
 			root.add_child(trail(Color(1.0, 1.0, 0.9, 0.9), radius * 0.8, 0.1, true))
+			# A faint violet afterglow hanging in the air.
+			root.add_child(trail(Color(0.55, 0.5, 1.0, 0.4), radius * 5.0, 0.24))
 			root.add_child(particles({"mesh": streak_mesh(0.18, 0.035), "align": true, "amount": 16,
 				"lifetime": 0.22, "size": [0.7, 1.1], "radius": radius, "speed": [2.0, 5.0],
 				"colors": gradient([Color.WHITE, Color(1, 0.9, 0.3, 0.0)])}))
@@ -583,28 +728,67 @@ static func impact(parent: Node, position: Vector3, element: int, size := 1.0) -
 			sparks(parent, position, Color(1, 0.6, 0.2), int(10 * size + 6), 8.0)
 			shockwave(parent, Vector3(position.x, _ground_y(parent, position), position.z), Color(1.0, 0.45, 0.1), 2.2 * size)
 		Element.WATER:
-			flash(parent, position, Color(0.7, 0.9, 1.0), 1.6 * size, 0.15, &"glow")
-			burst_particles(parent, position, {"texture": &"glow", "amount": int(30 * size + 10), "lifetime": 0.7,
-				"size": [0.08, 0.2], "speed": [3.0, 7.0], "direction": Vector3.UP, "spread": 70.0,
-				"gravity": Vector3(0, -14, 0), "colors": gradient([Color(0.9, 0.97, 1.0), Color(0.4, 0.7, 1.0, 0.0)])})
+			var ground := Vector3(position.x, _ground_y(parent, position), position.z)
+			flash(parent, position, Color(0.75, 0.92, 1.0), 2.4 * size, 0.15, &"glow")
+			# Drops flung and falling, long streaks of spray, and a crown of
+			# streaks thrown up and out of the spot like a splash in a pool.
+			var droplets := gradient([Color(0.95, 0.98, 1.0), Color(0.3, 0.62, 1.0, 0.95), Color(0.2, 0.5, 1.0, 0.0)], [0, 0.45, 1.0])
+			burst_particles(parent, position, {"texture": &"glow", "amount": int(34 * size + 12), "lifetime": 0.7,
+				"size": [0.18, 0.36], "speed": [3.5, 8.0], "direction": Vector3.UP, "spread": 80.0,
+				"gravity": Vector3(0, -14, 0), "colors": droplets})
+			burst_particles(parent, position, {"mesh": streak_mesh(0.4, 0.06), "align": true, "amount": int(12 * size + 6),
+				"lifetime": 0.45, "size": [0.8, 1.3], "speed": [5.0, 10.0], "direction": Vector3.UP, "spread": 75.0,
+				"gravity": Vector3(0, -12, 0), "damping": 1.0,
+				"colors": gradient([Color(0.95, 0.98, 1.0, 0.95), Color(0.4, 0.7, 1.0, 0.0)])})
+			burst_particles(parent, position - Vector3.UP * 0.3 * size, {"mesh": streak_mesh(1.0, 0.2), "align": true,
+				"amount": 18, "lifetime": 0.4, "size": [1.0, 1.7], "ring": [0.35 * size], "speed": [2.0, 3.0],
+				"direction": Vector3.UP, "spread": 12.0, "radial": [10.0, 16.0], "gravity": Vector3(0, -9, 0),
+				"colors": gradient([Color(1, 1, 1, 0.95), Color(0.45, 0.75, 1.0, 0.8), Color(0.3, 0.6, 1.0, 0.0)], [0, 0.5, 1.0])})
 			burst_particles(parent, position, {"texture": &"smoke", "atlas": true, "additive": false, "amount": 8,
 				"lifetime": 0.7, "size": [0.6 * size, 1.1 * size], "speed": [1.0, 2.5], "damping": 4.0,
 				"colors": gradient([Color(0.85, 0.93, 1.0, 0.6), Color(0.85, 0.93, 1.0, 0.0)])})
-			shockwave(parent, Vector3(position.x, _ground_y(parent, position), position.z), Color(0.5, 0.8, 1.0), 2.5 * size)
+			shockwave(parent, ground, Color(0.5, 0.8, 1.0), 2.5 * size)
+			shockwave(parent, ground, Color(0.9, 0.97, 1.0, 0.8), 1.5 * size, 0.3)
+			ground_mark(parent, ground, Color(0.25, 0.4, 0.6, 0.35), 1.2 * size, 1.6)
 		Element.WIND:
-			flash(parent, position, Color(0.8, 1.0, 0.9), 1.8 * size, 0.15)
-			for i in 3:
-				slash(parent, Transform3D(Basis(Vector3.UP, randf() * TAU), position - Vector3.UP * 0.2), Color(0.8, 1.0, 0.88), 1.8 * size, randf_range(-1.2, 1.2), 0.2)
-			shockwave(parent, position, Color(0.75, 1.0, 0.85), 2.4 * size, 0.35, Vector3.UP)
+			var ground := Vector3(position.x, _ground_y(parent, position), position.z)
+			flash(parent, position, Color(0.85, 1.0, 0.92), 1.8 * size, 0.14)
+			# Crossed cuts of wind hanging where the blow landed.
+			_wind_cut(parent, position, Color(0.35, 0.9, 0.58), 1.3 * size)
+			# A ring of pressure at the height of the blow, a wider one along
+			# the ground, and a little whirl winding up out of it.
+			shockwave(parent, position, Color(0.7, 1.0, 0.85), 2.8 * size, 0.4, Vector3.UP)
+			shockwave(parent, ground, Color(0.45, 0.9, 0.65), 2.2 * size, 0.5)
+			var whirl := spiral(Color(0.5, 0.95, 0.7, 0.85), 1.9 * size, 0.25 * size, 0.7 * size, 2.0, 22.0, 3, 0.16 * size, false, 0.5)
+			if _spawn(parent, whirl, ground + Vector3.UP * 0.1, 0.6) != null:
+				var rise := whirl.create_tween().set_parallel(true)
+				rise.tween_property(whirl, "scale", Vector3(1.5, 1.2, 1.5), 0.5).from(Vector3(0.6, 0.6, 0.6))
+				rise.tween_property(whirl, "global_position:y", ground.y + 0.8, 0.5)
+			dust(parent, ground, 0.7 * size, Color(0.85, 0.85, 0.75))
+			# Grass and leaves torn up and thrown, and streaks of air.
+			debris(parent, position, Color(0.42, 0.68, 0.3), 7, 5.0, 0.6)
 			burst_particles(parent, position, {"mesh": streak_mesh(0.5, 0.03), "align": true, "amount": 16,
 				"lifetime": 0.3, "size": [0.6, 1.2], "speed": [6.0, 10.0], "damping": 8.0,
 				"colors": gradient([Color(0.9, 1.0, 0.95), Color(0.6, 0.9, 0.7, 0.0)])})
 		Element.LIGHTNING:
-			flash(parent, position, Color(1.0, 0.97, 0.75), 2.4 * size, 0.14)
-			for i in 5:
-				var d := Vector3(randf_range(-1, 1), randf_range(-0.3, 1), randf_range(-1, 1)).normalized()
-				bolt(parent, position, position + d * randf_range(1.0, 2.2) * size, Color(1.0, 0.95, 0.5), 0.06, 0.18)
+			var ground := Vector3(position.x, _ground_y(parent, position), position.z)
+			flash(parent, position, Color(1.0, 0.97, 0.75), 2.8 * size, 0.15)
+			# The glare that lingers after the strike.
+			flash(parent, position, Color(1.0, 0.82, 0.3, 0.8), 3.4 * size, 0.55, &"glow")
+			# A bolt down onto the spot, forks racing out to the ground round
+			# it and some thrown up and out.
+			bolt(parent, position + Vector3(randf_range(-1, 1), 6.0 * size, randf_range(-1, 1)), position,
+				Color(1.0, 0.95, 0.5), 0.14 * size, 0.32)
+			for i in 6:
+				var heading := TAU * (i + randf()) / 6.0
+				var out := Vector3(cos(heading), 0.0, sin(heading)) * randf_range(1.4, 2.6) * size
+				bolt(parent, position, ground + Vector3.UP * 0.1 + out, Color(1.0, 0.95, 0.5), 0.07, 0.28, 0)
+			for i in 3:
+				var d := Vector3(randf_range(-1, 1), randf_range(0.2, 1), randf_range(-1, 1)).normalized()
+				bolt(parent, position, position + d * randf_range(1.0, 1.8) * size, Color(1.0, 0.95, 0.5), 0.05, 0.2, 0)
 			sparks(parent, position, Color(1.0, 0.9, 0.4), 18, 10.0)
+			shockwave(parent, ground, Color(1.0, 0.9, 0.4), 2.4 * size, 0.3)
+			ground_mark(parent, ground, Color(0.1, 0.08, 0.06, 0.5), 1.1 * size, 1.4)
 		Element.EARTH:
 			flash(parent, position, Color(0.95, 0.85, 0.65), 1.4 * size, 0.12, &"glow")
 			debris(parent, position, color.darkened(0.2), int(10 * size + 4), 6.0, size)
@@ -664,34 +848,57 @@ static func area_blast(parent: Node, center: Vector3, element: int, radius: floa
 			debris(parent, ground + Vector3.UP * 0.3, color.darkened(0.25), 24, 9.0, 1.4)
 			dust(parent, ground, radius * 0.6)
 		Element.WATER:
-			var column := sphere(radius * 0.35, energy_material(Color(0.4, 0.75, 1.0), 1.4, 0.4, 1.6))
-			if _spawn(parent, column, ground + Vector3.UP * 1.5, 0.8) != null:
-				column.scale = Vector3(1.0, 0.2, 1.0)
-				var tw := column.create_tween()
-				tw.tween_property(column, "scale", Vector3(0.9, 5.0, 0.9), 0.25).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-				tw.tween_property(column, "scale", Vector3(0.1, 6.0, 0.1), 0.45).set_ease(Tween.EASE_IN)
-			burst_particles(parent, ground + Vector3.UP * 0.5, {"texture": &"glow", "amount": 70, "lifetime": 1.1,
-				"size": [0.1, 0.25], "speed": [5.0, 11.0], "direction": Vector3.UP, "spread": 25.0,
-				"gravity": Vector3(0, -14, 0), "radius": radius * 0.3,
-				"colors": gradient([Color(0.9, 0.97, 1.0), Color(0.4, 0.7, 1.0, 0.0)])})
+			_water_column(parent, ground, radius, 5.5)
+			var droplets := gradient([Color(0.95, 0.98, 1.0), Color(0.35, 0.68, 1.0, 0.9), Color(0.2, 0.5, 1.0, 0.0)], [0, 0.45, 1.0])
+			# A fountain: drops going up and falling back, long arcing streaks
+			# of spray, and the crown of the column breaking at its top.
+			burst_particles(parent, ground + Vector3.UP * 0.5, {"texture": &"glow", "amount": 56, "lifetime": 1.1,
+				"size": [0.12, 0.28], "speed": [5.0, 11.0], "direction": Vector3.UP, "spread": 25.0,
+				"gravity": Vector3(0, -14, 0), "radius": radius * 0.3, "colors": droplets})
+			# White water boiling up the column.
+			burst_particles(parent, ground + Vector3.UP * 0.3, {"texture": &"smoke", "atlas": true, "additive": false,
+				"amount": 30, "lifetime": 0.55, "explosiveness": 0.4, "size": [0.7, 1.2], "speed": [9.0, 13.0],
+				"direction": Vector3.UP, "spread": 3.0, "radius": radius * 0.2, "spin": [-60, 60],
+				"colors": gradient([Color(1, 1, 1, 0.0), Color(0.95, 0.98, 1.0, 0.75), Color(0.8, 0.9, 1.0, 0.0)], [0, 0.25, 1.0])})
+			burst_particles(parent, ground + Vector3.UP * 0.5, {"mesh": streak_mesh(0.5, 0.07), "align": true,
+				"amount": 26, "lifetime": 1.0, "size": [0.8, 1.4], "speed": [7.0, 13.0], "direction": Vector3.UP,
+				"spread": 22.0, "gravity": Vector3(0, -14, 0), "radius": radius * 0.25,
+				"colors": gradient([Color(0.95, 0.98, 1.0, 0.95), Color(0.4, 0.7, 1.0, 0.0)])})
+			if is_instance_valid(parent) and parent.is_inside_tree():
+				parent.get_tree().create_timer(0.17, false).timeout.connect(func() -> void:
+					if is_instance_valid(parent) and parent.is_inside_tree():
+						burst_particles(parent, ground + Vector3.UP * 5.0, {"texture": &"glow", "amount": 28,
+							"lifetime": 0.9, "size": [0.12, 0.26], "speed": [2.0, 5.0], "direction": Vector3.UP,
+							"spread": 70.0, "radial": [1.0, 3.0], "gravity": Vector3(0, -12, 0),
+							"radius": radius * 0.3, "colors": droplets}))
 			burst_particles(parent, ground, {"texture": &"smoke", "atlas": true, "additive": false, "amount": 14,
 				"lifetime": 1.0, "size": [1.0, 1.8], "speed": [2.0, 4.0], "damping": 3.0, "ring": [radius * 0.4],
 				"colors": gradient([Color(0.85, 0.93, 1.0, 0.6), Color(0.85, 0.93, 1.0, 0.0)])})
+			ground_mark(parent, ground, Color(0.25, 0.4, 0.6, 0.35), radius * 0.9, 1.8)
 		Element.WIND:
 			_tornado(parent, ground, radius)
-			for i in 4:
-				slash(parent, Transform3D(Basis(Vector3.UP, TAU * i / 4.0), ground + Vector3.UP * (0.4 + i * 0.35)),
-					Color(0.45, 0.9, 0.6), radius * 1.3, 0.9, 0.35)
+			# Rings of air racing out, each a little higher and slower.
+			for i in 3:
+				shockwave(parent, ground + Vector3.UP * (0.3 + i * 0.7), Color(0.5, 0.92, 0.68),
+					radius * (1.3 - i * 0.2), 0.4 + i * 0.1)
 			burst_particles(parent, ground + Vector3.UP * 0.8, {"mesh": streak_mesh(0.6, 0.04), "align": true,
-				"amount": 40, "lifetime": 0.5, "size": [0.6, 1.2], "ring": [radius * 0.3], "speed": [4.0, 8.0],
-				"direction": Vector3.UP, "spread": 90.0, "tangential": [20.0, 30.0], "damping": 2.0,
+				"amount": 32, "lifetime": 0.5, "size": [0.6, 1.2], "ring": [radius * 0.3], "speed": [4.0, 8.0],
+				"direction": Vector3.UP, "spread": 90.0, "damping": 2.0,
 				"colors": gradient([Color(0.9, 1.0, 0.95), Color(0.6, 0.9, 0.7, 0.0)])})
+			debris(parent, ground + Vector3.UP * 0.3, Color(0.42, 0.68, 0.3), 10, 6.0, 0.6)
 			dust(parent, ground, radius * 0.5, Color(0.85, 0.85, 0.75))
 		Element.LIGHTNING:
 			for i in 6:
 				var ang := TAU * i / 6.0
 				var at := ground + Vector3(cos(ang), 0, sin(ang)) * radius * randf_range(0.3, 0.9)
-				bolt(parent, at + Vector3.UP * 9.0, at, Color(1.0, 0.95, 0.5), 0.12, 0.3)
+				bolt(parent, at + Vector3.UP * 9.0, at, Color(1.0, 0.95, 0.5), 0.14, 0.34, 1)
+				# Each strike spits a fork along the ground, and leaves its scorch.
+				var heading := randf() * TAU
+				bolt(parent, at + Vector3.UP * 0.2, at + Vector3.UP * 0.1 + Vector3(cos(heading), 0, sin(heading)) * randf_range(1.0, 2.0),
+					Color(1.0, 0.95, 0.5), 0.07, 0.26, 0)
+				ground_mark(parent, at, Color(0.1, 0.08, 0.06, 0.5), 0.9, 1.4)
+			bolt(parent, ground + Vector3.UP * 9.0, ground + Vector3.UP * 0.2, Color(1.0, 0.95, 0.5), 0.2, 0.36)
+			flash(parent, ground + Vector3.UP * 0.5, Color(1.0, 0.82, 0.3, 0.8), minf(radius * 1.2, 4.0), 0.5, &"glow")
 			sparks(parent, ground + Vector3.UP * 0.3, Color(1.0, 0.9, 0.4), 30, 10.0, Vector3.UP, 80.0)
 		_:
 			# Every nature at once: five coloured pillars round the seal.
@@ -702,6 +909,42 @@ static func area_blast(parent: Node, center: Vector3, element: int, radius: floa
 				_pillar(parent, at, Element.color(e), 7.0, 1.1)
 				shockwave(parent, at, Element.color(e), 1.6, 0.5)
 			sparks(parent, ground + Vector3.UP * 0.5, Color.WHITE, 30, 10.0, Vector3.UP, 80.0)
+
+
+## A column of water thrown up out of the ground and falling away: a body
+## tapering up, a bright core, shooting up fast, then thinning and fading.
+static func _water_column(parent: Node, at: Vector3, radius: float, height: float) -> void:
+	var root := Node3D.new()
+	var materials: Array[ShaderMaterial] = []
+	for layer in 2:
+		var body := CylinderMesh.new()
+		body.bottom_radius = radius * (0.32 if layer == 0 else 0.13)
+		body.top_radius = radius * (0.22 if layer == 0 else 0.09)
+		body.height = height * (1.0 if layer == 0 else 0.9)
+		body.cap_top = false
+		body.cap_bottom = false
+		body.radial_segments = 20
+		var m := energy_material(Color(0.3, 0.62, 1.0), 1.1, 0.35, 1.4) if layer == 0 \
+			else energy_material(Color(0.88, 0.97, 1.0), 1.3, 0.9, 1.2, true)
+		materials.append(m)
+		var mi := MeshInstance3D.new()
+		mi.mesh = body
+		mi.material_override = m
+		mi.position.y = body.height * 0.5
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		root.add_child(mi)
+	# Water streaming up the column in twisting ribbons.
+	root.add_child(spiral(Color(0.9, 0.97, 1.0, 0.9), height, radius * 0.3, radius * 0.24, 3.0, 22.0, 3, radius * 0.16, false, 0.9))
+	root.add_child(spiral(Color(0.3, 0.6, 1.0, 0.8), height * 0.95, radius * 0.34, radius * 0.28, 2.4, -17.0, 3, radius * 0.18, false, 0.9))
+	if _spawn(parent, root, at, 1.0) == null:
+		return
+	root.scale = Vector3(1.0, 0.05, 1.0)
+	var tw := root.create_tween()
+	tw.tween_property(root, "scale", Vector3.ONE, 0.2).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(0.25)
+	tw.tween_property(root, "scale", Vector3(0.15, 0.7, 0.15), 0.5).set_ease(Tween.EASE_IN)
+	for m in materials:
+		tw.parallel().tween_method(func(v: float) -> void: m.set_shader_parameter(&"fade", v), 1.0, 0.0, 0.5).set_ease(Tween.EASE_IN)
 
 
 ## A column of coloured energy shooting up and thinning away.
@@ -736,28 +979,48 @@ static func _chip_mesh(color: Color) -> BoxMesh:
 	return b
 
 
-## A whirlwind: a funnel of wind spinning up out of the ground and away.
+## A whirlwind: bands of wind winding up out of the ground, wide at the top,
+## with dust and torn-up leaves wheeling round inside, thrown up and away.
 static func _tornado(parent: Node, at: Vector3, radius: float) -> void:
 	var root := Node3D.new()
-	if _spawn(parent, root, at, 0.9) == null:
+	if _spawn(parent, root, at, 1.0) == null:
 		return
+	var height := 3.8
+	# Deep green bands (they show against pale sky), lighter ones turning the
+	# other way and a white thread of air that glows.
+	root.add_child(spiral(Color(0.2, 0.7, 0.48, 0.9), height, radius * 0.15, radius * 0.8, 2.0, 9.0, 4, radius * 0.22, false, 1.0))
+	root.add_child(spiral(Color(0.55, 1.0, 0.75, 0.85), height * 0.95, radius * 0.1, radius * 0.62, 1.6, -12.0, 3, radius * 0.17, false, 1.0))
+	root.add_child(spiral(Color(1, 1, 1, 0.7), height * 0.85, radius * 0.08, radius * 0.5, 1.3, 15.0, 2, radius * 0.1, true, 1.0))
+	# A faint body so there is something between the bands.
+	var funnel := CylinderMesh.new()
+	funnel.top_radius = radius * 0.7
+	funnel.bottom_radius = radius * 0.18
+	funnel.height = height
+	funnel.cap_top = false
+	funnel.cap_bottom = false
+	funnel.radial_segments = 24
+	var body := MeshInstance3D.new()
+	body.mesh = funnel
+	body.material_override = energy_material(Color(0.5, 0.92, 0.65), 0.55, 0.0, 1.2)
+	body.position.y = height * 0.5
+	body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var spin := Spinner.new()
-	spin.speed = 11.0
+	spin.speed = 7.0
+	spin.add_child(body)
 	root.add_child(spin)
-	for layer in 2:
-		var funnel := CylinderMesh.new()
-		funnel.top_radius = radius * (0.75 - layer * 0.15)
-		funnel.bottom_radius = radius * (0.2 - layer * 0.05)
-		funnel.height = 3.6 - layer * 0.6
-		funnel.cap_top = false
-		funnel.cap_bottom = false
-		funnel.radial_segments = 24
-		var mi := MeshInstance3D.new()
-		mi.mesh = funnel
-		mi.material_override = energy_material(Color(0.45, 0.9, 0.6) if layer == 0 else Color(0.85, 1.0, 0.9), 1.6, 0.0, 1.2)
-		mi.position.y = funnel.height * 0.5
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		spin.add_child(mi)
+	# Dust and leaves are emitted in a turning frame, so they wind round as
+	# they climb and fling outward.
+	var wheel := Spinner.new()
+	wheel.speed = 5.0
+	root.add_child(wheel)
+	wheel.add_child(particles({"texture": &"smoke", "atlas": true, "local": true, "amount": 22, "lifetime": 0.8,
+		"size": [0.5, 0.9], "ring": [radius * 0.2], "direction": Vector3.UP, "spread": 6.0, "speed": [2.5, 4.0],
+		"radial": [1.0, 2.2], "spin": [-40, 40],
+		"colors": gradient([Color(0.85, 0.8, 0.65, 0.0), Color(0.85, 0.8, 0.65, 0.45), Color(0.85, 0.8, 0.65, 0.0)], [0, 0.3, 1.0])}))
+	wheel.add_child(particles({"mesh": _chip_mesh(Color(0.42, 0.68, 0.3)), "local": true, "amount": 12,
+		"lifetime": 0.9, "size": [0.8, 1.4], "ring": [radius * 0.25], "direction": Vector3.UP, "spread": 6.0,
+		"speed": [2.0, 4.0], "radial": [1.0, 2.5], "spin": [-300, 300],
+		"size_curve": curve([Vector2(0, 0), Vector2(0.15, 1), Vector2(0.85, 1), Vector2(1, 0)])}))
 	root.scale = Vector3(0.4, 0.2, 0.4)
 	var tw := root.create_tween()
 	tw.tween_property(root, "scale", Vector3.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

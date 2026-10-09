@@ -51,7 +51,8 @@ func _ready() -> void:
 		_visual.add_child(Vfx.kunai())
 		_visual.add_child(Vfx.trail(Color(1, 1, 1, 0.55), 0.06, 0.12, true))
 	elif style == &"crescent":
-		_visual = Vfx.crescent(Color(0.75, 0.88, 1.0), radius * 3.2)
+		# In its nature's colour (steel-blue for a blade's own wave).
+		_visual = Vfx.crescent(color.lerp(Color(0.8, 0.92, 1.0), 0.3), radius * 3.2)
 	else:
 		_visual = Vfx.projectile_visual(element, radius)
 	add_child(_visual)

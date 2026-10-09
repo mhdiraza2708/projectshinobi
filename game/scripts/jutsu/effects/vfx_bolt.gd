@@ -1,9 +1,12 @@
 class_name VfxBolt
 extends MeshInstance3D
 ## A jagged bolt of lightning between two points, re-forked many times a
-## second so it crackles. Drawn as a wide soft glow with a white-hot core,
-## facing the camera. `a` and `b` are world positions (update them to make
-## the bolt follow something). Frees itself after `lifetime` (0 = never).
+## second so it crackles. Drawn as a wide soft halo, a coloured glow and a
+## white-hot core, facing the camera. `a` and `b` are world positions (move
+## them and the bolt stays attached, keeping its shape). It crackles for the
+## first part of its life, then holds its last shape and fades away slowly:
+## the afterglow. Frees itself after `lifetime` (0 = never; it crackles
+## for as long as it lives).
 
 var a := Vector3.ZERO
 var b := Vector3.UP
@@ -14,11 +17,19 @@ var lifetime := 0.25
 var chaos := 0.22
 ## Small side branches.
 var branches := 2
+## The share of its life it spends crackling before it holds still and fades.
+var crackle := 0.55
 var rng := RandomNumberGenerator.new()
+
+## The cool edge of the halo, so a bolt shows against pale sky and sand.
+const HALO_TINT := Color(0.55, 0.5, 1.0)
 
 var _age := 0.0
 var _regen := 0.0
-var _paths: Array = []   # Array of PackedVector3Array
+var _flicker := 1.0
+## Array of PackedVector3Array, each in the bolt's own frame: z runs from a
+## to b (0 to 1), x and y are sideways, all as shares of its length.
+var _paths: Array = []
 var _imesh := ImmediateMesh.new()
 var _glow_mat: StandardMaterial3D
 var _core_mat: StandardMaterial3D
@@ -42,22 +53,25 @@ func _process(delta: float) -> void:
 	if lifetime > 0.0 and _age >= lifetime:
 		queue_free()
 		return
-	_regen -= delta
-	if _regen <= 0.0:
-		_regen = 0.045
-		_fork()
+	if lifetime <= 0.0 or _age < lifetime * crackle:
+		_regen -= delta
+		if _regen <= 0.0:
+			_regen = 0.045
+			_fork()
 	_draw()
 
 
 ## A new random path (and branches) between a and b.
 func _fork() -> void:
-	_paths = [_jagged(a, b, chaos)]
+	var along := Vector3(0, 0, 1)
+	_paths = [_jagged(Vector3.ZERO, along, chaos)]
 	var main: PackedVector3Array = _paths[0]
 	for i in branches:
 		var from := main[rng.randi_range(1, main.size() - 2)]
-		var dir := (b - a)
-		var off := _perpendicular(dir) * dir.length() * rng.randf_range(0.15, 0.35)
-		_paths.append(_jagged(from, from + dir * rng.randf_range(0.15, 0.3) + off, chaos * 1.3))
+		var off := _perpendicular(along) * rng.randf_range(0.15, 0.35)
+		_paths.append(_jagged(from, from + along * rng.randf_range(0.15, 0.3) + off, chaos * 1.3))
+	# Each fork flares a little differently, which reads as crackle.
+	_flicker = rng.randf_range(0.7, 1.0)
 
 
 func _jagged(from: Vector3, to: Vector3, amount: float) -> PackedVector3Array:
@@ -80,17 +94,37 @@ func _perpendicular(dir: Vector3) -> Vector3:
 	return p.normalized() if p.length() > 1e-5 else Vector3.RIGHT
 
 
+## A path from the bolt's own frame placed between a and b in the world.
+func _to_world(path: PackedVector3Array) -> PackedVector3Array:
+	var span := b - a
+	var length := span.length()
+	var z := span / length if length > 1e-5 else Vector3.UP
+	var x := z.cross(Vector3.UP)
+	x = x.normalized() if x.length() > 1e-4 else z.cross(Vector3.RIGHT).normalized()
+	var y := z.cross(x)
+	var out := PackedVector3Array()
+	for p in path:
+		out.append(a + (x * p.x + y * p.y + z * p.z) * length)
+	return out
+
+
 func _draw() -> void:
 	_imesh.clear_surfaces()
 	var cam := get_viewport().get_camera_3d() if is_inside_tree() else null
-	var fade := 1.0 - (_age / lifetime if lifetime > 0.0 else 0.0)
+	var age_share := _age / lifetime if lifetime > 0.0 else 0.0
+	# Bright at the strike, a long tail of glow after, the core thinning.
+	var fade := pow(1.0 - age_share, 1.5) * _flicker
+	var thin := lerpf(1.0, 0.45, age_share)
+	var world: Array = _paths.map(_to_world)
+	var halo := color.lerp(HALO_TINT, 0.4)
 	_imesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, _glow_mat)
-	for k in _paths.size():
-		_strip(_paths[k], width * (3.0 if k == 0 else 1.8), Color(color, 0.55 * fade), cam)
+	for k in world.size():
+		_strip(world[k], width * (7.0 if k == 0 else 4.0), Color(halo, 0.22 * fade), cam)
+		_strip(world[k], width * (3.0 if k == 0 else 1.8), Color(color, 0.6 * fade), cam)
 	_imesh.surface_end()
 	_imesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, _core_mat)
-	for k in _paths.size():
-		_strip(_paths[k], width * (1.0 if k == 0 else 0.55), Color(Color(1, 1, 1).lerp(color, 0.2), fade), cam)
+	for k in world.size():
+		_strip(world[k], width * thin * (1.0 if k == 0 else 0.55), Color(Color(1, 1, 1).lerp(color, 0.2), fade), cam)
 	_imesh.surface_end()
 
 
