@@ -209,6 +209,29 @@ wrong trade.
   fireflies at night. Sets fade over `FADE` seconds, start over after a
   jump (fast travel, a chapter shifting the world), and shrink with the
   graphics preset (`Ambience.density()`: none on Low).
+- **Life on the sea:** `Islets` (a child of `Archipelago`) plans a few
+  clusters of outcrops from fixed seeds, `plan()` being plain data (one
+  cluster per route in `ROUTES` and a small one off every coast), and keeps
+  each outcrop `LANE` metres (plus its own radius) clear of the line between
+  *every* pair of island centres and `ISLAND_GAP` clear of every coast, so a
+  straight run is never blocked (`fits()`; the tests check it). A cluster is
+  one merged rock mesh (flat-shaded lathe rings with the terrain shader's
+  splat weights in vertex colour, in the palette of the nearest island), one
+  strip of surf, one `StaticBody3D` of convex hulls (so islet tops are
+  walkable) and tree `MultiMesh`es; rock fades past `RANGE`. The shrine islet
+  carries the real `shrine`, `gate` and `lantern` models (its lanterns join
+  the night lights through `lanterns()`), and the watch-tower is generated
+  (`set_lamp` lights it at dusk and night, polled from the game scene's
+  `time_of_day()`). `ShoreFoam` + `foam.gdshader` draw the surf: every island
+  traces its own waterline from its height map (`trace_coast`) and lays a
+  strip along it whose UV.y is the distance from the waterline and UV.x its
+  reach, so one shared material serves coasts and islets (islets get a skirt
+  that climbs the rock, which shows from a low angle). The shader rides the
+  same swell as `water.gdshader`. `Seabirds` is a single `MultiMesh` whose
+  circles and wingbeats are computed in `gull.gdshader` from per-instance
+  custom data, so the whole sky of gulls is one draw call and no CPU. Screenshots:
+  `--demo=sea_views`, or `--demo=world_stats --sea=1` for the draw-call table
+  as well.
 - **Map and travel:** `WorldMap` paints a chart from every island's real
   heights once per world (4 m a pixel). Islands are `discovered` when you
   set foot on them (saved in records); `fast_travel()` uses the summoning

@@ -206,6 +206,14 @@ controls can be remapped.
   Emberwood by day, and a few fireflies near the ground on every island
   at night. A light touch (a few hundred particles in all), fewer on the
   Medium preset and none on Low.
+- **Life on the sea**: the water between islands has things in it now.
+  Rocky islets and sea stacks stand along every route (a shrine on its
+  own islet with a gate and lanterns, and a plastered watch-tower whose lamp
+  burns from dusk), each solid enough to stand on, with a lane kept clear
+  between every pair of islands so the run never snags. White surf rolls in
+  along every coast and piles up against the rocks, and gulls wheel over each
+  island and cluster (they roost at night). All of it is a handful of draw
+  calls: the gulls are one instanced mesh flown entirely on the GPU.
 - **Graphics settings** (Pause → Graphics): Low / Medium / High / Ultra
   presets, window mode, VSync, frame rate cap, render resolution with FSR,
   anti-aliasing (FXAA, MSAA, TAA), shadow quality, ambient occlusion,
