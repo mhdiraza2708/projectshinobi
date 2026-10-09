@@ -59,6 +59,8 @@ var _flash: ColorRect
 ## "none", "rain", "storm", "snow" or "leaves".
 var weather := "none"
 var weather_particles: CPUParticles3D
+## Life in the air that goes with the island and the hour (see Ambience).
+var ambience: Ambience
 var _next_flash := 0.0
 
 var _customize_from_title := false
@@ -82,6 +84,9 @@ func _ready() -> void:
 	_base_fog = world.environment.fog_density
 	add_child(RayTracing.new(self, world))
 	_relight()
+	ambience = Ambience.new()
+	ambience.follow = player
+	add_child(ambience)
 	Settings.value_changed.connect(func(key: StringName, _v: Variant) -> void:
 		if key in [&"graphics_quality", &"ambient_occlusion", &"bloom", &"brightness"]:
 			apply_graphics())
@@ -540,17 +545,19 @@ func transition_time(time: String, seconds := 8.0) -> void:
 	var sun := $Sun as DirectionalLight3D
 	var old_sky := Skies.material(env)
 	var from := {"sun": sun.quaternion, "energy": sun.light_energy, "color": sun.light_color,
-		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy}
+		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy,
+		"scatter": env.fog_sun_scatter}
 	set_time_of_day(time)
 	if seconds <= 0.0:
 		return
 	var to := {"sun": sun.quaternion, "energy": sun.light_energy, "color": sun.light_color,
-		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy}
+		"ambient": env.ambient_light_energy, "fog": env.fog_light_color, "fog_energy": env.fog_light_energy,
+		"scatter": env.fog_sun_scatter}
 	var new_sky := Skies.material(env)
 	if old_sky and new_sky and old_sky != new_sky:
-		new_sky.set_shader_parameter(&"prev_panorama", old_sky.get_shader_parameter(&"panorama"))
-		new_sky.set_shader_parameter(&"prev_scale", old_sky.get_shader_parameter(&"scale"))
-		new_sky.set_shader_parameter(&"prev_to_panorama", old_sky.get_shader_parameter(&"to_panorama"))
+		# The old sky keeps its picture and its grade while it fades out.
+		for param: StringName in [&"panorama", &"scale", &"to_panorama", &"tint", &"horizon_tint", &"elevations"]:
+			new_sky.set_shader_parameter(StringName("prev_" + param), old_sky.get_shader_parameter(param))
 	if _time_tween and _time_tween.is_valid():
 		_time_tween.kill()
 	_time_tween = create_tween()
@@ -562,6 +569,7 @@ func transition_time(time: String, seconds := 8.0) -> void:
 		env.ambient_light_energy = lerpf(from["ambient"], to["ambient"], e)
 		env.fog_light_color = (from["fog"] as Color).lerp(to["fog"], e)
 		env.fog_light_energy = lerpf(from["fog_energy"], to["fog_energy"], e)
+		env.fog_sun_scatter = lerpf(from["scatter"], to["scatter"], e)
 		if new_sky:
 			new_sky.set_shader_parameter(&"blend", e), 0.0, 1.0, seconds)
 
@@ -569,6 +577,16 @@ func transition_time(time: String, seconds := 8.0) -> void:
 ## The current time of day (dawn, day, dusk, night).
 func time_of_day() -> String:
 	return _mood
+
+
+## The island whose air the player is in: the story island, or in free roam
+## the one they stand on ("" at sea, on the training ground, at the title).
+func ambient_island() -> String:
+	if island:
+		return island.id
+	if mode == Game.Mode.WORLD and world:
+		return world.current_island()
+	return ""
 
 
 ## The lantern props: the island's, the open world's, or the training ground's.
@@ -734,6 +752,8 @@ func _refresh_objective() -> void:
 func _process(delta: float) -> void:
 	if director and director.running:
 		_refresh_objective()
+	if ambience:
+		ambience.set_context(ambient_island(), _mood, weather)
 	if weather == "storm":
 		_next_flash -= delta
 		if _next_flash <= 0.0:
@@ -1368,6 +1388,7 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			rig.pitch = deg_to_rad(-6.0)
 			rig.snap()
 			await _frames(45)
+	ambience.settle()
 	await RenderingServer.frame_post_draw
 	var err := get_viewport().get_texture().get_image().save_png(path)
 	if err != OK:

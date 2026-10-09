@@ -661,6 +661,11 @@ func _check_island() -> void:
 			hud.show_banner("Discovered %s: you can travel here from the map" % Island.display_name(here), &"info")
 
 
+## The island you're over or beside now ("" out at sea).
+func current_island() -> String:
+	return _island
+
+
 ## Islands you've set foot on (Emberwood, home, always).
 func discovered(id: String) -> bool:
 	return id == "emberwood" or (Game.record("world", "discovered", []) as Array).has(id)

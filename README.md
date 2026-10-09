@@ -195,9 +195,17 @@ controls can be remapped.
 - **Photographed skies and scanned ground** (Poly Haven, CC0): every time
   of day and weather is a real sky photograph, with the sun turned to
   match the sun in the photo and the ambient light, reflections and fog
-  taken from it. The ground layers are photo-scanned surfaces at their
-  real size, blending by height (dirt settles into the hollows between
-  grass).
+  taken from it. Each hour is graded to its mood: dusk is golden hour
+  (amber haze under a violet sky, a low orange sun and long shadows),
+  dawn is cool pink and night a deep moonlit blue. The ground layers are
+  photo-scanned surfaces at their real size, blending by height (dirt
+  settles into the hollows between grass).
+- **Life in the air**: embers and ash drift over the Ashen Pass, red maple
+  leaves fall in Autumn Wood, light snow on the Frozen Road, fine mist by
+  Old Dam's water, wind streaks across Five Winds, pollen and petals in
+  Emberwood by day, and a few fireflies near the ground on every island
+  at night. A light touch (a few hundred particles in all), fewer on the
+  Medium preset and none on Low.
 - **Graphics settings** (Pause → Graphics): Low / Medium / High / Ultra
   presets, window mode, VSync, frame rate cap, render resolution with FSR,
   anti-aliasing (FXAA, MSAA, TAA), shadow quality, ambient occlusion,

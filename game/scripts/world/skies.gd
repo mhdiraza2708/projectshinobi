@@ -13,16 +13,38 @@ const DIR := "res://assets/skies/"
 const SHADER := preload("res://assets/shaders/hdri_sky.gdshader")
 ## Per sky: how bright it's drawn (times the photo's own level), the sun's
 ## light energy, the ambient light energy and how bright the sun's disc is.
+## A look can also grade the photo and the light to the hour (all optional,
+## colours in linear light):
+##   sun_color     the sun's (or moon's) colour, instead of the photo's
+##   elevation     the sun's height in degrees, instead of the photo's
+##   tint          multiplies the whole sky
+##   horizon_tint  multiplies the sky near the horizon too (warm haze, with
+##                 a cooler sky overhead)
+##   halo          how far the sun's wide glow reaches
+##   fog           multiplies the horizon colour the distant ground fades into
+##   scatter       how much the fog takes the sun's colour toward the sun
 const LOOKS := {
 	"day": {"sky": 0.8, "sun": 1.5, "ambient": 0.55, "disc": 1.0},
-	"dawn": {"sky": 0.9, "sun": 1.3, "ambient": 0.6, "disc": 0.8},
-	"dusk": {"sky": 1.0, "sun": 1.2, "ambient": 0.6, "disc": 0.8},
-	"night": {"sky": 0.7, "sun": 0.4, "ambient": 0.6, "disc": 0.12},
+	# Cool pink: a rose sun, lilac haze and a bluer sky overhead.
+	"dawn": {"sky": 0.7, "sun": 1.3, "ambient": 0.6, "disc": 0.9,
+		"sun_color": [1.0, 0.5, 0.55], "tint": [0.95, 0.9, 1.08], "horizon_tint": [1.35, 0.8, 0.95],
+		"halo": 0.3, "fog": [1.25, 0.9, 1.05]},
+	# Golden hour. The photo is a bright blue afternoon, so it's regraded to
+	# amber haze under a violet sky, lit by a low orange sun (low light on
+	# flat ground, so the sun is stronger to keep the ground from going dark).
+	"dusk": {"sky": 0.9, "sun": 2.3, "ambient": 1.1, "disc": 1.0,
+		"sun_color": [1.0, 0.58, 0.25], "elevation": 8.0, "tint": [0.95, 0.88, 1.0],
+		"horizon_tint": [1.8, 0.82, 0.38], "halo": 0.5, "fog": [1.35, 0.9, 0.62], "scatter": 0.3},
+	# Deep moonlit blue, still bright enough to read the ground by (blue light
+	# carries little brightness, so there is more of it than the old grey moon).
+	"night": {"sky": 0.62, "sun": 0.9, "ambient": 1.4, "disc": 0.12,
+		"sun_color": [0.55, 0.7, 1.0], "tint": [0.7, 0.85, 1.12], "horizon_tint": [0.9, 1.0, 1.15],
+		"fog": [0.8, 0.95, 1.2]},
 	"overcast": {"sky": 0.75, "sun": 0.4, "ambient": 0.6, "disc": 0.0},
 	"snow": {"sky": 0.8, "sun": 0.5, "ambient": 0.6, "disc": 0.0},
 }
-## The sun never sits lower than this: a sun on the horizon leaves the
-## arena in one long shadow.
+## The sun never sits lower than this (unless a look sets its own height): a
+## sun on the horizon leaves the arena in one long shadow.
 const MIN_ELEVATION := 10.0
 ## Angular radius of the sun (or moon) disc, in radians.
 const DISC_RADIUS := 0.0047
@@ -73,6 +95,26 @@ static func turn_between(from: Vector3, to: Vector3) -> Basis:
 	return Basis(Vector3.UP, -angle)
 
 
+## How high the sun (or moon) stands for a sky, in degrees.
+static func elevation_of(key: String) -> float:
+	var look: Dictionary = LOOKS.get(key, LOOKS["day"])
+	return float(look.get("elevation", maxf(float(data()[key]["sun_elevation"]), MIN_ELEVATION)))
+
+
+## A direction as the sky shader looks it up: the sky below the sun is
+## squeezed (or stretched) so the photo's sun, at `elevations.x` radians,
+## appears at the game's, `elevations.y`. The same as the shader's lift_sun.
+static func lift(direction: Vector3, elevations: Vector2) -> Vector3:
+	if elevations.y < 0.01 or absf(elevations.x - elevations.y) < 0.001 or direction.y <= 0.0:
+		return direction
+	var el := asin(minf(direction.y, 1.0))
+	var e := el * elevations.x / elevations.y if el < elevations.y \
+		else elevations.x + (el - elevations.y) * (PI / 2.0 - elevations.x) / (PI / 2.0 - elevations.y)
+	var h := Vector2(direction.x, direction.z)
+	h = h / maxf(h.length(), 1e-5)
+	return Vector3(h.x * cos(e), sin(e), h.y * cos(e))
+
+
 ## Puts the sky `key` over `env` and points `sun` at its sun, on a bearing
 ## of `yaw` degrees. `dim` darkens everything (a night storm).
 static func apply(env: Environment, sun: DirectionalLight3D, key: String, yaw: float, dim := 1.0) -> void:
@@ -82,22 +124,30 @@ static func apply(env: Environment, sun: DirectionalLight3D, key: String, yaw: f
 	var look: Dictionary = LOOKS.get(key, LOOKS["day"])
 	dim *= 1.0 if Graphics.supported() else COMPATIBILITY_GAIN
 	var scale := float(s["scale"]) * float(look["sky"]) * dim
-	var elevation := maxf(float(s["sun_elevation"]), MIN_ELEVATION)
+	var elevation := elevation_of(key)
 	var sun_rot := Vector3(deg_to_rad(-elevation), deg_to_rad(yaw), 0.0)
 	# A DirectionalLight shines down its -Z: +Z points at the sun.
 	var toward := Basis.from_euler(sun_rot).z
 	var photo_sun := panorama_direction(Vector2(s["sun_uv"][0], s["sun_uv"][1]))
 	var turn := turn_between(photo_sun, toward)
-	var sun_rgb := _color(s["sun_color"])
+	var sun_rgb := _color(look.get("sun_color", s["sun_color"]))
+	var tint := _color(look.get("tint", [1.0, 1.0, 1.0]))
+	var low := _color(look.get("horizon_tint", [1.0, 1.0, 1.0]))
 
 	var mat := ShaderMaterial.new()
 	mat.shader = SHADER
 	mat.set_shader_parameter(&"panorama", load(DIR + key + ".jpg"))
 	mat.set_shader_parameter(&"scale", scale)
 	mat.set_shader_parameter(&"to_panorama", turn.inverse())
-	mat.set_shader_parameter(&"sun_direction", (turn * photo_sun).normalized())
+	# The sky shader lifts the photo's sun to this height, so it's drawn
+	# where the light comes from.
+	mat.set_shader_parameter(&"elevations", Vector2(deg_to_rad(float(s["sun_elevation"])), deg_to_rad(elevation)))
+	mat.set_shader_parameter(&"sun_direction", toward)
 	mat.set_shader_parameter(&"sun_color", Vector3(sun_rgb.r, sun_rgb.g, sun_rgb.b) * float(look["disc"]) * dim)
 	mat.set_shader_parameter(&"sun_radius", DISC_RADIUS)
+	mat.set_shader_parameter(&"sun_halo", float(look.get("halo", 0.12)))
+	mat.set_shader_parameter(&"tint", Vector3(tint.r, tint.g, tint.b))
+	mat.set_shader_parameter(&"horizon_tint", Vector3(low.r, low.g, low.b))
 	var sky := Sky.new()
 	sky.sky_material = mat
 	sky.radiance_size = Sky.RADIANCE_SIZE_256
@@ -109,15 +159,16 @@ static func apply(env: Environment, sun: DirectionalLight3D, key: String, yaw: f
 	env.ambient_light_sky_contribution = 1.0
 	env.ambient_light_energy = float(look["ambient"]) * dim
 	# Still kept up to date for what reads it directly (ray-traced reflections).
-	env.ambient_light_color = _srgb(_color(s["ambient"]) * scale)
+	env.ambient_light_color = _srgb(_color(s["ambient"]) * scale * tint * low.lerp(Color.WHITE, 0.5))
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	# Distant ground fades into the colour of the sky behind it.
-	var horizon := _color(s["horizon"]) * scale
+	var horizon := _color(s["horizon"]) * scale * _color(look.get("fog", [1.0, 1.0, 1.0]))
 	var peak := maxf(horizon.r, maxf(horizon.g, horizon.b))
 	env.fog_light_color = _srgb(horizon / maxf(peak, 1e-4))
 	env.fog_light_energy = peak
 	env.fog_aerial_perspective = 0.7
 	env.fog_sky_affect = 0.0
+	env.fog_sun_scatter = float(look.get("scatter", 0.0))
 
 	sun.rotation = sun_rot
 	sun.light_color = _srgb(sun_rgb)
