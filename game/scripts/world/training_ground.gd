@@ -187,6 +187,9 @@ func show_title() -> void:
 	player.camera_rig.begin_showcase(-1.1)
 	title_screen.open()
 	Music.play(&"title")
+	# Compile the jutsu effects' shaders now, not on each one's first cast.
+	if VfxWarmup.wanted() and get_node_or_null(^"VfxWarmup") == null:
+		add_child(VfxWarmup.new())
 
 
 func start_training() -> void:

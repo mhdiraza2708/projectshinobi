@@ -43,10 +43,18 @@ var _drawn := false
 func bind(skeleton: Skeleton3D, canonical_to_skeleton: Basis) -> void:
 	_skel = skeleton
 	_frame = canonical_to_skeleton
-	var head_points: Array = []
-	_regions = measure_regions(skeleton, _frame, head_points)
-	_head_points = PackedVector3Array(head_points)
-	_face = measure_face(skeleton, _frame)
+	var key := _measure_key(skeleton, canonical_to_skeleton)
+	var measured: Array = _measured.get(key, [])
+	if measured.is_empty():
+		var head_points: Array = []
+		measured = [measure_regions(skeleton, _frame, head_points), PackedVector3Array(head_points),
+			measure_face(skeleton, _frame)]
+		_measured[key] = measured
+		while _measured.size() > MEASURE_CACHE:
+			_measured.erase(_measured.keys()[0])
+	_regions = measured[0]
+	_head_points = measured[1]
+	_face = measured[2]
 	var head := region(&"Head")
 	var foot_y := INF
 	for foot in [&"LeftFoot", &"RightFoot", &"LeftToes", &"RightToes"]:
@@ -55,6 +63,24 @@ func bind(skeleton: Skeleton3D, canonical_to_skeleton: Basis) -> void:
 			foot_y = minf(foot_y, r.position.y)
 	if head.size != Vector3.ZERO and foot_y < INF:
 		_height = head.end.y - foot_y
+
+
+## Measurements of models already fitted, by _measure_key: walking every
+## vertex takes a few frames' time, and a Shade Clone is the same body again.
+static var _measured := {}
+const MEASURE_CACHE := 8
+
+
+## The same meshes on the same skeleton measure the same: copies of a scene
+## share their mesh and skin resources.
+static func _measure_key(skel: Skeleton3D, frame: Basis) -> String:
+	var parts: PackedStringArray = [str(skel.get_bone_count()), str(frame)]
+	for node in skel.find_children("*", "MeshInstance3D", true, false):
+		var mi := node as MeshInstance3D
+		if mi.mesh == null or mi.has_meta(&"gear"):
+			continue
+		parts.append("%s/%d/%d" % [mi.name, mi.mesh.get_instance_id(), mi.skin.get_instance_id() if mi.skin else 0])
+	return "|".join(parts)
 
 
 ## Canonical-space extents of the vertices a bone dominates (zero size if none).
@@ -357,9 +383,6 @@ func _build_ninjato(k: float) -> void:
 	var hand := _skel.find_bone(&"RightHand")
 	if hips.size == Vector3.ZERO or hand < 0:
 		return
-	var source := (NINJATO.instantiate() as Node3D)
-	var mesh := (source.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
-	source.free()
 	var scale := 0.86 * k
 
 	# Worn: the hilt just in front of the left hip at the belt, the scabbard
@@ -369,10 +392,10 @@ func _build_ninjato(k: float) -> void:
 	var worn := Basis(side, along, side.cross(along)).scaled(Vector3.ONE * scale)
 	var guard := Vector3(hips.position.x + 0.03 * k, hips.end.y - hips.size.y * 0.3, hips.position.z + 0.01 * k)
 	var at := Transform3D(worn, guard - worn * Vector3(0, GUARD_Y, 0))
-	scabbard = _part(mesh, SCABBARD_SURFACES)
+	scabbard = _part(SCABBARD_SURFACES)
 	scabbard.name = "Scabbard"
 	scabbard.transform = at
-	sheathed_hilt = _part(mesh, HILT_SURFACES)
+	sheathed_hilt = _part(HILT_SURFACES)
 	sheathed_hilt.name = "SheathedHilt"
 	sheathed_hilt.transform = at
 	hilt_grip = Marker3D.new()
@@ -385,9 +408,11 @@ func _build_ninjato(k: float) -> void:
 	# Drawn: the grip through the curled fingers, the blade out past the
 	# thumb, the edge facing the knuckles. Measured on this rig's resting
 	# hand, so it holds on any rig.
-	sword = _part(mesh, HILT_SURFACES)
+	sword = _part(HILT_SURFACES)
 	sword.name = "Katana"
-	var blade := _mesh(_blade_mesh(), BLADE_COLOR, true, true)
+	if _blade == null:
+		_blade = _blade_mesh()
+	var blade := _mesh(_blade, BLADE_COLOR, true, true)
 	blade.name = "Blade"
 	sword.add_child(blade)
 	blade_trail = BladeTrail.new()
@@ -431,21 +456,37 @@ func _grip_in_hand(scale: float) -> Transform3D:
 	return Transform3D(basis, grip - basis * Vector3(0, GRIP_Y, 0))
 
 
+## The ninjato's pieces (by surface list) and blade, cut and shaded once and
+## shared by everyone wearing one.
+static var _parts := {}
+static var _blade: ArrayMesh
+
+
 ## A piece of the ninjato model made of some of its surfaces.
-func _part(mesh: Mesh, surfaces: Array) -> MeshInstance3D:
-	var part := ArrayMesh.new()
-	for i: int in surfaces:
-		if i >= mesh.get_surface_count():
-			continue
-		part.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh.surface_get_arrays(i))
-		part.surface_set_material(part.get_surface_count() - 1, mesh.surface_get_material(i))
+func _part(surfaces: Array) -> MeshInstance3D:
+	var part: ArrayMesh = _parts.get(str(surfaces))
+	if part == null:
+		var source := NINJATO.instantiate() as Node3D
+		var mesh := (source.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
+		source.free()
+		part = ArrayMesh.new()
+		for i: int in surfaces:
+			if i >= mesh.get_surface_count():
+				continue
+			part.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh.surface_get_arrays(i))
+			part.surface_set_material(part.get_surface_count() - 1, mesh.surface_get_material(i))
+		var shaded := MeshInstance3D.new()
+		shaded.mesh = part
+		var holder := Node3D.new()
+		holder.add_child(shaded)
+		Toon.apply(holder, 0.004)
+		for i in part.get_surface_count():
+			if shaded.get_surface_override_material(i):
+				part.surface_set_material(i, shaded.get_surface_override_material(i))
+		holder.free()
+		_parts[str(surfaces)] = part
 	var mi := MeshInstance3D.new()
 	mi.mesh = part
-	var holder := Node3D.new()
-	holder.add_child(mi)
-	Toon.apply(holder, 0.004)
-	holder.remove_child(mi)
-	holder.free()
 	return mi
 
 

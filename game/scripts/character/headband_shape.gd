@@ -20,6 +20,33 @@ var radii := PackedFloat32Array()
 ## hair may poke over the band, as it does on a real one).
 static func fit(points: PackedVector3Array, axis: Vector2, y: float, back_drop: float, slab: float,
 		fallback: Vector2, percentile := 0.82) -> HeadbandShape:
+	# The same head fits the same: a Shade Clone or a re-dress skips the
+	# per-vertex pass.
+	var key := "%d|%d|%s|%s|%s|%s|%s|%s" % [points.size(), hash(points), axis, y, back_drop, slab, fallback, percentile]
+	if _fits.has(key):
+		return (_fits[key] as HeadbandShape).copy()
+	var s := _fit(points, axis, y, back_drop, slab, fallback, percentile)
+	_fits[key] = s.copy()
+	while _fits.size() > FIT_CACHE:
+		_fits.erase(_fits.keys()[0])
+	return s
+
+
+static var _fits := {}
+const FIT_CACHE := 16
+
+
+func copy() -> HeadbandShape:
+	var s := HeadbandShape.new()
+	s.center = center
+	s.y_front = y_front
+	s.drop = drop
+	s.radii = radii.duplicate()
+	return s
+
+
+static func _fit(points: PackedVector3Array, axis: Vector2, y: float, back_drop: float, slab: float,
+		fallback: Vector2, percentile: float) -> HeadbandShape:
 	var s := HeadbandShape.new()
 	s.center = axis
 	s.y_front = y

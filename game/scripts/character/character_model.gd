@@ -188,6 +188,27 @@ static func roster() -> Array[Dictionary]:
 	return out
 
 
+## Character scenes read lately, newest last. A model's file isn't kept in
+## memory by the characters made from it, so without this every Shade Clone
+## or rival wearing a model already on screen read it from disk again: a
+## tenth of a second each, a visible freeze mid-fight.
+static var _scenes := {}
+const SCENE_CACHE := 4
+
+
+static func load_scene(path: String) -> PackedScene:
+	var scene: PackedScene = _scenes.get(path)
+	if scene == null:
+		scene = load(path) as PackedScene
+		if scene == null:
+			return null
+	_scenes.erase(path)
+	_scenes[path] = scene
+	while _scenes.size() > SCENE_CACHE:
+		_scenes.erase(_scenes.keys()[0])
+	return scene
+
+
 func load_model(path: String) -> void:
 	if instance:
 		instance.queue_free()
@@ -196,7 +217,7 @@ func load_model(path: String) -> void:
 		animator.queue_free()
 		animator = null
 	gear.clear()
-	var scene := load(path) as PackedScene
+	var scene := load_scene(path)
 	if scene == null:
 		push_error("CharacterModel: could not load %s" % path)
 		return

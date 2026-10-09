@@ -71,7 +71,7 @@ static func apply(root: Node3D, skel: Skeleton3D, hair_from: String, outfit_from
 		donors[outfit_from] = donors.get(outfit_from, []) + [OUTFIT]
 	var springs: Array = []
 	for path: String in donors:
-		var scene := load(path) as PackedScene
+		var scene := CharacterModel.load_scene(path)
 		if scene == null:
 			push_warning("Wardrobe: can't load %s" % path)
 			continue

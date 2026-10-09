@@ -241,3 +241,22 @@ func test_the_quest_pillar_is_a_soft_additive_beam() -> void:
 	var ground := beacon.get_children().filter(func(n: Node) -> bool: return n is MeshInstance3D and n.mesh is PlaneMesh)
 	assert_eq(ground.size(), 1, "a glow on the ground")
 	beacon.queue_free()
+
+
+func test_the_warm_up_plays_every_effect_out_of_sight_then_goes() -> void:
+	await _load()
+	var loose := _loose_effects().size()
+	var warm := VfxWarmup.new()
+	scene.add_child(warm)
+	assert_true(Sfx.world_muted, "its blasts and walls aren't heard")
+	await seconds(VfxWarmup.HOLD_TIME * 1.5)
+	assert_true(warm.find_children("*", "JutsuProjectile", true, false).size() >= 1, "effects play inside it")
+	assert_true(warm.find_children("*", "JutsuWall", true, false).size() >= 1)
+	assert_eq(_loose_effects().size(), loose, "none in the game's world")
+	assert_true(root.get_tree().get_nodes_in_group(&"projectiles").is_empty(), "nothing to dodge")
+	assert_true(warm.find_world_3d() != scene.get_world_3d(), "a world of its own")
+	await seconds(VfxWarmup.HOLD_TIME * (VfxWarmup.ELEMENTS.size() + 1))
+	assert_false(is_instance_valid(warm), "and it goes when it's done")
+	assert_true(VfxWarmup.done)
+	assert_false(Sfx.world_muted, "the world is heard again")
+	VfxWarmup.done = false

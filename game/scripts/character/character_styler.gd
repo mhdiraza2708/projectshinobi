@@ -50,6 +50,9 @@ static func classify(material_name: String) -> String:
 func bind(root: Node) -> void:
 	slots.clear()
 	var found: Array[Dictionary] = []
+	# One copy per material, not per surface: a VRoid model reuses a dozen
+	# materials across a hundred-odd surfaces.
+	var copies := {}
 	for node in root.find_children("*", "MeshInstance3D", true, false):
 		var mi := node as MeshInstance3D
 		if mi.mesh == null or mi.has_meta(&"gear"):
@@ -58,8 +61,12 @@ func bind(root: Node) -> void:
 			var src := mi.get_active_material(i)
 			if src == null:
 				continue
+			if copies.has(src):
+				mi.set_surface_override_material(i, copies[src])
+				continue
 			var slot := classify(src.resource_name)
 			var mat := src.duplicate() as Material
+			copies[src] = mat
 			mi.set_surface_override_material(i, mat)
 			var entry := {"material": mat, "slot": slot}
 			if mat is ShaderMaterial:

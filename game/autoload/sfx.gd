@@ -37,6 +37,9 @@ var _pool_3d: Array[AudioStreamPlayer3D] = []
 var _loops: Dictionary = {}
 var _last_msec: Dictionary = {}
 var _last_ui_msec := -100000
+## Sounds in the world stay silent while this is on (VfxWarmup setting off
+## effects out of sight).
+var world_muted := false
 
 
 func _ready() -> void:
@@ -97,7 +100,7 @@ func play(sound: StringName, volume_db := 0.0, pitch_var := 0.04, bus := BUS_SFX
 
 ## Plays a sound from a point in the world.
 func play_at(sound: StringName, position: Vector3, volume_db := 0.0, pitch_var := 0.06) -> void:
-	if not _accept(sound):
+	if world_muted or not _accept(sound):
 		return
 	var p := _free_player(_pool_3d) as AudioStreamPlayer3D
 	p.stream = _streams[sound]
