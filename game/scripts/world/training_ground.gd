@@ -1025,6 +1025,8 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				var m := CharacterModel.new()
 				m.use_profile = false
 				m.model_path = rigs[i]["path"]
+				if m.model_path.begins_with(EnemyShinobi.RIVAL_DIR):
+					m.style = EnemyShinobi.RIVAL_STYLE.duplicate()
 				add_child(m)
 				m.position = Vector3((i - 2) * 1.1, 0.0, -3.0)
 				m.rotation.y = float(_user_args().get("yaw", "2.4"))
