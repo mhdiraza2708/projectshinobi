@@ -1,19 +1,29 @@
 class_name EyeSequence
 extends Node
 ## An eye art opening, in close-up: the world stops, the camera moves in on
-## the eyes, and the pattern spins into the irises under a brush title card.
-## The awakened form goes further: the first pattern breaks into the
-## awakened one with a flash and a shockwave, and the camera pulls back to
-## show the shinobi wreathed in its colour. Holding Pause skips, as in
-## every other cinematic.
+## the face, then a hard cut to black and a drawn cut-in of the eyes
+## (EyeInsert): the bangs whip aside, the lids snap open with a flash and
+## the pattern spins into the irises under a brush title card. Drawn, so it
+## works for any character, even one whose eyes the hair hides. The
+## awakened form goes further: the pattern breaks into the awakened one,
+## then a cut back to the shinobi wreathed in its colour as a shockwave
+## goes out. Holding Pause skips, as in every other cinematic.
 
 signal finished
 
 ## Seconds of the opening shot, and of the awakening after it.
 const OPEN_TIME := 1.8
 const AWAKEN_TIME := 1.6
-## When the opening shot cuts from the face to one eye.
+## When the opening shot cuts from the face to the drawn eyes.
 const CUT_AT := 0.5
+## Beats of the cut-in, in seconds after the cut: the bangs sweeping aside,
+## the lids opening (the flash comes as they part), and the pattern
+## finishing its spin.
+const HAIR_SWEEP := Vector2(0.15, 0.45)
+const LIDS_OPEN := Vector2(0.35, 0.55)
+const SPIN_DONE := 1.0
+## How long the awakened pattern takes to break through before the cut back.
+const AWAKEN_BREAK := 0.55
 const FOV := 32.0
 ## Grace after the sequence before the player can be hurt again.
 const AFTER_IFRAMES := 0.5
@@ -37,6 +47,7 @@ var _cam_base := Transform3D.IDENTITY
 var _skipping := false
 var _skip_held := 0.0
 var _aura: Node3D
+var _insert: EyeInsert
 
 
 static func begin(p: Player, m: EyeArtMode) -> EyeSequence:
@@ -111,67 +122,99 @@ func card_text() -> String:
 	return CinematicKit.card_text(_card)
 
 
+## The drawn cut-in, while it's on screen (null before the cut and after).
+func insert() -> EyeInsert:
+	return _insert if is_instance_valid(_insert) else null
+
+
 # --- The shots ---------------------------------------------------------------
 
-## In on the face, then a cut to one eye filling the screen as the pattern
-## spins into place.
+## In on the face, then the cut to black: the drawn eyes open and the
+## pattern spins into place.
 func _open() -> void:
 	var fwd := _forward()
+	var eyes := mode.eye_point()
 	var t := 0.0
 	var flashed := false
 	var carded := false
 	while t < OPEN_TIME and not _skipping:
 		if t < CUT_AT:
-			var eyes := mode.eye_point()
+			eyes = mode.eye_point()
 			var k := smoothstep(0.0, 1.0, t / CUT_AT)
 			var from := eyes + fwd * 0.85 - Vector3.UP * 0.02
 			var to := eyes + fwd * 0.45 - Vector3.UP * 0.015
 			_cam_base = Transform3D(Basis.IDENTITY, from.lerp(to, k)).looking_at(eyes, Vector3.UP)
 		else:
-			var iris := mode.iris_point()
-			var k := smoothstep(CUT_AT, OPEN_TIME, t)
-			var from := iris + fwd * 0.16
-			var to := iris + fwd * 0.115
-			_cam_base = Transform3D(Basis.IDENTITY, from.lerp(to, k)).looking_at(iris, Vector3.UP)
-		var open := smoothstep(CUT_AT + 0.05, CUT_AT + 0.5, t)
-		# The awakened eye opens in its first form, then breaks into the new one.
-		mode._set_pattern(open, 0.0, (1.0 - open) * TAU * 2.0)
-		if t >= CUT_AT and not flashed:
-			flashed = true
-			_overlay.flash(Color(color, 0.55), 0.25)
-			Sfx.play(&"buff", 2.0)
-		if t >= CUT_AT + 0.12 and not carded and not mode.awakened:
-			carded = true
-			_card = CinematicKit.title_card(self, "開眼  DOJUTSU", str(art["kanji"]), str(form.get("name", art["name"])),
-				color, OPEN_TIME - CUT_AT)
+			if _insert == null:
+				_insert = EyeInsert.new(art)
+				add_child(_insert)
+				Sfx.play(&"eye_open", 0.0)
+			var u := t - CUT_AT
+			var parting := smoothstep(LIDS_OPEN.x, LIDS_OPEN.y, u)
+			# The lids snap a touch past open and settle.
+			var lids := parting + sin(parting * PI) * 0.12
+			var open := smoothstep(LIDS_OPEN.x + 0.05, SPIN_DONE, u)
+			var spin := (1.0 - open) * TAU * 2.0
+			var burst := clampf(1.0 - absf(u - LIDS_OPEN.y) / 0.35, 0.0, 1.0)
+			var fade := 1.0 - smoothstep(OPEN_TIME - CUT_AT - 0.12, OPEN_TIME - CUT_AT, u) \
+				if not mode.awakened else 1.0
+			_insert.set_state(lids, smoothstep(HAIR_SWEEP.x, HAIR_SWEEP.y, u), open, spin, 0.0, burst, fade)
+			# The model's own irises follow, for when the camera comes back.
+			mode._set_pattern(open, 0.0, spin)
+			if u >= LIDS_OPEN.x + 0.08 and not flashed:
+				flashed = true
+				_overlay.flash(Color(color, 0.6), 0.3)
+			if u >= LIDS_OPEN.x + 0.1 and not carded and not mode.awakened:
+				carded = true
+				_card = CinematicKit.title_card(self, "開眼  DOJUTSU", str(art["kanji"]), str(form.get("name", art["name"])),
+					color, OPEN_TIME - t)
 		await get_tree().process_frame
 		t += get_process_delta_time()
 	mode._set_pattern(1.0, 0.0, 0.0)
+	# Back from the cut-in on the face.
+	_cam_base = Transform3D(Basis.IDENTITY, eyes + fwd * 0.45 - Vector3.UP * 0.015).looking_at(eyes, Vector3.UP)
+	if not mode.awakened:
+		_drop_insert()
 
 
-## The first pattern breaks into the awakened one; the camera pulls back.
+## The first pattern breaks into the awakened one in the cut-in; then a cut
+## back to the shinobi as the shockwave goes out, and the camera pulls back.
 func _awaken() -> void:
 	var eyes := mode.eye_point()
 	var fwd := _forward()
 	var from := _cam_base.origin
 	var to := eyes + fwd * 1.5 + fwd.cross(Vector3.UP).normalized() * 0.35 - Vector3.UP * 0.25
-	var iris := mode.iris_point()
 	_overlay.flash(Color(1, 1, 1, 0.85), 0.3)
 	Sfx.play(&"thunder", -6.0, 0.05)
-	Vfx.shockwave(_world, player.global_position + Vector3.UP * 0.2, color, 7.0, 0.7)
-	_aura = Vfx.boss_aura(color, 1.0)
-	_aura.name = "AwakeningAura"
-	player.add_child(_aura)
 	_card = CinematicKit.title_card(self, "覚醒  AWAKENED", str(form.get("kanji", art["kanji"])),
 		str(form.get("name", art["name"])), color, AWAKEN_TIME)
 	var t := 0.0
+	var cut_back := false
 	while t < AWAKEN_TIME and not _skipping:
-		var change := smoothstep(0.0, 0.5, t)
-		mode._set_pattern(1.0, change, (1.0 - change) * TAU * 3.0)
-		var k := smoothstep(0.6, AWAKEN_TIME, t)
-		_cam_base = Transform3D(Basis.IDENTITY, from.lerp(to, k)).looking_at(iris.lerp(eyes - Vector3.UP * 0.12, k), Vector3.UP)
+		var change := smoothstep(0.0, AWAKEN_BREAK, t)
+		var spin := (1.0 - change) * TAU * 3.0
+		mode._set_pattern(1.0, change, spin)
+		if t < AWAKEN_BREAK:
+			if _insert:
+				_insert.set_state(1.0, 1.0, 1.0, spin, change, 1.0 - change * 0.6)
+		elif not cut_back:
+			cut_back = true
+			_drop_insert()
+			_overlay.flash(Color(color, 0.7), 0.25)
+			Vfx.shockwave(_world, player.global_position + Vector3.UP * 0.2, color, 7.0, 0.7)
+			_aura = Vfx.boss_aura(color, 1.0)
+			_aura.name = "AwakeningAura"
+			player.add_child(_aura)
+		var k := smoothstep(AWAKEN_BREAK, AWAKEN_TIME, t)
+		_cam_base = Transform3D(Basis.IDENTITY, from.lerp(to, k)).looking_at(eyes - Vector3.UP * 0.12 * k, Vector3.UP)
 		await get_tree().process_frame
 		t += get_process_delta_time()
+
+
+func _drop_insert() -> void:
+	if is_instance_valid(_insert):
+		_insert.queue_free()
+	_insert = null
 
 
 func _finish() -> void:
@@ -186,6 +229,7 @@ func _finish() -> void:
 		_camera.queue_free()
 	if is_instance_valid(_card):
 		_card.queue_free()
+	_drop_insert()
 	_overlay.hide_bars()
 	Music.duck(false)
 	active = null

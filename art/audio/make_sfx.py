@@ -459,6 +459,37 @@ def teleport():
     return mix(shimmer, whoosh, boom, sparkle)
 
 
+def eye_open():
+    """A dojutsu opening, timed to the cut-in: a rush swelling for 0.4 s, then
+    as the lids part a metallic shing, a sub boom and a breathy flare, and a
+    shimmer that rings out."""
+    d = 1.7
+    n = int(d * SR)
+    t = t_axis(d)
+    hit = 0.42
+    # The rush: noise climbing through a filter toward the cut.
+    swell = np.clip(t / hit, 0, 1) ** 2.5 * np.exp(-np.clip(t - hit, 0, None) * 14.0)
+    rush = svf_sweep(noise(d, 371), 200.0, 2600.0, 5200.0, q=2.5) * swell * 0.8
+    under = lp(brown(d, 372), 180) * swell * 0.9
+    # The shing: inharmonic bright partials with a slight downward bend.
+    m = int((d - hit) * SR)
+    tt = np.arange(m) / SR
+    ring = np.zeros(m)
+    for k, (f, a, dec) in enumerate(((1318.0, 1.0, 0.9), (1977.0, 0.7, 0.7), (2794.0, 0.5, 0.55),
+                                     (3729.0, 0.35, 0.45), (5274.0, 0.2, 0.3))):
+        bend = f * (1.0 + 0.03 * np.exp(-tt * 18.0))
+        ring += np.sin(2 * np.pi * np.cumsum(bend) / SR + k) * a * np.exp(-tt * 6.9 / dec)
+    shing = at(ring * 0.32 + hp(noise(d - hit, 373), 4000)[:m] * np.exp(-tt * 60.0) * 0.5, hit, d)
+    boom = at(tone(78, 32, 1.0) * env(int(1.0 * SR), 0.003, 0.9) * 1.0, hit, d)
+    # The shimmer after: a soft high cluster trembling as it fades.
+    tail = np.zeros(n)
+    for k, f in enumerate((2093.0, 2637.0, 3136.0, 4186.0)):
+        tail += np.sin(2 * np.pi * f * t + k * 1.3) * (0.5 ** k)
+    shimmer = tail * np.clip((t - hit) / 0.05, 0, 1) * np.exp(-np.clip(t - hit, 0, None) * 2.2) \
+        * (0.6 + 0.4 * np.sin(2 * np.pi * 13.0 * t)) * 0.2
+    return mix(rush, under, shing, boom, shimmer)
+
+
 def enemy_down():
     d = 0.6
     n = int(d * SR)
@@ -534,7 +565,7 @@ SOUNDS = {
     "ui_move": ui_move, "ui_select": ui_select, "ui_back": ui_back, "ui_open": ui_open,
     "ui_close": ui_close, "wave_start": wave_start, "victory": victory, "defeat": defeat,
     "enemy_down": enemy_down, "weak_hit": weak_hit, "smoke": smoke, "teleport": teleport,
-    "rain_loop": rain_loop, "wind_loop": wind_loop, "thunder": thunder,
+    "rain_loop": rain_loop, "wind_loop": wind_loop, "thunder": thunder, "eye_open": eye_open,
 }
 # Loops must not be faded or DC-shifted at the seam.
 LOOPS = {"charge_loop", "rain_loop", "wind_loop"}

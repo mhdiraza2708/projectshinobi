@@ -102,8 +102,8 @@ func _element(holder: Node3D, element: int) -> void:
 	holder.add_child(wall)
 
 
-## What every fight shows: kunai, strikes, sparks, smoke, healing and the
-## chakra auras.
+## What every fight shows: kunai, strikes, sparks, smoke, healing, the
+## chakra auras and the dojutsu cut-in.
 func _combat(holder: Node3D) -> void:
 	var steel := Color(1.0, 0.9, 0.7)
 	_projectile(holder, Element.NONE, &"kunai", Vector3(-2.5, 1.2, 0))
@@ -122,6 +122,10 @@ func _combat(holder: Node3D) -> void:
 	var boss := Vfx.boss_aura(Color(0.8, 0.2, 0.2))
 	boss.position = Vector3(2, 0, -1)
 	holder.add_child(boss)
+	# The dojutsu cut-in, drawn over this viewport for a moment.
+	var insert := EyeInsert.new()
+	insert.set_state(1.0, 1.0, 1.0, 0.0, 0.0, 1.0)
+	holder.add_child(insert)
 
 
 ## A projectile that hangs where it's put (it never flies into anything).

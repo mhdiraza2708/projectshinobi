@@ -899,6 +899,30 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		InputDevice.device_changed.emit(InputDevice.current)
 	await _frames(20)
 	match demo:
+		"insert":
+			# The dojutsu cut-in at four beats, in a 2 x 2 grid: shut under the
+			# bangs, the bangs sweeping, the lids parting, open.
+			# --art=<eye art id> picks the pattern.
+			hud.visible = false
+			var art := Perks.eye_art(str(_user_args().get("art", "hawk_eye")))
+			var grid := CanvasLayer.new()
+			grid.layer = 20
+			add_child(grid)
+			var cell := get_viewport().get_visible_rect().size / 2.0
+			# lids, hair, pattern, burst
+			var beats := [[0.0, 0.0, 0.0, 0.0], [0.0, 0.6, 0.0, 0.0], [0.75, 1.0, 0.5, 1.0], [1.0, 1.0, 1.0, 0.0]]
+			for i in beats.size():
+				var b: Array = beats[i]
+				var insert := EyeInsert.new(art)
+				insert.set_state(b[0], b[1], b[2], 0.0, 0.0, b[3])
+				insert.material.set_shader_parameter(&"aspect", cell.x / cell.y)
+				var rect := ColorRect.new()
+				rect.material = insert.material
+				rect.position = Vector2(i % 2, i / 2) * cell
+				rect.size = cell
+				grid.add_child(rect)
+				insert.free()
+			await _frames(10)
 		"weave":
 			player.toggle_lock()
 			await _frames(30)

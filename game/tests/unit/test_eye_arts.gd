@@ -1,8 +1,8 @@
 extends TestCase
-## Opening an eye art in battle (EyeArtMode, EyeSequence, EyePattern): the
-## data is valid and original, opening costs chakra and adds the open
-## form's perks for a while, the first opening in an area plays the
-## close-up and later ones don't, the eye closes and rests, it awakens
+## Opening an eye art in battle (EyeArtMode, EyeSequence, EyeInsert,
+## EyePattern): the data is valid and original, opening costs chakra and
+## adds the open form's perks for a while, every opening plays the close-up
+## and its drawn cut-in of the eyes, the eye closes and rests, it awakens
 ## after Part One, and the pattern finds the irises on a VRoid model.
 
 const Scene := preload("res://scenes/training_ground.tscn")
@@ -81,11 +81,19 @@ func test_opening_costs_chakra_adds_perks_and_plays_the_close_up() -> void:
 	assert_true(EyeSequence.active != null, "the first opening here is a close-up")
 	assert_true(EyeSequence.active.frozen_count() >= 1, "the world stands still")
 	assert_eq(foe.process_mode, Node.PROCESS_MODE_DISABLED)
-	await seconds(0.9)
+	assert_true(EyeSequence.active.insert() == null, "in on the face first")
+	await seconds(EyeSequence.CUT_AT + 0.15)
+	var insert := EyeSequence.active.insert()
+	assert_true(insert != null, "then a cut to the drawn eyes")
+	assert_true(Sfx.history.has(&"eye_open"), "with its sound")
+	assert_true(insert.lids() < 0.5, "still shut under the bangs")
+	await seconds(EyeSequence.LIDS_OPEN.y + 0.1)
+	assert_true(insert.lids() > 0.9, "the eyes open")
 	assert_true(EyeSequence.active.card_text().contains("Talon Sight".to_upper()), "the card names the form")
 	assert_false(scene.hud.visible, "the HUD steps aside")
 	await seconds(EyeSequence.OPEN_TIME)
 	assert_true(EyeSequence.active == null, "and it ends")
+	assert_false(is_instance_valid(insert), "the cut-in goes with it")
 	assert_true(scene.hud.visible)
 	assert_true(foe.process_mode != Node.PROCESS_MODE_DISABLED, "time moves again")
 	assert_eq(player.eye_mode.phase, EyeArtMode.Phase.ACTIVE)
