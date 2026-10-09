@@ -235,6 +235,10 @@ func _cam_loop(s: Dictionary, id: int) -> void:
 	var start_fov := camera.fov
 	var t := 0.0
 	while id == _shot and not skipping and is_instance_valid(camera):
+		# Someone the shot frames has left the stage (an exit while the
+		# camera still follows them): hold the camera where it is.
+		if not _shot_ready(s):
+			break
 		var k := clampf(t / maxf(s["seconds"], 0.001), 0.0, 1.0)
 		k = k * k * (3.0 - 2.0 * k)
 		var xf := _shot_transform(s, k)

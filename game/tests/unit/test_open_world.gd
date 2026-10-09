@@ -356,3 +356,45 @@ func test_continuing_at_night_finds_the_lanterns_lit() -> void:
 	assert_eq(scene.time_of_day(), "night")
 	assert_true(scene.lantern_lights.size() > 6, "lanterns lit across the archipelago")
 	assert_near(_lantern_glow(), scene.LANTERN_GLOW, 0.01, "their paper glowing")
+
+
+## Plays out whatever the story shows: dialogue is clicked through, but
+## cutscenes play in full (as a player sees them, without skipping).
+func _story_through() -> void:
+	if scene.dialogue.is_open():
+		scene.dialogue.advance()
+		scene.dialogue.advance()
+
+
+func test_kagerou_mission_plays_to_the_end_in_the_world() -> void:
+	# Kagerou's boss fight and everything after it, played where the story
+	# happens (in the world), then back to free roam.
+	await _load()
+	for i in 6:
+		Game.mark_chapter_done(world.story.chapters[i]["id"])
+	world.refresh()
+	scene.start_story_in_world("ch5_kagerou")
+	await physics_frames(3)
+	var finished := []
+	scene.story_director.chapter_finished.connect(func(c: Dictionary) -> void: finished.append(c["id"]))
+	var beats: Array = scene.story_director.chapter["beats"]
+	scene.dialogue.visible = false
+	scene.story_director.beat_index = beats.find_custom(func(b: Dictionary) -> bool: return b["do"] == "boss") - 1
+	scene.story_director._next()
+	await physics_frames(ceili(EnemyShinobi.SPAWN_TIME * 60.0) + 5)
+	var boss: EnemyShinobi = scene.story_director.boss
+	assert_true(boss != null, "the boss is on the field")
+	boss.take_hit(99999.0, Element.NONE, player)
+	for i in 2400:
+		await _story_through()
+		if not finished.is_empty():
+			break
+		await physics_frames(1)
+	assert_eq(finished, ["ch5_kagerou"], "the mission finishes (stuck at beat %d)" % scene.story_director.beat_index)
+	for i in 400:
+		if scene.mode == Game.Mode.WORLD:
+			break
+		await physics_frames(1)
+	assert_eq(scene.mode, Game.Mode.WORLD, "and you're back in the world")
+	await physics_frames(30)
+	assert_true(is_instance_valid(player) and player.is_inside_tree(), "still standing")
