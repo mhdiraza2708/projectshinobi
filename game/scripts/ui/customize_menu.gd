@@ -97,21 +97,33 @@ func _open(for_creation: bool) -> void:
 	player.input_enabled = false
 	player.camera_rig.begin_showcase()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	var first: int = CREATION_ORDER[0] if creating else T_LOOK
+	var first: int = _order()[0]
 	_select_tab(first)
 	_tab_buttons[first].grab_focus()
 	opened.emit()
 
 
+## The tabs on offer, in order: everything, or creation's order. With the
+## game's main character there's no look to edit, only who they are.
+func _order() -> Array:
+	var order: Array = (CREATION_ORDER if creating else range(TABS.size())).duplicate()
+	if CharacterModel.has_main():
+		for tab in [T_LOOK, T_COLOURS, T_GEAR]:
+			order.erase(tab)
+	return order
+
+
 ## Tab order, title and footer for the current mode.
 func _apply_mode() -> void:
-	var order: Array = CREATION_ORDER if creating else range(TABS.size())
+	var order := _order()
 	for pos in order.size():
 		_tab_row.move_child(_tab_buttons[order[pos]], pos)
+	for i in _tab_buttons.size():
+		_tab_buttons[i].visible = order.has(i)
 	_subtitle.text = "旅立ち" if creating else "身支度"
 	_title.text = "NEW SHINOBI" if creating else "CUSTOMIZE"
 	_done.visible = not creating
-	_reset.visible = true
+	_reset.visible = not CharacterModel.has_main()
 	_begin.visible = creating
 	_back.visible = creating
 	_update_footer()
@@ -155,7 +167,7 @@ func _input(event: InputEvent) -> void:
 		elif event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
 			step = 1
 		if step != 0:
-			var order: Array = CREATION_ORDER if creating else range(TABS.size())
+			var order := _order()
 			var next: int = order[wrapi(order.find(_tabs.current_tab) + step, 0, order.size())]
 			_select_tab(next)
 			_tab_buttons[next].grab_focus()

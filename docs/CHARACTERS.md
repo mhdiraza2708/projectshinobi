@@ -150,6 +150,22 @@ Colour slots are found from material names. VRoid tags them (`_HAIR`,
 If a model's naming isn't recognised, it gets a single whole-model
 **Body** colour instead.
 
+### The main character (a Tripo model)
+
+Everyone plays the game's own main character,
+`game/assets/characters/main/mc.glb`. Anything that follows the player's
+profile wears it: the player, their Shade Clones, the customize preview and
+the skill screen. They keep their own clothes and colours, and the game
+adds only the katana at the hip that sword strikes draw. Customize keeps
+who they are (name, clan, dojutsu, jutsu) but not how they look. To
+replace them, export the new model the same way as a rival (below) and
+save it over `mc.glb`. Removing the file brings back the VRoid roster and
+appearance editing.
+
+A Tripo model has no blend shapes and no separate eyes, so the main
+character doesn't blink or talk. The dojutsu opening uses a drawn cut-in
+of the eyes, so it doesn't need eyes on the model.
+
 ### Masked rivals (Tripo models)
 
 The rank and file of each nature can wear a masked rival made in Tripo
@@ -163,7 +179,7 @@ the talking mouths, expressions, eye patterns and hair physics.
 3. Save it as `game/assets/characters/rivals/<nature>_<name>.glb`, where
    `<nature>` is `fire`, `wind`, `lightning`, `earth` or `water`, for example
    `fire_raider.glb`.
-4. Run `make rivals`. It maps the skeleton to Godot's humanoid bones the
+4. Run `make tripo`. It maps the skeleton to Godot's humanoid bones the
    same way as Mixamo clips.
 
 The game sizes rivals to shinobi height and gives them cel shading and an

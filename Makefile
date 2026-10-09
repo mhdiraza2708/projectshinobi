@@ -8,7 +8,7 @@ SHOTS ?= screenshots
 # Any Python with numpy and scipy (pip install -r art/audio/requirements.txt).
 PYTHON ?= python3
 
-.PHONY: run editor import test assets animations rivals sfx music voices vfx fonts polyhaven screenshots
+.PHONY: run editor import test assets animations tripo sfx music voices vfx fonts polyhaven screenshots
 
 run:
 	$(GODOT) --path game
@@ -33,10 +33,11 @@ animations: import
 	$(GODOT) --headless --path game --script res://tools/setup_mixamo.gd
 	$(MAKE) import
 
-# Configure rival models in game/assets/characters/rivals/ (Tripo exports with
-# the Mixamo skeleton preset) for humanoid retargeting, then re-import them.
-rivals: import
-	$(GODOT) --headless --path game --script res://tools/setup_rivals.gd
+# Configure Tripo characters (the main character in game/assets/characters/main/
+# and rivals in game/assets/characters/rivals/, exported with the Mixamo
+# skeleton preset) for humanoid retargeting, then re-import them.
+tripo: import
+	$(GODOT) --headless --path game --script res://tools/setup_tripo.gd
 	$(MAKE) import
 
 # Regenerate the synthesised sound effects in game/assets/audio/sfx/.

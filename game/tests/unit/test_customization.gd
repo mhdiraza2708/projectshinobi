@@ -7,7 +7,13 @@ const Scene := preload("res://scenes/training_ground.tscn")
 var model: CharacterModel
 
 
+# The roster and appearance editing underneath the main character.
+func before_each() -> void:
+	CharacterModel.use_main = false
+
+
 func after_each() -> void:
+	CharacterModel.use_main = true
 	Profile.persist = false
 	Profile.save_path = ""
 

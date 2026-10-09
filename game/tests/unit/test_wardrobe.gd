@@ -10,6 +10,15 @@ const VITA := R + "/vita.vrm"
 var model: CharacterModel
 
 
+# The roster and appearance editing underneath the main character.
+func before_each() -> void:
+	CharacterModel.use_main = false
+
+
+func after_each() -> void:
+	CharacterModel.use_main = true
+
+
 func _model(path: String, style := {}) -> CharacterModel:
 	model = CharacterModel.new()
 	model.use_profile = false

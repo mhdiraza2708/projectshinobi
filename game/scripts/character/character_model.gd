@@ -17,6 +17,15 @@ const ROSTER_DIR := "res://assets/characters/roster"
 const DEFAULT_MODEL := "res://assets/characters/roster/hairsample_male.vrm"
 ## The low-poly Godette (CC-BY), kept as a light fallback.
 const PLACEHOLDER_MODEL := "res://assets/characters/default/godette.vrm"
+## The game's own main character (a Tripo model): everyone plays as them,
+## so whoever follows the Profile wears this, whatever model it names.
+const MAIN_MODEL := "res://assets/characters/main/mc.glb"
+## How the main character is worn: their own colours and clothes, with
+## only the katana at the hip that every sword strike draws.
+const MAIN_LOOK := {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "ninjato",
+	"pouch": false, "gear_scale": 1.0, "gear_lift": 0.0, "height": 1.0, "hair_from": "", "outfit_from": ""}
+## Off only for tests of the roster and appearance editing underneath.
+static var use_main := true
 ## Ink outline width (metres) on models that aren't VRoid's.
 const OUTLINE := 0.004
 
@@ -138,11 +147,23 @@ func _find_mouth() -> void:
 func resolve_path() -> String:
 	if model_path != "":
 		return model_path
+	if use_profile and has_main():
+		return MAIN_MODEL
 	if use_profile:
 		var chosen: String = Profile.get_value(&"model")
 		if chosen != "" and ResourceLoader.exists(chosen):
 			return chosen
 	return resolve_path_default()
+
+
+## Whether the game's main character is there to wear.
+static func has_main() -> bool:
+	return use_main and ResourceLoader.exists(MAIN_MODEL)
+
+
+## Whether this model is the main character.
+func is_main() -> bool:
+	return loaded_path == MAIN_MODEL
 
 
 ## The character used when the profile names none.
@@ -281,6 +302,9 @@ func current_look() -> Dictionary:
 	var look := {}
 	for key: StringName in Profile.DEFAULTS:
 		look[key] = Profile.get_value(key) if use_profile else style.get(String(key), Profile.DEFAULTS[key])
+	if use_profile and resolve_path() == MAIN_MODEL:
+		for key: String in MAIN_LOOK:
+			look[StringName(key)] = MAIN_LOOK[key]
 	if use_profile:
 		# An eye art colours the eyes.
 		var art := Perks.active_eye_art()

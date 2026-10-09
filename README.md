@@ -37,8 +37,6 @@ controls can be remapped.
 
 ![Trial of the Five Natures: locked on to a Lightning chunin weaving a jutsu, its seals shown above its head; the wave, weakness and timer at the top](docs/images/trial.jpg)
 
-![Customize, Gear tab: a hachigane, face mask and scarf fitted to the character, and the sword worn at the hip (or none, to fight with fists)](docs/images/customize.jpg)
-
 ## What you can do right now
 
 - **An open world of islands.** Continue a save (or start one) and you're
@@ -92,8 +90,7 @@ controls can be remapped.
   standing or on the run (the blade trails behind you in the shinobi run).
   A few quiet seconds and it goes home to the scabbard; weaving seals puts
   it away at once (you need both hands). The Kenjutsu tree sharpens all of
-  it. Jonin and anyone else wearing a sword fight the same way; take the
-  sword off in Customize and you fight with your fists. The blade leaves a
+  it. Jonin and anyone else wearing a sword fight the same way. The blade leaves a
   ribbon of light in the draw and every cut, a glint runs up it as it comes
   out, and a landed cut holds the world for a heartbeat and throws sparks
   along its line.
@@ -155,9 +152,11 @@ controls can be remapped.
   asks before overwriting anything. Each slot holds its own shinobi, jutsu
   loadouts, story progress and records, and saves as you play. A save from
   an older version becomes slot 1.
+- **One main character**, the game's own: everyone plays the same
+  androgynous shinobi in an indigo haori, katana at the hip.
 - **Character creation** (New Game): pick a **clan**, a **dojutsu**, your
-  name and nature, your look and gear, and your jutsu loadout, then begin
-  chapter one. All of it can be changed later from Pause → Customize.
+  name and nature, and your jutsu loadout, then begin chapter one. All of
+  it can be changed later from Pause → Customize.
 - **Clans** (original to this game): Hearth (fire), Gale (wind), Stormvein
   (lightning), Stonewright (earth), Tidebound (water) and the clanless
   Wayfarer. A clan fixes your chakra nature (a Wayfarer chooses) and brings
@@ -181,11 +180,9 @@ controls can be remapped.
   guarding swallows enemy jutsu (up to three) instead of blocking them, and
   LB + Y throws them all back at your target, half again as strong.
 - **The ultimate meter keeps its charge** from one fight to the next.
-- **Character customization** (Pause → Customize): pick from your
-  VRoid roster, tint hair/eyes/skin/outfit, add ninja gear fitted to the
-  character's measured head and body (headband or hachigane, mask, scarf,
-  ninjato at the hip, kunai pouch), set height and expression, name your shinobi, and
-  choose a chakra nature (its jutsu cost 20% less chakra).
+- **Customize** (Pause → Customize): rename your shinobi, change clan,
+  dojutsu and jutsu, and choose a chakra nature (its jutsu cost 20% less
+  chakra).
 - **Ray tracing** (on GPUs that have it: NVIDIA RTX, AMD RX 6000+, Intel
   Arc): real hardware ray tracing through Vulkan. The sea mirrors the
   island, shiny steel reflects its surroundings, and ray-traced ambient
@@ -234,11 +231,12 @@ Docs:
 
 ## Characters
 
-The player is a **VRoid Studio** character: drop your export at
-`game/assets/characters/player.vrm` and it replaces the placeholder. The step-by-step
-guide is in [docs/CHARACTERS.md](docs/CHARACTERS.md). The game fixes facing and scale,
-keeps the anime shader and hair/cloth physics, and poses the character
-with IK (including the hand-seal pose) on any humanoid rig.
+The player is the game's **main character**, a Tripo model rigged with the
+Mixamo skeleton (`game/assets/characters/main/mc.glb`). The story cast and
+rivals are VRoid Studio characters and Tripo models. The game maps any of
+these onto Godot's humanoid skeleton, fixes facing and scale, and poses
+them with IK (including the hand-seal pose). The step-by-step guide is in
+[docs/CHARACTERS.md](docs/CHARACTERS.md).
 
 ## Known gaps (honest list)
 
