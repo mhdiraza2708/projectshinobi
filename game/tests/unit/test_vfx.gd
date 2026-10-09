@@ -87,6 +87,86 @@ func test_trails_finish_in_place_after_impact() -> void:
 	assert_eq(scene.get_children().filter(func(n: Node) -> bool: return n is VfxTrail).size(), 0, "then goes")
 
 
+func test_spirals_wind_round_an_axis_and_free_themselves() -> void:
+	await _load()
+	var s := Vfx.spiral(Color(0.5, 1.0, 0.7, 0.8), 3.0, 0.2, 0.8, 2.0, 9.0, 3, 0.2, false, 0.4)
+	scene.add_child(s)
+	await physics_frames(6)
+	assert_eq(s.mesh.get_surface_count(), 1, "the ribbons are drawn")
+	assert_true(s.mesh.get_aabb().size.y > 2.0, "they run the length of the axis (%s)" % s.mesh.get_aabb().size)
+	assert_true(s.mesh.get_aabb().size.x > 0.5, "and wind out round it")
+	await seconds(0.8)
+	assert_false(is_instance_valid(s), "gone when its time is up")
+
+
+func test_a_bolt_stays_attached_when_its_ends_move() -> void:
+	await _load()
+	var v := Vfx.bolt(scene, Vector3(0, 5, 0), Vector3(0, 5, 10), Color.WHITE, 0.1, 0.0)
+	await physics_frames(3)
+	var shape: PackedVector3Array = v._paths[0]
+	v.a = Vector3(4, 5, 0)
+	v.b = Vector3(4, 9, 7)
+	var moved := v._to_world(shape)
+	assert_true(moved[0].is_equal_approx(v.a) and moved[moved.size() - 1].is_equal_approx(v.b), "the same bolt, between its new ends")
+	v.queue_free()
+
+
+func test_a_bolt_crackles_then_holds_its_shape_and_fades() -> void:
+	await _load()
+	var v := Vfx.bolt(scene, Vector3.ZERO, Vector3(0, 8, 0), Color.WHITE, 0.1, 0.8)
+	await seconds(0.55)
+	var held: PackedVector3Array = v._paths[0]
+	await physics_frames(6)
+	assert_eq(v._paths[0], held, "no more crackle in the afterglow")
+	await seconds(0.4)
+	assert_false(is_instance_valid(v), "then gone")
+
+
+func test_the_needle_trails_a_bolt_of_its_own() -> void:
+	var visual := Vfx.projectile_visual(Element.LIGHTNING, 0.2)
+	var arcs: ArcCluster = visual.find_children("*", "ArcCluster", true, false)[0]
+	assert_true(arcs.tail > 1.0, "a line of lightning streaming behind")
+	visual.free()
+
+
+func test_water_and_wind_carry_spirals() -> void:
+	for element in [Element.WATER, Element.WIND]:
+		var visual := Vfx.projectile_visual(element, 0.35)
+		assert_true(visual.find_children("*", "VfxSpiral", true, false).size() >= 1, "%s twists" % Element.display_name(element))
+		visual.free()
+	var crescent := Vfx.crescent(Color(0.5, 1.0, 0.7), 1.0)
+	assert_true(crescent.find_children("*", "VfxSpiral", true, false).size() == 1, "the crescent has air curling off it")
+	crescent.free()
+
+
+func test_the_crescent_is_a_solid_bow_that_tapers_to_points() -> void:
+	var mesh := Vfx.crescent_mesh(2.0, 0.5, Color.WHITE, Color(1, 1, 1, 0.0))
+	var box := mesh.get_aabb()
+	assert_true(box.size.x > 3.0 and box.size.y < 0.01, "a wide flat bow (%s)" % box.size)
+	assert_true(box.position.z < 0.0, "bowing forward, toward -Z")
+	var points := mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX] as PackedVector3Array
+	var widest := 0.0
+	for p in points:
+		widest = maxf(widest, absf(p.x))
+	var tips := {}
+	for p in points:
+		if absf(p.x) > widest - 0.001:
+			tips[p.snappedf(0.001)] = true
+	assert_eq(tips.size(), 2, "each end is a single point")
+
+
+func test_every_nature_lands_and_blasts_then_leaves_nothing_behind() -> void:
+	await _load()
+	var at := player.global_position + Vector3(0, 1.0, -6)
+	for element in [Element.FIRE, Element.WIND, Element.LIGHTNING, Element.EARTH, Element.WATER, Element.NONE]:
+		Vfx.impact(scene, at, element, 1.0)
+		Vfx.area_blast(scene, at, element, 3.0)
+		await physics_frames(4)
+	await seconds(4.0)
+	var left := _loose_effects()
+	assert_eq(left.size(), 0, "all of it freed itself (left: %s)" % [left.map(func(n: Node) -> String: return n.get_class())])
+
+
 func test_charging_shows_an_aura_that_goes_away() -> void:
 	await _load()
 	Input.action_press(&"charge_chakra")

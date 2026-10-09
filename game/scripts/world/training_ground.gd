@@ -1120,31 +1120,10 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			# An ultimate partway through: --demo=ult:hearthfall:0.6,2.2 (seconds
 			# after it starts; earlier times also saved as <path>_<t>.png).
 			var parts := demo.split(":")
-			var u := Ultimates.get_ultimate(parts[1])
-			var nature: int = u["element_id"] if u["element_id"] != Element.NONE else Element.FIRE
-			Profile.set_value(&"affinity", nature)
-			Profile.set_value(&"ultimate", parts[1])
-			player.caster.affinity = nature
-			for i in 3:
-				var e := EnemyShinobi.new()
-				e.rank = &"genin"
-				e.element = [Element.WIND, Element.EARTH, Element.WATER][i]
-				add_child(e)
-				e.global_position = player.global_position + Vector3(-2.5 + 2.5 * i, 0.1, -9.0 - absf(i - 1) * 1.5)
-			for f in 40:
-				await get_tree().physics_frame
-			player.toggle_lock()
-			player.ult_charge = Ultimates.MAX_CHARGE
-			player.try_ultimate()
-			var fps := float(_user_args().get("fps", "60"))
 			var times := parts[2].split(",") if parts.size() > 2 else PackedStringArray(["1.0"])
-			var done := 0
-			for i in times.size():
-				var target := ceili(float(times[i]) * fps) + 1
-				await _frames(target - done)
-				done = target
+			await _demo_ultimate(parts[1], times, true, func(i: int) -> void:
 				if i < times.size() - 1:
-					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i]))
+					get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s.png" % times[i])))
 		"trailer":
 			# The 50-second teaser (see TrailerDirector; record with --write-movie).
 			await TrailerDirector.run(self).play()
@@ -1335,6 +1314,15 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			player.caster.cast(jutsu, player.lock_target)
 			for f in wait:
 				await get_tree().physics_frame
+		_ when demo.begins_with("vfxseq:"):
+			# Several jutsu in one run, a frame saved at each listed moment:
+			# --demo=vfxseq:sunfall_orb@20,45;cinder_bloom@6,14:close
+			# (physics frames after each cast; ":close" frames the blast
+			# near the caster instead of the whole range; the shots are
+			# saved beside the screenshot path as <name>_<n>.png). An
+			# ultimate goes last, in seconds: ...;ult=stormcaller@1.55,1.8
+			# (set --fps to the --fixed-fps).
+			await _vfx_sequence(demo.trim_prefix("vfxseq:"), path)
 		"vfx_strike", "vfx_strike_back", "vfx_charge", "vfx_dash":
 			player.toggle_lock()
 			await _frames(30)
@@ -1430,6 +1418,92 @@ func _side_camera() -> void:
 	cam.fov = 50
 	cam.position = mid + side * a.distance_to(b) * 0.95 + Vector3.UP * 1.2
 	cam.look_at(mid)
+	cam.current = true
+
+
+## An ultimate partway through, for the ult and vfxseq demos: casts `id`
+## with three foes in front and calls `shoot(i)` as each of `times` (seconds
+## after it starts) is reached.
+func _demo_ultimate(id: String, times: PackedStringArray, lock: bool, shoot: Callable) -> void:
+	var u := Ultimates.get_ultimate(id)
+	var nature: int = u["element_id"] if u["element_id"] != Element.NONE else Element.FIRE
+	Profile.set_value(&"affinity", nature)
+	Profile.set_value(&"ultimate", id)
+	player.caster.affinity = nature
+	for i in 3:
+		var e := EnemyShinobi.new()
+		e.rank = &"genin"
+		e.element = [Element.WIND, Element.EARTH, Element.WATER][i]
+		add_child(e)
+		e.global_position = player.global_position + Vector3(-2.5 + 2.5 * i, 0.1, -9.0 - absf(i - 1) * 1.5)
+	for f in 40:
+		await get_tree().physics_frame
+	if lock:
+		player.toggle_lock()
+	player.ult_charge = Ultimates.MAX_CHARGE
+	player.try_ultimate()
+	var fps := float(_user_args().get("fps", "60"))
+	var done := 0
+	for i in times.size():
+		var target := ceili(float(times[i]) * fps) + 1
+		await _frames(target - done)
+		done = target
+		shoot.call(i)
+
+
+## The vfxseq demo: casts each listed jutsu in turn at the locked dummy and
+## saves a frame at every listed moment (see the `vfxseq:` case above).
+func _vfx_sequence(spec: String, path: String) -> void:
+	player.toggle_lock()
+	await _frames(30)
+	var shot := 0
+	for segment in spec.split(";"):
+		if segment.begins_with("ult="):
+			# An ultimate, last in the list (it takes the camera): ult=<id>@<seconds>,...
+			var ult := segment.trim_prefix("ult=").split("@")
+			var first := shot
+			await _demo_ultimate(ult[0], ult[1].split(","), false, func(i: int) -> void:
+				get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%d.png" % (first + i))))
+			continue
+		var close := segment.ends_with(":close")
+		var parts := segment.trim_suffix(":close").split("@")
+		var jutsu := JutsuRegistry.get_jutsu(StringName(parts[0]))
+		if close:
+			_close_camera(jutsu.max_range * 0.5 + 1.0)
+		else:
+			_side_camera()
+		player.stats.chakra = player.stats.max_chakra
+		player.caster._cooldowns.clear()
+		var before := get_children()
+		player.caster.cast(jutsu, player.lock_target)
+		var done := 0
+		for moment in parts[1].split(","):
+			for f in int(moment) - done:
+				await get_tree().physics_frame
+			done = int(moment)
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%d.png" % shot))
+			shot += 1
+		# Clear this one away so it doesn't hang over the next.
+		for n in get_children():
+			if not before.has(n):
+				n.queue_free()
+		for f in 8:
+			await get_tree().physics_frame
+
+
+## A camera off to the right of the caster, looking `ahead` metres in front
+## of them (blasts and walls that go off close by).
+func _close_camera(ahead: float) -> void:
+	var forward := -player.global_basis.z
+	forward.y = 0.0
+	forward = forward.normalized()
+	var at := player.global_position + forward * ahead + Vector3.UP * 1.2
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.fov = 50
+	cam.position = at + forward.cross(Vector3.UP) * 8.0 + Vector3.UP * 1.8
+	cam.look_at(at)
 	cam.current = true
 
 
