@@ -95,3 +95,27 @@ func test_the_drawn_sword_takes_the_cap_on_its_grip() -> void:
 	assert_true(scabbard.end.y <= CharacterGear.GUARD_Y + 0.01,
 		"nothing of the scabbard above the guard to be left at the hip (%.3f)" % scabbard.end.y)
 	assert_true(sword.end.y > CharacterGear.GRIP_Y + 0.1, "the grip ends in its cap (%.3f)" % sword.end.y)
+
+
+## The radius of the headband's knot (it grows with the band's size).
+func _knot_radius(m: CharacterModel) -> float:
+	for att in m.gear.attachments():
+		for mi in att.find_children("*", "MeshInstance3D", true, false):
+			if (mi as MeshInstance3D).mesh is SphereMesh:
+				return ((mi as MeshInstance3D).mesh as SphereMesh).radius
+	return 0.0
+
+
+func test_the_player_sets_their_height_and_headband_size() -> void:
+	Profile.set_value(&"headband", "cloth")
+	await _load()
+	var m := player.model
+	var tall := m.measure_height()
+	var knot := _knot_radius(m)
+	assert_true(knot > 0.0, "a band to size")
+	Profile.set_value(&"height", 1.08)
+	Profile.set_value(&"headband_size", 1.4)
+	await physics_frames(2)
+	assert_near(m.measure_height() / tall, 1.08, 0.02, "taller by the slider")
+	# The whole band grows by the size (the ring still hugs the head).
+	assert_near(_knot_radius(m) / knot, 1.4, 0.05, "a bigger band")

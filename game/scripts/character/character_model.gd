@@ -24,7 +24,7 @@ const MAIN_MODEL := "res://assets/characters/main/mc.glb"
 ## katana at the hip that every sword strike draws, and whatever headband
 ## (and colour and height) the player picks for them.
 const MAIN_LOOK := {"tints": {}, "mask": false, "scarf": false, "back": "ninjato",
-	"pouch": false, "gear_scale": 1.0, "height": 1.0, "hair_from": "", "outfit_from": ""}
+	"pouch": false, "gear_scale": 1.0, "hair_from": "", "outfit_from": ""}
 ## Off only for tests of the roster and appearance editing underneath.
 static var use_main := true
 ## Ink outline width (metres) on models that aren't VRoid's.
@@ -289,7 +289,7 @@ func load_model(path: String) -> void:
 
 
 const GEAR_KEYS: PackedStringArray = ["headband", "headband_color", "mask", "mask_color", "scarf",
-	"scarf_color", "back", "pouch", "gear_scale", "gear_lift"]
+	"scarf_color", "back", "pouch", "gear_scale", "gear_lift", "headband_size"]
 
 ## The look applied when the model isn't following the Profile (enemies).
 ## Same keys as Profile: "tints" {slot: Color}, gear keys, "height",

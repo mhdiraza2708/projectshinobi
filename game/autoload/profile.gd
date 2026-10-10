@@ -35,6 +35,9 @@ const DEFAULTS := {
 	# Manual fit tweaks for gear on unusual head shapes.
 	&"gear_scale": 1.0,
 	&"gear_lift": 0.0,
+	# The headband itself: how wide the cloth, how long the tails, how big
+	# the plate (1 = as fitted).
+	&"headband_size": 1.0,
 	# Set once character creation is finished (a slot starts uncreated).
 	&"created": false,
 	# Ids from res://data/clans.json and eye_arts.json ("" = none).

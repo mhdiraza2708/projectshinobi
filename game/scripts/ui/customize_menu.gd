@@ -442,8 +442,11 @@ func _build_gear() -> Control:
 	if CharacterModel.has_main():
 		# The main character wears their own clothes and the katana; the
 		# headband is theirs to choose.
+		list.add_child(_labelled("Headband size", _slider(&"headband_size", 0.7, 1.5, 0.01, "%.0f%%", 100.0, 300.0)))
 		list.add_child(_labelled("Headband height", _slider(&"gear_lift", -0.15, 0.15, 0.01, "%+.0f", 100.0, 300.0)))
 		list.add_child(_hint("Fitted to the head and hair; nudge it here if the hair gets in the way."))
+		list.add_child(_section("Height"))
+		list.add_child(_slider(&"height", 0.9, 1.1, 0.01, "%.0f%%", 100.0))
 		return list
 
 	list.add_child(_section("Face mask"))
@@ -461,6 +464,7 @@ func _build_gear() -> Control:
 
 	list.add_child(_section("Fit"))
 	list.add_child(_labelled("Gear size", _slider(&"gear_scale", 0.85, 1.25, 0.01, "%.0f%%", 100.0, 300.0)))
+	list.add_child(_labelled("Headband size", _slider(&"headband_size", 0.7, 1.5, 0.01, "%.0f%%", 100.0, 300.0)))
 	list.add_child(_labelled("Headband height", _slider(&"gear_lift", -0.15, 0.15, 0.01, "%+.0f", 100.0, 300.0)))
 	list.add_child(_hint("Gear is fitted to each character's measured head and body; nudge it here if hair gets in the way."))
 	return list

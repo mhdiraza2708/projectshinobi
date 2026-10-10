@@ -249,6 +249,9 @@ func rebuild(settings: Dictionary) -> void:
 func _build_headband(kind: String, settings: Dictionary, head: AABB, face: AABB, k: float, lift: float) -> Node3D:
 	var color: Color = settings["headband_color"]
 	var scale := float(settings.get("gear_scale", 1.0))
+	# Headband size: the cloth's width, the knot and tails, the plate. The
+	# band still hugs the head (only a thicker band sits a touch further out).
+	var size := clampf(float(settings.get("headband_size", 1.0)), 0.6, 1.6)
 	var measured := face != head
 	# Across the forehead, above the brows (the face mesh runs chin to hairline).
 	var y := (face.position.y + face.size.y * 0.76 if measured else head.position.y + head.size.y * 0.72) + lift
@@ -268,8 +271,8 @@ func _build_headband(kind: String, settings: Dictionary, head: AABB, face: AABB,
 
 	var root := Node3D.new()
 	root.name = "Headband"
-	var band_h := 0.034 * k
-	var thick := 0.006 * k
+	var band_h := 0.034 * k * size
+	var thick := 0.006 * k * lerpf(1.0, size, 0.5)
 	var band := MeshInstance3D.new()
 	band.name = "Band"
 	band.mesh = shape.band_mesh(band_h, thick)
@@ -286,15 +289,15 @@ func _build_headband(kind: String, settings: Dictionary, head: AABB, face: AABB,
 	knot_mat.next_pass = Toon.outline(0.002)
 	for lobe_at: Array in [[-1.0, Vector3(1.0, 0.75, 0.55)], [1.0, Vector3(1.0, 0.75, 0.55)], [0.0, Vector3(0.6, 0.9, 0.7)]]:
 		var ball := SphereMesh.new()
-		ball.radius = 0.014 * k
-		ball.height = 0.028 * k
+		ball.radius = 0.014 * k * size
+		ball.height = 0.028 * k * size
 		ball.radial_segments = 12
 		ball.rings = 6
 		var lobe := MeshInstance3D.new()
 		lobe.mesh = ball
 		lobe.material_override = knot_mat
 		lobe.scale = lobe_at[1]
-		lobe.position = back + outward * 0.006 * k + Vector3(float(lobe_at[0]) * 0.016 * k, 0, 0)
+		lobe.position = back + outward * 0.006 * k * size + Vector3(float(lobe_at[0]) * 0.016 * k * size, 0, 0)
 		root.add_child(lobe)
 	for side in [-1.0, 1.0]:
 		var tail := GearRibbon.new()
@@ -302,15 +305,15 @@ func _build_headband(kind: String, settings: Dictionary, head: AABB, face: AABB,
 		tail.anchor = back + outward * 0.008 * k + Vector3(side * 0.008 * k, -0.006 * k, 0)
 		tail.head_center = Vector3(axis.x, y - 0.06 * k, axis.y)
 		tail.head_radius = shape.radius_at(PI) * 0.97
-		tail.length = (0.13 if side < 0.0 else 0.105) * k
-		tail.width = 0.026 * k
+		tail.length = (0.13 if side < 0.0 else 0.105) * k * size
+		tail.width = 0.026 * k * size
 		tail.side = side
 		tail.color = color.darkened(0.04)
 		root.add_child(tail)
 
 	if kind == "hachigane":
-		var plate_w := (face.size.x if measured else head.size.x * 0.8) * 0.66 * scale
-		var plate_h := 0.05 * k
+		var plate_w := (face.size.x if measured else head.size.x * 0.8) * 0.66 * scale * size
+		var plate_h := 0.05 * k * size
 		var half_angle := plate_w * 0.5 / (shape.radius_at(0.0) + thick)
 		var plate := MeshInstance3D.new()
 		plate.name = "Plate"
