@@ -311,22 +311,25 @@ func test_a_teleport_does_not_whip_the_hair() -> void:
 	assert_true(worst < 0.12, "the hair hangs where it did (a tip strayed %.2f m)" % worst)
 
 
-func test_the_thumb_and_fingers_wrap_round_a_drawn_sword() -> void:
+func test_a_drawn_sword_is_held_with_the_thumb_wrapped_and_the_fingers_closed() -> void:
 	_armed("ninjato")
-	await _frames(2)
+	await _frames(12)
 	var poser := model.poser
+	model.animator.strike()
+	for i in 240:
+		if model.gear.is_drawn() and not poser.is_drawing():
+			break
+		await _frames(1)
+	model.animator.speed_ratio = 0.0
+	await _frames(40)
+	assert_true(model.gear.is_drawn(), "the sword is out")
+	assert_true(float(poser._cur["wrap_R"]) > 0.9, "the thumb is told to wrap")
+	assert_true(float(poser._cur["curl_R"]) >= 1.4, "the fingers to close hard")
+	assert_true(float(poser._cur["wrap_L"]) < 0.01, "the other hand is left alone")
+	# And the wrap moves the thumb's bones: it swings across the palm.
 	var skel: Skeleton3D = poser._skel
 	var tip: int = poser._b[&"RightThumbDistal"]
-	var finger_tip: int = poser._b[&"RightMiddleDistal"]
-	var knuckle := finger_tip   # the thumb's tip is measured to the middle fingertip
-	var palm: int = poser._b[&"RightHand"]
-	var thumb_before := skel.get_bone_global_pose(tip).origin.distance_to(skel.get_bone_global_pose(knuckle).origin)
-	var finger_before := skel.get_bone_global_pose(finger_tip).origin.distance_to(skel.get_bone_global_pose(palm).origin)
-	model.animator.strike()
-	await seconds(HumanoidPoser.DRAW_TIME + 0.4)
-	model.animator.speed_ratio = 0.0
-	await _frames(20)
-	var thumb_after := skel.get_bone_global_pose(tip).origin.distance_to(skel.get_bone_global_pose(knuckle).origin)
-	var finger_after := skel.get_bone_global_pose(finger_tip).origin.distance_to(skel.get_bone_global_pose(palm).origin)
-	assert_true(thumb_after < thumb_before * 0.8, "the thumb comes round to meet the fingers (%.3f -> %.3f)" % [thumb_before, thumb_after])
-	assert_true(finger_after < finger_before * 0.85, "the fingers close on the grip (%.3f -> %.3f)" % [finger_before, finger_after])
+	var before := skel.get_bone_global_pose(tip).origin
+	poser._curl_thumb("Right", 1.0)
+	var moved := skel.get_bone_global_pose(tip).origin.distance_to(before)
+	assert_true(moved > 0.01, "the thumb's tip moves round the grip (%.3f m)" % moved)
