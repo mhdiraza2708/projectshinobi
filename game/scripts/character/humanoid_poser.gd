@@ -480,15 +480,22 @@ func _sword(p: Dictionary) -> void:
 			p["hips_drop"] = float(p["hips_drop"]) + 0.06 * sin(t * PI)
 
 
-## Holding the drawn sword: low and forward standing still, trailing back
-## while running (the shinobi run), swept behind in a sprint.
+## Holding the drawn sword: the way a swordsman waits, the arm hanging easy at
+## the side, the wrist cocked so the blade angles down and away from the leg,
+## and the body loose (the shoulders level, the weight on one hip, the head a
+## little low). Trailing back while running (the shinobi run), swept behind in
+## a sprint.
 func _sword_hold(p: Dictionary) -> void:
 	if not sword_drawn and _draw_t <= 0.0:
 		p["use_arm_R"] = p["use_arms"]
 		return
-	var arm := Vector3(0.32, -0.62, -0.42)
-	var blade := Vector3(-0.1, -0.45, -1.0)
-	var edge := Vector3(0.0, -1.0, 0.45)
+	# The arm hangs all but straight (reach just short of full, so the elbow
+	# only softens), a little out from the hip. The fingers run inward and down
+	# along it (the palm faces forward, the knuckles back), so the wrist bends
+	# only a little.
+	var arm := Vector3(0.2, -0.97, -0.06)
+	var blade := Vector3(0.5, -0.84, -0.18)
+	var edge := Vector3(-0.8, -0.6, 0.15)
 	if pose == Pose.GUARD:
 		# A blade block: held level across in front of the head.
 		arm = Vector3(0.12, 0.3, -0.58)
@@ -507,6 +514,9 @@ func _sword_hold(p: Dictionary) -> void:
 		blade = Vector3(0.15, -0.45, 1.0)
 		edge = Vector3(0.0, -1.0, -0.45)
 	_sword_key(p, arm, blade, edge, 0.0)
+	if arm.y < -0.9:
+		# Hanging at the side: the elbow, if it bends at all, bends back.
+		p["pole_R"] = Vector3(0.5, -0.3, 0.8)
 
 
 func _sword_key(p: Dictionary, arm: Vector3, blade: Vector3, edge: Vector3, twist: float) -> void:

@@ -333,3 +333,23 @@ func test_a_drawn_sword_is_held_with_the_thumb_wrapped_and_the_fingers_closed() 
 	poser._curl_thumb("Right", 1.0)
 	var moved := skel.get_bone_global_pose(tip).origin.distance_to(before)
 	assert_true(moved > 0.01, "the thumb's tip moves round the grip (%.3f m)" % moved)
+
+
+func test_a_standing_swordsman_lets_the_sword_arm_hang_nearly_straight_with_the_blade_angled_out() -> void:
+	_armed("ninjato")
+	await _frames(12)
+	var poser := model.poser
+	model.animator.strike()
+	for i in 240:
+		if model.gear.is_drawn() and not poser.is_drawing():
+			break
+		await _frames(1)
+	model.animator.speed_ratio = 0.0
+	await _frames(40)
+	var arm: Vector3 = poser._cur["arm_R"]
+	assert_true(arm.length() > 0.95, "the reach is all but full: the elbow barely bends (%.2f)" % arm.length())
+	assert_true(arm.y < -0.9 and absf(arm.x) < 0.35, "it hangs at the side, not out in front (%s)" % arm)
+	var blade: Vector3 = poser._cur["thumb_R"]
+	assert_true(blade.y < -0.7, "the blade points down")
+	assert_true(blade.x > 0.3, "and away from the leg")
+	assert_true(blade.angle_to(Vector3.DOWN) < deg_to_rad(45.0), "no more than 45 degrees off vertical (%.0f)" % rad_to_deg(blade.angle_to(Vector3.DOWN)))
