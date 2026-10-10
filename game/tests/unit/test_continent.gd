@@ -419,3 +419,17 @@ func test_a_regions_footpaths_are_beaten_earth() -> void:
 		assert_eq(land.surface_at(c.x + p.x, c.y + p.y), &"dirt", "on the path at %s" % p)
 	for p: Vector2 in [Vector2(9, -40), Vector2(-12, -42)]:
 		assert_eq(land.surface_at(c.x + p.x, c.y + p.y), &"grass", "beside it at %s" % p)
+
+
+func test_no_road_is_too_steep_to_walk_up() -> void:
+	var land := ContinentLand.new()
+	for path: Dictionary in land.roads.paths:
+		var pts: PackedVector2Array = path["points"]
+		var worst := 0.0
+		for k in range(1, pts.size()):
+			var d := pts[k].distance_to(pts[k - 1])
+			if d < 0.5:
+				continue
+			worst = maxf(worst, absf(land.height_at(pts[k].x, pts[k].y) - land.height_at(pts[k - 1].x, pts[k - 1].y)) / d)
+		# The player walks up 45 degrees; roads keep well under it, both ways.
+		assert_true(rad_to_deg(atan(worst)) < 38.0, "a road climbs no steeper than 38 degrees (%.0f)" % rad_to_deg(atan(worst)))

@@ -25,6 +25,8 @@ var _ah := PackedFloat32Array()
 var _bh := PackedFloat32Array()
 var _aw := PackedFloat32Array()
 var _bw := PackedFloat32Array()
+var _ak := PackedFloat32Array()
+var _bk := PackedFloat32Array()
 var _grid: Dictionary = {}
 
 
@@ -32,9 +34,15 @@ func _init(search_reach := 24.0) -> void:
 	reach = search_reach
 
 
-## Adds a path: `points` in (x, z), with a height and a half width at each.
-func add_path(points: PackedVector2Array, heights: PackedFloat32Array, half_widths: PackedFloat32Array) -> void:
-	paths.append({"points": points, "heights": heights, "widths": half_widths})
+## Adds a path: `points` in (x, z), with a height and a half width at each,
+## and optionally a bank at each: how much further than usual the land eases
+## into it (a road cut deep into a slope needs wide banks, not walls).
+func add_path(points: PackedVector2Array, heights: PackedFloat32Array, half_widths: PackedFloat32Array,
+		banks := PackedFloat32Array()) -> void:
+	if banks.size() != points.size():
+		banks = PackedFloat32Array()
+		banks.resize(points.size())
+	paths.append({"points": points, "heights": heights, "widths": half_widths, "banks": banks})
 
 
 ## Sorts every segment into the hash. Call once, after the last add_path.
@@ -44,6 +52,7 @@ func finish() -> void:
 		var pts: PackedVector2Array = path["points"]
 		var hs: PackedFloat32Array = path["heights"]
 		var ws: PackedFloat32Array = path["widths"]
+		var ks: PackedFloat32Array = path["banks"]
 		for i in pts.size() - 1:
 			var id := _ax.size()
 			_ax.append(pts[i].x)
@@ -54,7 +63,9 @@ func finish() -> void:
 			_bh.append(hs[i + 1])
 			_aw.append(ws[i])
 			_bw.append(ws[i + 1])
-			var pad := reach + maxf(ws[i], ws[i + 1])
+			_ak.append(ks[i])
+			_bk.append(ks[i + 1])
+			var pad := reach + maxf(ws[i], ws[i + 1]) + maxf(ks[i], ks[i + 1])
 			var lo := Vector2(minf(pts[i].x, pts[i + 1].x), minf(pts[i].y, pts[i + 1].y)) - Vector2(pad, pad)
 			var hi := Vector2(maxf(pts[i].x, pts[i + 1].x), maxf(pts[i].y, pts[i + 1].y)) + Vector2(pad, pad)
 			for cx in range(int(floorf(lo.x / CELL)), int(floorf(hi.x / CELL)) + 1):
@@ -95,6 +106,34 @@ func query(x: float, z: float) -> Vector3:
 			best_h = lerpf(_ah[id], _bh[id], t)
 			best_w = w
 	return Vector3(best_e, best_h, best_w)
+
+
+## query(), with the bank there as w.
+func query_banked(x: float, z: float) -> Vector4:
+	var list: Variant = _grid.get(int(floorf(x / CELL)) * 8192 + int(floorf(z / CELL)))
+	if list == null:
+		return Vector4(NONE, 0.0, 0.0, 0.0)
+	var best_e := NONE
+	var best_h := 0.0
+	var best_w := 0.0
+	var best_k := 0.0
+	for id: int in (list as PackedInt32Array):
+		var ax := _ax[id]
+		var az := _az[id]
+		var dx := _bx[id] - ax
+		var dz := _bz[id] - az
+		var len2 := dx * dx + dz * dz
+		var t := clampf(((x - ax) * dx + (z - az) * dz) / maxf(len2, 0.0001), 0.0, 1.0)
+		var px := x - (ax + dx * t)
+		var pz := z - (az + dz * t)
+		var w := lerpf(_aw[id], _bw[id], t)
+		var e := sqrt(px * px + pz * pz) - w
+		if e < best_e:
+			best_e = e
+			best_h = lerpf(_ah[id], _bh[id], t)
+			best_w = w
+			best_k = lerpf(_ak[id], _bk[id], t)
+	return Vector4(best_e, best_h, best_w, best_k)
 
 
 ## Total length of every path (metres).

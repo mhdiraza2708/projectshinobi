@@ -70,6 +70,11 @@ const RIVER_HALF_WIDTH := Vector2(2.4, 6.0)
 const ROAD_HALF := 2.6
 const ROAD_FALLOFF := 5.0
 const ROAD_SPACING := 8.0
+## The steepest a road climbs (rise over run, about 31 degrees): well within
+## what you can walk up, either way.
+const ROAD_MAX_GRADE := 0.6
+## How wide a road's banks are per metre it is cut in or built up.
+const ROAD_BANK := 1.4
 const ROAD_DIRT_FADE := 1.8
 ## The footpaths of a region are only looked for this close to its centre.
 const FOOTPATH_REACH := 90.0
@@ -253,9 +258,10 @@ func _height(x: float, z: float, with_roads: bool) -> float:
 			var channel := lerpf(q.y, q.y + RIVER_DEPTH + RIVER_CREST, smoothstep(0.0, RIVER_BANK, q.x))
 			h = lerpf(channel, h, smoothstep(RIVER_BANK, RIVER_REACH, q.x))
 	if with_roads and roads != null:
-		var q := roads.query(x, z)
-		if q.x < ROAD_FALLOFF:
-			h = lerpf(q.y, h, smoothstep(0.0, ROAD_FALLOFF, q.x))
+		var q := roads.query_banked(x, z)
+		var falloff := ROAD_FALLOFF + q.w
+		if q.x < falloff:
+			h = lerpf(q.y, h, smoothstep(0.0, falloff, q.x))
 	return _flatten_pads(x, z, h)
 
 
@@ -644,7 +650,14 @@ func _build_roads() -> void:
 			if vq.x < 3.0:
 				heights[i] = minf(heights[i], vq.y + RIVER_DEPTH - 0.35)
 			widths.append(ROAD_HALF)
-		found.add_path(pts, heights, widths)
+		var graded := _graded(pts, heights)
+		# Where it is cut in (or built up) the land eases into it over banks
+		# as wide as the cut is deep, so a pass is a valley and not a slot.
+		var banks := PackedFloat32Array()
+		for i in pts.size():
+			banks.append(ROAD_BANK * absf(heights[i] - graded[i]))
+		banks = ContinentRouter.blur(banks, 3)
+		found.add_path(pts, graded, widths, banks)
 		road_links.append(PackedStringArray([link[0], link[1]]))
 		# Later roads like to share the way.
 		for p in pts:
@@ -656,6 +669,20 @@ func _build_roads() -> void:
 						weights[k] = maxf(weights[k] * 0.8, 0.5)
 	found.finish()
 	roads = found
+
+
+## A roadbed no steeper than ROAD_MAX_GRADE anywhere: where the land climbs
+## faster, the road cuts into it (or is built up), evened from both ends.
+static func _graded(pts: PackedVector2Array, heights: PackedFloat32Array) -> PackedFloat32Array:
+	var h := heights.duplicate()
+	for round in 3:
+		for i in range(1, h.size()):
+			var step := ROAD_MAX_GRADE * pts[i].distance_to(pts[i - 1])
+			h[i] = clampf(h[i], h[i - 1] - step, h[i - 1] + step)
+		for i in range(h.size() - 2, -1, -1):
+			var step := ROAD_MAX_GRADE * pts[i].distance_to(pts[i + 1])
+			h[i] = clampf(h[i], h[i + 1] - step, h[i + 1] + step)
+	return h
 
 
 func _wobbled_road(pts: PackedVector2Array) -> PackedVector2Array:
