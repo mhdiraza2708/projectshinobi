@@ -16,13 +16,23 @@ const TAB_SKILLS := 4
 const TAB_QUESTS := 5
 const TAB_MAP := 6
 
+## The scroll's paper at the 1920 x 1080 layout size: nearly the whole screen
+## tall, so a settings page shows a screenful of rows. Smaller viewports (a
+## large UI scale) shrink it to fit.
+const PAPER_SIZE := Vector2(1240, 930)
+## What the paper leaves free: the rollers above and below it, and a margin.
+const PAPER_SPARE := Vector2(100, 140)
+
 signal customize_requested
 signal title_requested
 
 var player: Player
 
 var _root: Control
-## HUDs hidden while the menu is open (to show again on close).
+var _paper: PaperPanel
+var _rollers: Array[Control] = []
+## HUDs hidden while the menu is open (to show again on close): the vitals
+## and quick-cast HUD, and the quest tracker's text and marker.
 var _hidden_huds: Array[CanvasLayer] = []
 var _tabs: TabContainer
 var _tab_buttons: Array[Button] = []
@@ -54,6 +64,7 @@ func bind(p: Player) -> void:
 	player = p
 	_build()
 	_root.visible = false
+	get_viewport().size_changed.connect(_fit_paper)
 	Settings.bindings_changed.connect(_refresh_controls)
 	InputDevice.device_changed.connect(func(_d: Binding.Device) -> void:
 		_refresh_jutsu()
@@ -70,10 +81,12 @@ func open() -> void:
 	get_tree().paused = true
 	# The HUD would show around the edges of the scroll.
 	_hidden_huds.clear()
-	for hud in get_tree().root.find_children("*", "Hud", true, false):
-		if (hud as CanvasLayer).visible:
-			(hud as CanvasLayer).visible = false
-			_hidden_huds.append(hud)
+	for cls in ["Hud", "QuestTracker"]:
+		for hud in get_tree().root.find_children("*", cls, true, false):
+			if (hud as CanvasLayer).visible:
+				(hud as CanvasLayer).visible = false
+				_hidden_huds.append(hud)
+	_fit_paper()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_tab_hint.visible = InputDevice.current == Binding.Device.GAMEPAD
 	_refresh_controls()
@@ -154,18 +167,18 @@ func _build() -> void:
 	scroll.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_root.add_child(scroll)
 	scroll.add_child(_roller())
-	var paper := PaperPanel.new()
-	paper.seed = 21.0
-	paper.opacity = 0.99
-	paper.tear = 3.0
-	paper.margin = Vector4(48, 26, 48, 26)
-	paper.custom_minimum_size = Vector2(1240, 820)
-	scroll.add_child(paper)
+	_paper = PaperPanel.new()
+	_paper.seed = 21.0
+	_paper.opacity = 0.99
+	_paper.tear = 3.0
+	_paper.margin = Vector4(48, 26, 48, 26)
+	scroll.add_child(_paper)
 	scroll.add_child(_roller())
+	_fit_paper()
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override(&"separation", 12)
-	paper.add_child(vbox)
+	_paper.add_child(vbox)
 
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override(&"separation", 16)
@@ -244,7 +257,7 @@ func _build() -> void:
 
 func _roller() -> Control:
 	var bar := Panel.new()
-	bar.custom_minimum_size = Vector2(1300, 28)
+	bar.custom_minimum_size = Vector2(PAPER_SIZE.x + 60.0, 28)
 	bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var wood := StyleBoxFlat.new()
 	wood.bg_color = UiKit.WOOD
@@ -254,8 +267,13 @@ func _roller() -> Control:
 	bar.add_theme_stylebox_override(&"panel", wood)
 	for side in [0.0, 1.0]:
 		var knob := Panel.new()
-		knob.size = Vector2(34, 34)
-		knob.position = Vector2(side * (1300 - 34), -3)
+		# Pinned to the bar's own ends, whatever width it is fitted to.
+		knob.anchor_left = side
+		knob.anchor_right = side
+		knob.offset_left = -34.0 * side
+		knob.offset_right = 34.0 * (1.0 - side)
+		knob.offset_top = -3
+		knob.offset_bottom = 31
 		var k := StyleBoxFlat.new()
 		k.bg_color = UiKit.GOLD
 		k.set_corner_radius_all(17)
@@ -263,7 +281,20 @@ func _roller() -> Control:
 		k.border_color = Color(UiKit.WOOD).darkened(0.3)
 		knob.add_theme_stylebox_override(&"panel", k)
 		bar.add_child(knob)
+	_rollers.append(bar)
 	return bar
+
+
+## Sizes the paper (and the rollers over it) to the screen: PAPER_SIZE where
+## it fits, less where a large UI scale leaves less room.
+func _fit_paper() -> void:
+	if _paper == null or not is_inside_tree():
+		return
+	var view := get_viewport().get_visible_rect().size
+	var fit := Vector2(clampf(view.x - PAPER_SPARE.x, 800.0, PAPER_SIZE.x), clampf(view.y - PAPER_SPARE.y, 440.0, PAPER_SIZE.y))
+	_paper.custom_minimum_size = fit
+	for bar in _rollers:
+		bar.custom_minimum_size.x = fit.x + 60.0
 
 
 func _rule() -> ColorRect:
@@ -634,6 +665,7 @@ func _build_skills() -> Control:
 	_skills_summary.add_theme_constant_override(&"separation", 14)
 	_skills_open = _button("Open skill trees", open_skills)
 	_skills_open.add_theme_font_size_override(&"font_size", 28)
+	_skills_open.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_refresh_skills()
 	return _skills_summary
 
@@ -787,6 +819,10 @@ func _quest_row(kanji: String, title: String, line: String, track_id: String, tr
 			_focus_first(_quest_list))
 		b.disabled = track_id == tracked
 		row.add_child(b)
+		# Clear of the scrollbar.
+		var edge := Control.new()
+		edge.custom_minimum_size.x = 10
+		row.add_child(edge)
 	return row
 
 

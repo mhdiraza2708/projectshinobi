@@ -2,17 +2,18 @@ class_name CustomizeMenu
 extends CanvasLayer
 ## Character customization: who your shinobi is (name, nature), plus the clan,
 ## eye art and jutsu loadouts that shape how you fight. The game has one fixed
-## main character (CharacterModel.has_main()), so the Look, Colours and Gear
-## tabs stay hidden; with no main character (a plain checkout without the
-## model pack) they come back for the roster, tints and ninja gear.
+## main character (CharacterModel.has_main()), so the Look and Colours tabs stay
+## hidden and Gear holds only their headband; with no main character (a plain
+## checkout without the model pack) they all come back for the roster, tints
+## and ninja gear.
 ## Changes apply live to the character (standing on the right, orbit with the
 ## right stick or a mouse drag) and are saved to the Profile immediately.
 ## Fully navigable with a controller: D-pad/stick to move, A to pick, LB/RB
 ## to switch tabs, B or Start to finish.
 ##
 ## `open_creation()` runs it as the start of a new game: the tabs come in the
-## order you'd choose them (clan, dojutsu, name, jutsu), and Begin / Back
-## replace Done.
+## order you'd choose them (clan, dojutsu, name, headband, jutsu), and Begin /
+## Back replace Done.
 
 signal opened
 signal closed
@@ -307,7 +308,8 @@ func _rebuild_tabs() -> void:
 		_tabs.remove_child(c)
 		c.queue_free()
 	# Every tab keeps its slot (the tab numbers are fixed), but only the ones
-	# on offer are built: with the main character there's no wardrobe to fill.
+	# on offer are built: with the main character there's no wardrobe to fill
+	# beyond the headband.
 	var builders: Array[Callable] = [_build_look, _build_colours, _build_gear, _build_identity,
 		_build_clan, _build_eyes, _build_jutsu]
 	for i in TABS.size():

@@ -75,7 +75,7 @@ func show_main() -> void:
 	var slot := SaveSlots.active
 	if slot > 0:
 		_first = _entry("続", "Continue", _slot_summary(slot), continue_chosen.emit.bind(slot))
-	_entry("新", "New Game", "" if slot > 0 else "Choose your clan, dojutsu, name and jutsu, then begin the story.",
+	_entry("新", "New Game", "" if slot > 0 else "Choose your clan, dojutsu, name, headband and jutsu, then begin the story.",
 		show_slots.bind(true))
 	if _first == null or slot == 0:
 		_first = _menu.get_child(0) as Button
@@ -311,6 +311,7 @@ func _confirm(heading: String, body: String, yes_label: String, on_yes: Callable
 func show_chapters() -> void:
 	_page = &"chapters"
 	_clear_menu()
+	_menu.add_child(UiKit.label("Clear each mission to unseal the next.", 18, UiKit.INK_SOFT, &"body"))
 	# Ten chapters don't fit the scroll: list them in a scrolling column that
 	# follows controller focus.
 	var scroll := ScrollContainer.new()
@@ -336,9 +337,10 @@ func show_chapters() -> void:
 				(": " + title.to_upper()) if title != "" else ""], 22, UiKit.CRIMSON_DARK, &"bold"))
 		var unlocked := story.is_unlocked(id)
 		var done := Game.chapter_done(id)
-		var status := "Cleared" if done else ("New" if unlocked else "Sealed: clear the mission before it")
-		var b := _entry(Story.numeral(c["number"]) if unlocked else "封", c["title"] if unlocked else "? ? ?",
-			"%s  ·  %s" % [c["location"], status] if unlocked else status, chapter_chosen.emit.bind(id))
+		var status := "Cleared" if done else "New"
+		# A sealed chapter is one dim line, not a block of the same sentence.
+		var b := _entry(Story.numeral(c["number"]) if unlocked else "封", c["title"] if unlocked else "? ? ?   sealed",
+			"%s  ·  %s" % [c["location"], status] if unlocked else "", chapter_chosen.emit.bind(id))
 		b.disabled = not unlocked
 		if unlocked and (focus == null or not done):
 			focus = b
