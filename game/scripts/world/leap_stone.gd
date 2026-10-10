@@ -66,7 +66,7 @@ func leap(who: Player) -> void:
 	who.input_enabled = false
 	who.velocity = Vector3.ZERO
 	Vfx.shockwave(get_parent(), from, Color("9fd8ff"), 3.5, 0.5)
-	Sfx.play(&"dash", 2.0)
+	Sfx.play(&"dash")
 	var peak := maxf(from.y, to.y) + ARC
 	var tw := who.create_tween()
 	tw.tween_method(func(t: float) -> void:

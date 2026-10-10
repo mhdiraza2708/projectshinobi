@@ -255,6 +255,7 @@ func _state_free(delta: float) -> void:
 				return
 	if Input.is_action_just_pressed(&"quick_page"):
 		quick_page = 1 - quick_page
+		Sfx.ui(&"ui_tab")
 		feedback.emit("Quick-cast slots %d–%d" % [quick_page * Loadouts.PAGE + 1, (quick_page + 1) * Loadouts.PAGE], &"info")
 		quick_slots_changed.emit()
 	if Input.is_action_just_pressed(&"preset_next"):
@@ -364,6 +365,7 @@ func _enter(new_state: State) -> void:
 		State.CHARGING:
 			stats.is_charging = false
 			Sfx.stop_loop(&"charge")
+			Sfx.play(&"charge_end")
 			_stop_charge_fx()
 		State.GUARDING: stats.guard_multiplier = 1.0
 		State.DASHING:
@@ -373,6 +375,7 @@ func _enter(new_state: State) -> void:
 				_dash_trail.reparent(get_parent())
 			_dash_trail = null
 	if new_state == State.CHARGING:
+		Sfx.play(&"charge_start")
 		Sfx.start_loop(&"charge", &"charge_loop", -3.0)
 		_start_charge_fx()
 	state = new_state
@@ -470,7 +473,7 @@ func _held_bank() -> int:
 func _jump() -> void:
 	if is_on_floor():
 		velocity.y = jump_velocity
-		Sfx.play(&"jump", -4.0)
+		Sfx.play(&"jump")
 	elif _air_jumps_left > 0 and stats.spend_chakra(air_jump_cost):
 		_air_jumps_left -= 1
 		velocity.y = jump_velocity * 0.9
@@ -555,11 +558,16 @@ func _strike() -> void:
 		_since_blocked = INF
 		feedback.emit("Counter!", &"info")
 	var landed := false
+	var guarded := false
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, 0.9 * reach, [get_rid()]):
+		var raised := victim is EnemyShinobi and (victim as EnemyShinobi).state == EnemyShinobi.State.GUARDING
 		# Guard Breaker (or a counter) knocks a raised guard aside first.
-		if victim is EnemyShinobi and (counter or (Perks.has(&"guard_break") \
-				and (victim as EnemyShinobi).state == EnemyShinobi.State.GUARDING)):
+		if victim is EnemyShinobi and (counter or (Perks.has(&"guard_break") and raised)):
+			if raised:
+				Sfx.play_at(&"guard_break", (victim as Node3D).global_position + Vector3.UP, -2.0)
+			raised = false
 			(victim as EnemyShinobi).stagger()
+		guarded = guarded or raised
 		if Combat.apply_hit(victim, damage, Element.NONE, self) > 0.0:
 			landed = true
 			notify_hit(victim, &"strike")
@@ -572,7 +580,9 @@ func _strike() -> void:
 					+ Vector3(0.0, 0.0, -0.35))
 				Vfx.blade_sparks(get_parent(), at, along.normalized(), 1.0 if finisher else 0.8)
 	if landed:
-		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
+		# Steel on a raised guard rings; a cut with the sword slices; fists thud.
+		var sound := &"blade_clash" if armed and guarded else (&"blade_hit" if armed else &"strike_hit")
+		Sfx.play_at(sound, center, 0.0, 0.1)
 		if armed:
 			HitStop.freeze(get_tree(), 0.07 if finisher else 0.05)
 		camera_rig.add_shake(0.25)
@@ -603,7 +613,7 @@ func _blade_wave(forward: Vector3, cut: float) -> void:
 	p.direction = caster.aim_direction(target) if target else forward
 	get_parent().add_child(p)
 	p.global_position = global_position + Vector3.UP * 1.1 + forward * 0.8
-	Sfx.play(&"strike_whoosh", 1.0, 0.05)
+	Sfx.play(&"strike_whoosh", 0.0, 0.05)
 
 
 func throw_kunai() -> void:
@@ -662,7 +672,10 @@ func _is_hostile(n: Node) -> bool:
 
 
 func toggle_lock() -> void:
-	_set_lock(null if lock_target else find_lock_target())
+	var held := lock_target != null
+	_set_lock(null if held else find_lock_target())
+	if held or lock_target != null:
+		Sfx.play(&"lock_off" if held else &"lock_on")
 
 
 func find_lock_target() -> Node3D:
@@ -819,7 +832,7 @@ func _on_dodged(_amount: float, _element: int) -> void:
 	stats.chakra_changed.emit(stats.chakra, stats.max_chakra)
 	feedback.emit("Mirror Eye", &"cast")
 	Vfx.flash(get_parent(), global_position + Vector3.UP * 1.6, _eye_color().lightened(0.3), 2.4, 0.3, &"glow")
-	Sfx.play(&"chakra_jump", -2.0)
+	Sfx.play(&"perfect_dodge")
 	# Real time, not slowed time.
 	await get_tree().create_timer(Perks.FOCUS_SECONDS, true, false, true).timeout
 	Engine.time_scale = 1.0
@@ -829,7 +842,7 @@ func _on_dodged(_amount: float, _element: int) -> void:
 ## Still Eye: a perfectly timed guard.
 func _perfect_guard() -> void:
 	gain_ultimate(Ultimates.PER_PERFECT_GUARD)
-	Sfx.play(&"guard", 3.0)
+	Sfx.play(&"blade_clash")
 	feedback.emit("Still Eye: blocked", &"cast")
 	stats.chakra = minf(stats.max_chakra, stats.chakra + Perks.FOCUS_CHAKRA * 0.8)
 	stats.chakra_changed.emit(stats.chakra, stats.max_chakra)
@@ -875,7 +888,12 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 	if amount <= 0.0 and state == State.GUARDING:
 		_perfect_guard()
 		return
-	Sfx.play(&"guard" if state == State.GUARDING else &"hit_player")
+	if state != State.GUARDING:
+		Sfx.play(&"hit_player", -2.0)
+	elif animator and animator.sword_drawn():
+		Sfx.play(&"blade_clash", -2.0)
+	else:
+		Sfx.play(&"guard")
 	if animator and state != State.GUARDING and not stats.is_dead():
 		animator.hit(amount >= interrupt_damage)
 	camera_rig.add_shake(clampf(amount / 30.0, 0.1, 0.6))
@@ -908,7 +926,7 @@ func gain_ultimate(amount: float) -> void:
 	ultimate_changed.emit(ult_charge, Ultimates.MAX_CHARGE)
 	if before < Ultimates.MAX_CHARGE and ultimate_ready():
 		feedback.emit("Ultimate ready: %s" % InputDevice.glyph(&"ultimate"), &"info")
-		Sfx.play(&"buff", 2.0)
+		Sfx.play(&"ult_ready")
 		InputDevice.rumble(0.3, 0.3, 0.2)
 
 
@@ -956,7 +974,7 @@ func _on_died() -> void:
 	weaver.cancel()
 	_set_lock(null)
 	_enter(State.DOWN)
-	Sfx.play(&"hit_player", 3.0)
+	Sfx.play(&"hit_player")
 	# Fall (the death clip), or topple forward onto the ground without one.
 	if not (animator and animator.die()):
 		var tw := model.create_tween()
@@ -973,7 +991,7 @@ func _on_second_wind() -> void:
 	Vfx.shockwave(world, global_position + Vector3.UP * 0.2, Color("f4e7c5"), 4.0, 0.6)
 	Vfx.flash(world, at, Color("fff3d6"), 2.6, 0.25)
 	Vfx.sparks(world, at, Color("f4e7c5"), 20, 7.0)
-	Sfx.play(&"buff", 2.0)
+	Sfx.play(&"buff")
 	InputDevice.rumble(0.8, 0.6, 0.35)
 	feedback.emit("Second Wind!", &"info")
 	stats.is_invulnerable = true

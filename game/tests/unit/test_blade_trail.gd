@@ -154,7 +154,7 @@ func test_drawing_the_sword_glints_and_rings() -> void:
 	await seconds(HumanoidPoser.DRAW_TIME * HumanoidPoser.DRAW_REACH + 0.06)
 	trail.refresh()
 	assert_true(trail._flare != null and trail._flare.visible, "a glint runs up the blade")
-	assert_true(Sfx.history.has(&"kunai_throw"), "with the sound of steel")
+	assert_true(Sfx.history.has(&"sword_draw"), "with the sound of steel")
 	var guard := model.gear.sword.to_global(Vector3(0, CharacterGear.GUARD_Y, 0))
 	var point := model.gear.sword.to_global(Vector3(0, CharacterGear.GUARD_Y - CharacterGear.BLADE_LENGTH, 0))
 	var at := trail._flare.global_position

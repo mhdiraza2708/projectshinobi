@@ -639,6 +639,7 @@ func _start_windup() -> void:
 	_enter(State.WINDUP)
 	_seal_label.modulate = UiKit.CRIMSON.lightened(0.2)
 	_seal_label.text = "!"
+	Sfx.play_at(&"windup", global_position + Vector3.UP)
 
 
 func _windup(delta: float) -> void:
@@ -673,13 +674,14 @@ func _melee_hit() -> void:
 			var at := (victim as Node3D).global_position + Vector3.UP * 1.1 - forward * 0.4 if victim is Node3D else center
 			Vfx.hit_spark(get_parent(), at, Element.color(element), 1.0, forward)
 	if landed:
-		Sfx.play_at(&"strike_hit", center, 0.0, 0.1)
+		var bladed := model.animator != null and model.animator.sword_drawn()
+		Sfx.play_at(&"blade_hit" if bladed else &"strike_hit", center, 0.0, 0.1)
 
 
 func _dodge() -> void:
 	var side := Vector3.UP.cross(-global_basis.z).normalized()
 	_dodge_dir = side * (1.0 if randf() < 0.5 else -1.0)
-	Sfx.play_at(&"dash", global_position, -2.0)
+	Sfx.play_at(&"dodge", global_position)
 	_enter(State.DODGING)
 
 

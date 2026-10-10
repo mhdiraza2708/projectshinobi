@@ -96,6 +96,7 @@ static var _library_cache: Dictionary = {}
 
 func setup(model_root: Node, humanoid_poser: HumanoidPoser, clip_dir := CLIP_DIR) -> void:
 	poser = humanoid_poser
+	add_child(Footsteps.new())
 	library = load_library(clip_dir)
 	# Clips need the humanoid skeleton the retargeting targets.
 	if library.get_animation_list().is_empty() or not poser.active \
@@ -263,15 +264,19 @@ func _update_sword(delta: float) -> void:
 			gear.set_drawn(_swap_to)
 			if _swap_to:
 				_glint()
+			else:
+				_sword_sound(&"sword_snap", gear.scabbard)
 	elif gear.is_drawn():
 		if pose == HumanoidPoser.Pose.WEAVE or pose == HumanoidPoser.Pose.CHARGE:
 			# Seals and charging need both hands: home at once.
 			gear.set_drawn(false)
+			_sword_sound(&"sword_snap", gear.scabbard)
 		elif _since_cut > SHEATHE_AFTER and pose == HumanoidPoser.Pose.LOCOMOTION and not airborne \
 				and _action != &"death":
 			poser.sheathe()
 			_swap_left = HumanoidPoser.SHEATHE_TIME * HumanoidPoser.SHEATHE_HOME
 			_swap_to = false
+			_sword_sound(&"sword_sheathe", gear.scabbard)
 	poser.sword_drawn = gear.is_drawn()
 	if is_instance_valid(gear.blade_trail):
 		gear.blade_trail.emitting = gear.is_drawn() and (poser.is_cutting() or poser.is_drawing())
@@ -281,8 +286,13 @@ func _update_sword(delta: float) -> void:
 func _glint() -> void:
 	if is_instance_valid(gear.blade_trail):
 		gear.blade_trail.glint()
-	if gear.sword.is_inside_tree():
-		Sfx.play_at(&"kunai_throw", gear.sword.global_position, -4.0, 0.06)
+	_sword_sound(&"sword_draw", gear.sword)
+
+
+## A sound from the sword (or its scabbard), where it is in the world.
+func _sword_sound(sound: StringName, from: Node3D) -> void:
+	if is_instance_valid(from) and from.is_inside_tree():
+		Sfx.play_at(sound, from.global_position, 0.0, 0.04)
 
 
 ## Leg lengths per second the character is covering.

@@ -81,6 +81,7 @@ func _ready() -> void:
 	# The sea is ground for a shinobi.
 	_water = StaticBody3D.new()
 	_water.name = "Water"
+	_water.set_meta(&"surface", &"water")
 	_water.collision_layer = Combat.LAYER_WORLD
 	var col := CollisionShape3D.new()
 	col.shape = WorldBoundaryShape3D.new()

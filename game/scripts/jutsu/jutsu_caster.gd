@@ -185,7 +185,7 @@ func _blast(jutsu: JutsuDefinition, power: float) -> void:
 		if Combat.apply_hit(victim, power, jutsu.element, _body()) > 0.0 and _body().has_method(&"notify_hit"):
 			_body().notify_hit(victim, &"jutsu")
 	Vfx.area_blast(_world_parent(), center, jutsu.element, jutsu.radius)
-	Sfx.play_at(&"explosion", center)
+	Sfx.play_at(&"explosion", center, -4.0)
 
 
 func _raise_wall(jutsu: JutsuDefinition) -> void:

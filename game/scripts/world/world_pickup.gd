@@ -81,5 +81,5 @@ func collect() -> void:
 	var c := Color(str(Quests.ITEMS.get(item, {}).get("color", "#ffffff")))
 	Vfx.flash(get_parent(), global_position, c, 1.4, 0.2)
 	Vfx.sparks(get_parent(), global_position, c, 10, 4.0)
-	Sfx.play(&"ui_select", 2.0)
+	Sfx.play(&"pickup")
 	queue_free()
