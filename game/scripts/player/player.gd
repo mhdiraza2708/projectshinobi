@@ -108,6 +108,7 @@ var _strike_cooldown := 0.0
 ## Seconds since the guard last took a blow (Counter Edge).
 var _since_blocked := INF
 var _strike_combo := 0
+var _since_strike := INF
 var _auto_jutsu: JutsuDefinition
 var _auto_queue: Array[int] = []
 var _auto_timer := 0.0
@@ -201,6 +202,7 @@ func _physics_process(delta: float) -> void:
 			feedback.emit("Second Wind ready", &"info")
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_strike_cooldown = maxf(0.0, _strike_cooldown - delta)
+	_since_strike += delta
 	_since_blocked += delta
 	weaver.tick(delta)
 	_validate_lock()
@@ -569,7 +571,11 @@ func _strike() -> void:
 	var armed := animator != null and animator.has_sword()
 	var drawing := armed and not animator.sword_drawn()
 	var steps := combo_length()
+	# A pause starts the combo over, so a fight never opens on the finisher.
+	if _since_strike > COMBO_RESET:
+		_strike_combo = -1
 	_strike_combo = (_strike_combo + 1) % steps
+	_since_strike = 0.0
 	var finisher := _strike_combo == steps - 1 and not drawing
 	var x_slash := finisher and armed
 	# Kenjutsu (skill tree) makes the cuts faster, longer and harder; the X
@@ -607,12 +613,17 @@ func _strike() -> void:
 	# Crescent Moon: the finisher flies on.
 	if finisher and Perks.has(&"blade_wave"):
 		_blade_wave(forward, damage)
+	# The draw is a blow of its own: the cuts begin after it.
+	if drawing:
+		_strike_combo = -1
 
 
 ## The arc each blow leaves (radians of tilt): with a sword, down, rising,
 ## level (the X has its own two); with fists, left, right, uppercut.
 const SWORD_TILTS := [0.7, -0.7, 0.05, 0.7]
 const FIST_TILTS := [0.7, -0.7, 1.35]
+## Seconds without a blow before the combo starts over.
+const COMBO_RESET := 1.1
 ## Each stroke of the X carries this share of the finisher's blow.
 const X_STROKE_SHARE := 0.6
 

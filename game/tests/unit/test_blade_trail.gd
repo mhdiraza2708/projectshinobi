@@ -313,3 +313,25 @@ func test_a_blade_sparks_burst_cleans_up_after_itself() -> void:
 	Vfx.slash(scene, Transform3D.IDENTITY.translated(Vector3(0, 1, 0)), Color(0.3, 0.55, 1.0), 1.8, 0.0, 0.18, 0.35)
 	await seconds(1.5)
 	assert_eq(scene.get_children().size(), count, "all of it freed itself")
+
+
+func test_the_combo_starts_over_after_a_pause_and_after_the_draw() -> void:
+	scene = Scene.instantiate()
+	root.add_child(scene)
+	var player: Player = scene.player
+	await physics_frames(10)
+	player.global_position = Vector3(300, 5, 300)
+	assert_true(player.animator.has_sword())
+	player._strike()
+	assert_true(player.animator.poser.is_drawing(), "the first blow draws")
+	await seconds(HumanoidPoser.DRAW_TIME + 0.1)
+	player._strike_cooldown = 0.0
+	player._strike()
+	assert_eq(player._strike_combo, 0, "after the draw comes the first cut")
+	player._strike_cooldown = 0.0
+	player._strike()
+	assert_eq(player._strike_combo, 1, "then the second")
+	await seconds(Player.COMBO_RESET + 0.2)
+	player._strike_cooldown = 0.0
+	player._strike()
+	assert_eq(player._strike_combo, 0, "a pause starts the combo over (never opening on the X)")
