@@ -35,6 +35,15 @@ func _load() -> void:
 	player.stats.health = player.stats.max_health
 
 
+## Waits until the special has run its course (not for a fixed time: a slow
+## machine runs the game slower than the clock).
+func _until_spent(limit := 15.0) -> void:
+	await physics_frames(3)
+	var end := Time.get_ticks_msec() + int(limit * 1000.0)
+	while specials.is_busy() and Time.get_ticks_msec() < end:
+		await physics_frames(1)
+
+
 func _spec(kind: String, extra := {}) -> Dictionary:
 	var s := {"kind": kind, "delay": 0.4, "damage": 20.0}
 	s.merge(extra, true)
@@ -54,14 +63,14 @@ func test_a_quake_hurts_whoever_stays_and_spares_whoever_leaves() -> void:
 	await _load()
 	var before := player.stats.health
 	specials._run(_spec("quake", {"count": 3}))
-	await seconds(0.7)
+	await _until_spent()
 	assert_true(player.stats.health < before, "standing in the mark hurts")
 	player.stats.health = player.stats.max_health
 	before = player.stats.health
 	specials._run(_spec("quake", {"count": 3}))
 	await physics_frames(5)
 	player.global_position += Vector3(30, 0, 0)
-	await seconds(0.7)
+	await _until_spent()
 	assert_eq(player.stats.health, before, "leaving the marks takes no damage")
 
 
@@ -70,14 +79,14 @@ func test_a_ring_runs_along_the_ground_and_a_jump_clears_it() -> void:
 	player.set_physics_process(false)
 	var before := player.stats.health
 	specials._run(_spec("ring", {"delay": 0.2}))
-	await seconds(1.6)
+	await _until_spent()
 	assert_true(player.stats.health < before, "the ring catches you on the ground")
 	player.stats.health = player.stats.max_health
 	before = player.stats.health
 	specials._run(_spec("ring", {"delay": 0.2}))
 	await physics_frames(5)
 	player.global_position.y += 4.0
-	await seconds(1.6)
+	await _until_spent()
 	assert_eq(player.stats.health, before, "above it, it passes under you")
 	assert_false(specials.is_busy(), "and it is spent")
 
@@ -86,7 +95,7 @@ func test_a_chain_brings_the_boss_to_you_in_steps() -> void:
 	await _load()
 	var start := boss.global_position
 	specials._run(_spec("chain", {"count": 2, "delay": 0.3}))
-	await seconds(1.0)
+	await _until_spent()
 	assert_true(boss.global_position.distance_to(start) > 4.0, "the boss blinked")
 	assert_true(boss.global_position.distance_to(player.global_position) < 8.0, "to strike round you")
 
@@ -96,13 +105,13 @@ func test_specials_scale_with_the_story_tier() -> void:
 	boss.tier = 0
 	var before := player.stats.health
 	specials._run(_spec("quake", {"count": 1, "radius": 5.0}))
-	await seconds(0.7)
+	await _until_spent()
 	var plain := before - player.stats.health
 	player.stats.health = player.stats.max_health
 	boss.tier = 5
 	before = player.stats.health
 	specials._run(_spec("quake", {"count": 1, "radius": 5.0}))
-	await seconds(0.7)
+	await _until_spent()
 	var late := before - player.stats.health
 	assert_true(plain > 0.0 and late > plain, "later bosses hit harder (%.1f then %.1f)" % [plain, late])
 
@@ -114,7 +123,7 @@ func test_the_schedule_runs_them_one_at_a_time() -> void:
 	var before := player.stats.health
 	await physics_frames(10)
 	assert_true(specials.is_busy(), "it starts by itself when its time comes")
-	await seconds(0.8)
+	await _until_spent()
 	assert_true(player.stats.health < before, "and lands")
 	assert_false(specials.is_busy(), "then it is spent until its next turn")
 
@@ -128,7 +137,9 @@ func test_a_special_waits_for_its_health_threshold() -> void:
 	await seconds(0.8)
 	assert_eq(player.stats.health, before, "at full health it does not start")
 	boss.stats.health = boss.stats.max_health * 0.4
-	await seconds(0.8)
+	var end := Time.get_ticks_msec() + 10000
+	while player.stats.health >= before and Time.get_ticks_msec() < end:
+		await physics_frames(2)
 	assert_true(player.stats.health < before, "below the threshold it does")
 
 
