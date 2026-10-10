@@ -59,9 +59,9 @@
 			]},
 		{"do": "enter", "who": "hisame", "at": [-3, 4]},
 		{"do": "say", "lines": [
-			["hisame", "It's out of him, but it's loose! {name}: the Five-Nature Seal. Rat, Tiger, Dragon, Snake, Boar. Now!", "angry"]
+			["hisame", "It's out of him, but it's loose! {name}: the Five-Nature Seal. Rat, Ox, Hare, Tiger, Rat. Now!", "angry"]
 		]},
-		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Tiger, Dragon, Snake, Boar (hold {weave}; {charge_chakra} charges chakra)",
+		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Ox, Hare, Tiger, Rat, one turn round the first bank (hold {weave}; {charge_chakra} charges chakra)",
 			"goal": "cast", "jutsu": "five_nature_seal"},
 		{"do": "banner", "text": "The Nue is sealed"},
 		{"do": "scene", "steps": [

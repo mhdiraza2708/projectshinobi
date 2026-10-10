@@ -57,10 +57,10 @@
     "form": "area",
     "seals": [
       "rat",
+      "ox",
+      "hare",
       "tiger",
-      "dragon",
-      "snake",
-      "boar"
+      "rat"
     ],
     "chakra_cost": 45,
     "cooldown": 20,

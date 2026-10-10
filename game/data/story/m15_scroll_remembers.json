@@ -22,11 +22,11 @@
 		]},
 		{"do": "say", "lines": [
 			["player", "You said you'd teach me something no one has used in a hundred years."],
-			["hisame", "The founders' own binding. The Five-Nature Seal. Rat, Tiger, Dragon, Snake, Boar."],
+			["hisame", "The founders' own binding. The Five-Nature Seal. Rat, Ox, Hare, Tiger, Rat."],
 			["hisame", "Five natures woven into one circle. It is how they tore the Nue apart the first time. It will cost you nearly everything you have."],
 			["hisame", "Tomorrow you'll weave it while the Nue screams at you. Tonight you'll weave it while I watch. Twice."]
 		]},
-		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Tiger, Dragon, Snake, Boar (hold {weave}; {charge_chakra} charges chakra)",
+		{"do": "task", "text": "Weave the Five-Nature Seal: Rat, Ox, Hare, Tiger, Rat, one turn round the first bank (hold {weave}; {charge_chakra} charges chakra)",
 			"goal": "cast", "jutsu": "five_nature_seal", "count": 2, "music": "tension"},
 		{"do": "say", "lines": [
 			["hisame", "...The founders would have liked you. They were stubborn too.", "happy"]
