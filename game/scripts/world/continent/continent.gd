@@ -102,6 +102,11 @@ func region_center(id: String) -> Vector3:
 	return to_global(Vector3(c.x, land.pad_height(id), c.y))
 
 
+## The sea as ground a shinobi can run on (null when it is not ground).
+func water_body() -> StaticBody3D:
+	return _water
+
+
 ## Ids of the regions (the island ids).
 func region_ids() -> PackedStringArray:
 	return land.regions

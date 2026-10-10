@@ -172,6 +172,14 @@ var preset: Dictionary = {}
 ## this island's own, there is no invisible wall (a fight raises its own,
 ## ArenaWall), every tree is solid, and scenery fades out with distance.
 var open_world := false
+## Set before build() to make this island only its authored place on a larger
+## land (a region of the continent): no terrain, water, foam, scatter or
+## horizon of its own, just its props and their colliders, standing on the
+## ground `ground_at` (x, z) -> height gives, in this island's own space.
+var ground_at := Callable()
+## And, in that case, what the ground is made of at a world position (a Sfx
+## surface name), for footsteps there.
+var surface_fn := Callable()
 ## How far scenery stays drawn in the open world (metres).
 const SCENERY_RANGE := 520.0
 ## And the surf along its coast.
@@ -213,17 +221,21 @@ func build(island_id: String) -> void:
 			pts.append(Vector2(q[0], q[1]))
 		_paths.append([pts, float(p[1])])
 
+	var overlay := ground_at.is_valid()
 	_body = StaticBody3D.new()
 	_body.name = "Ground"
 	add_child(_body)
-	_build_terrain()
-	_build_water()
-	_build_foam()
-	if not open_world:
-		_build_wall()
+	if not overlay:
+		_build_terrain()
+		_build_water()
+		_build_foam()
+		if not open_world:
+			_build_wall()
 	var avoid: Array[Vector2] = []
 	for prop: Dictionary in preset.get("props", []):
 		avoid.append(_place_prop(prop))
+	if overlay:
+		return
 	for s: Dictionary in preset.get("scatter", []):
 		_scatter(s, avoid)
 	if preset.get("tufts") != null:
@@ -236,6 +248,8 @@ func build(island_id: String) -> void:
 
 ## Ground height at (x, z). Exactly 0 across the clearing.
 func height_at(x: float, z: float) -> float:
+	if ground_at.is_valid():
+		return float(ground_at.call(x, z))
 	var r := sqrt(x * x + z * z)
 	var clearing: float = preset["clearing"]
 	var inland := smoothstep(clearing, clearing + 9.0, r)
@@ -279,6 +293,8 @@ func _slope(x: float, z: float) -> float:
 ## Sfx surface: grass, dirt, stone, sand or snow (what the preset's textures
 ## make of grass and sand).
 func surface_at(world_position: Vector3) -> StringName:
+	if surface_fn.is_valid():
+		return surface_fn.call(world_position)
 	var local := to_local(world_position)
 	var x := local.x
 	var z := local.z

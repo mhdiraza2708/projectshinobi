@@ -127,10 +127,27 @@ func _build_island(id: String) -> void:
 		return
 	var island := Island.new()
 	island.open_world = true
-	island.position = offset_of(id)
+	island.position = offset(id)
 	add_child(island)
 	island.build(id)
 	islands[id] = island
+
+
+## Where `id`'s origin (its clearing) sits in this world's own space. The
+## continent's world answers with its regions' places instead.
+func offset(id: String) -> Vector3:
+	return offset_of(id)
+
+
+## Where every place is on the map, (x, z) in this world's own space.
+func layout() -> Dictionary:
+	return LAYOUT
+
+
+## Completes once the ground round the player is solid to stand on (always,
+## for islands, which are built whole).
+func ground_ready() -> void:
+	pass
 
 
 ## Where an island's origin (its clearing) sits in the archipelago. A summit
@@ -144,7 +161,7 @@ static func offset_of(id: String) -> Vector3:
 func island_near(world_pos: Vector3, margin := 18.0) -> String:
 	var p := to_local(world_pos)
 	for id: String in LAYOUT:
-		var c := offset_of(id)
+		var c := offset(id)
 		var coast := float(Island.PRESETS[id]["coast"])
 		if Vector2(p.x - c.x, p.z - c.z).length() < coast + margin:
 			return id
@@ -155,13 +172,13 @@ func island_near(world_pos: Vector3, margin := 18.0) -> String:
 func on_island(id: String, local: Vector2) -> Vector3:
 	var island: Island = islands.get(id)
 	var h := island.height_at(local.x, local.y) if island else 0.0
-	return to_global(offset_of(id) + Vector3(local.x, maxf(h, SEA_LEVEL - offset_of(id).y), local.y))
+	return to_global(offset(id) + Vector3(local.x, maxf(h, SEA_LEVEL - offset(id).y), local.y))
 
 
 ## Moves the world so `id`'s clearing is at the origin, and the player with
 ## it. Returns how far everything moved.
 func focus_on(id: String) -> Vector3:
-	var delta := -to_global(offset_of(id))
+	var delta := -to_global(offset(id))
 	if delta.is_zero_approx():
 		return delta
 	position += delta
