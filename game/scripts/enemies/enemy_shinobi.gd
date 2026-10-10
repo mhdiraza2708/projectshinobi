@@ -782,12 +782,11 @@ func _start_windup() -> void:
 	_rush = 0.0
 	_combo = 0
 	_attack_frame = Engine.get_physics_frames()
+	_flare_ring(UiKit.CRIMSON.lightened(0.15), 1.25)
+	Vfx.flash(get_parent(), global_position + Vector3.UP * 1.2, UiKit.CRIMSON.lightened(0.3), 1.0 * size, 0.2)
 	_enter(State.WINDUP)
 	_seal_label.modulate = UiKit.CRIMSON.lightened(0.2)
 	_seal_label.text = "!"
-	_flare_ring(UiKit.CRIMSON.lightened(0.15), 1.25)
-	Vfx.flash(get_parent(), global_position + Vector3.UP * 1.2, UiKit.CRIMSON.lightened(0.3), 1.0 * size, 0.2)
-	Sfx.play_at(&"dash", global_position + Vector3.UP, -7.0)
 
 
 func _windup(delta: float) -> void:
