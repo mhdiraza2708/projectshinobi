@@ -182,7 +182,6 @@ var water_level := -1.0
 
 var _noise := FastNoiseLite.new()
 var _detail := FastNoiseLite.new()
-var _mesh_cache: Dictionary = {}
 var _paths: Array = []   # [[PackedVector2Array, width]]
 var _body: StaticBody3D
 
@@ -614,21 +613,7 @@ func _scatter(spec: Dictionary, avoid: Array[Vector2]) -> void:
 
 ## The meshes of a model and their transforms relative to its root.
 func _model_meshes(scene_name: String) -> Array:
-	if _mesh_cache.has(scene_name):
-		return _mesh_cache[scene_name]
-	var root: Node3D = (load(MODELS + scene_name + ".gltf") as PackedScene).instantiate()
-	var out := []
-	for node in root.find_children("*", "MeshInstance3D", true, false):
-		var mi := node as MeshInstance3D
-		var xf := Transform3D.IDENTITY
-		var n: Node = mi
-		while n != root:
-			xf = (n as Node3D).transform * xf
-			n = n.get_parent()
-		out.append([mi.mesh, xf])
-	root.free()
-	_mesh_cache[scene_name] = out
-	return out
+	return ModelMeshes.parts(scene_name)
 
 
 ## Grass tufts around the clearing's edge and on the lower slopes.

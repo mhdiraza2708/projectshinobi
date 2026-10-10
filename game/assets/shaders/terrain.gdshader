@@ -39,15 +39,22 @@ uniform float arena_edge = 2.5;
 uniform float water_level = -1000.0;
 // Rain darkens and glosses everything a little (0-1).
 uniform float wetness = 0.0;
+// The continent (ContinentMesh) paints each vertex's UV and UV2 with a colour
+// multiplier for its region's palette (r, g in UV, b in UV2.x; scaled by
+// biome_tint, which is its range; 0 leaves it off) and a snow amount (UV2.y).
+uniform float biome_tint = 0.0;
+uniform vec3 snow_color : source_color = vec3(0.93, 0.95, 0.98);
 
 varying vec3 world_pos;
 varying vec3 world_normal;
 varying vec4 weights;
+varying vec4 biome;
 
 void vertex() {
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	weights = COLOR;
+	biome = biome_tint > 0.0 ? vec4(UV, UV2) : vec4(0.0);
 	// Texture space follows world X/Z (the meshes carry no tangents of their own).
 	TANGENT = normalize(vec3(1.0, 0.0, 0.0) - NORMAL * NORMAL.x);
 	BINORMAL = cross(NORMAL, TANGENT);
@@ -125,6 +132,13 @@ void fragment() {
 
 	// Broad light/dark patches so big open ground isn't uniform.
 	col *= 0.88 + 0.24 * n;
+	if (biome_tint > 0.0) {
+		col *= biome.rgb * biome_tint;
+		// Snow lies in patches at its edge, and is a little glossier.
+		float snow = smoothstep(0.35, 0.65, biome.a + (n - 0.5) * 0.6);
+		col = mix(col, snow_color * (0.92 + 0.08 * n2), snow);
+		rough = mix(rough, 0.6, snow);
+	}
 	float wet = max(smoothstep(water_level + 0.2, water_level - 1.5, world_pos.y),
 		// Rain pools in the low parts first.
 		wetness * (0.55 + 0.45 * (1.0 - height)));
