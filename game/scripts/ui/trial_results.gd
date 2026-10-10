@@ -14,7 +14,7 @@ var _stamp_slot: Control
 var _kicker: Label
 var _heading: Label
 var _sub: Label
-var _lines: Label
+var _lines: VBoxContainer
 var _record: Label
 var _retry: Button
 var _second: Button
@@ -57,8 +57,7 @@ func show_panel(stamp: String, good: bool, kicker: String, heading: String, sub:
 	_kicker.text = kicker
 	_heading.text = heading
 	_sub.text = sub
-	_lines.text = body
-	_lines.visible = body != ""
+	_set_lines(body)
 	_record.visible = record
 	_retry.text = primary
 	_second.text = secondary
@@ -71,6 +70,27 @@ func show_panel(stamp: String, good: bool, kicker: String, heading: String, sub:
 
 func close() -> void:
 	visible = false
+
+
+## "Label   value" lines as two aligned columns; a line without the gap is
+## text of its own.
+func _set_lines(body: String) -> void:
+	for c in _lines.get_children():
+		_lines.remove_child(c)
+		c.queue_free()
+	for line in body.split("\n", false):
+		var parts := line.split("   ", false, 1)
+		if parts.size() < 2:
+			_lines.add_child(UiKit.label(line, 28, UiKit.INK, &"bold"))
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override(&"separation", 24)
+		var name_label := UiKit.label(parts[0], 26, UiKit.INK_SOFT, &"bold")
+		name_label.custom_minimum_size.x = 260
+		row.add_child(name_label)
+		row.add_child(UiKit.label(parts[1].strip_edges(), 30, UiKit.INK, &"bold"))
+		_lines.add_child(row)
+	_lines.visible = _lines.get_child_count() > 0
 
 
 func _build() -> void:
@@ -116,7 +136,8 @@ func _build() -> void:
 	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_sub.custom_minimum_size.x = 780
 	vbox.add_child(_sub)
-	_lines = UiKit.label("", 28, UiKit.INK, &"bold")
+	_lines = VBoxContainer.new()
+	_lines.add_theme_constant_override(&"separation", 4)
 	vbox.add_child(_lines)
 	_record = UiKit.label("New record!", 30, UiKit.CRIMSON, &"display")
 	vbox.add_child(_record)
