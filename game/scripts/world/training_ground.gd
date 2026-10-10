@@ -1028,6 +1028,16 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			customize_menu._select_tab({"creation": CustomizeMenu.T_CLAN, "creation_eyes": CustomizeMenu.T_EYES,
 				"creation_identity": CustomizeMenu.T_IDENTITY, "creation_jutsu": CustomizeMenu.T_JUTSU}[demo])
 			await _frames(40)
+		"mc_poses":
+			# The shinobi in each stance, from the game camera and from in
+			# front, saved as <path>_<stance>_<back|front>.png (--views=a,b
+			# picks some of idle, weave, guard, charge, kunai, cast, strike;
+			# --dist=<metres> sets the front camera's distance).
+			await _demo_poses(path)
+		"skill_stages":
+			# The skill screen's stage on each tree, saved as
+			# <path>_<tree>.png (--trees=body,eye picks some).
+			await _demo_skill_stages(path)
 		_ when demo.begins_with("anim:"):
 			# Five rigs frozen in one clip: --demo=anim:sprint:0.3 (clip, seconds).
 			var parts := demo.split(":")
@@ -1457,6 +1467,86 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		push_error("Could not save screenshot to %s (error %d)" % [path, err])
 	Input.action_release(&"weave")
 	get_tree().quit(0 if err == OK else 1)
+
+
+## The mc_poses demo: the player locked on to the dummy, put in each stance
+## in turn, and saved from the game camera and from a camera in front.
+func _demo_poses(path: String) -> void:
+	hud.visible = false
+	player.toggle_lock()
+	await _frames(30)
+	var only := str(_user_args().get("views", "idle,weave,guard,charge,kunai,cast,strike")).split(",", false)
+	var front := Camera3D.new()
+	front.fov = 40.0
+	add_child(front)
+	for view in only:
+		match view:
+			"weave":
+				Input.action_press(&"weave")
+				await _frames(2)
+				for seal in [Seal.TIGER, Seal.SNAKE]:
+					player.weaver.add_seal(seal)
+				await _frames(4)
+			"guard":
+				Input.action_press(&"guard")
+				await _frames(10)
+			"charge":
+				Input.action_press(&"charge_chakra")
+				await _frames(14)
+			"kunai":
+				player.throw_kunai()
+				for f in 5:
+					await get_tree().physics_frame
+			"cast":
+				player.stats.chakra = player.stats.max_chakra
+				player.caster.cast(JutsuRegistry.get_jutsu(&"ember_volley"), player.lock_target)
+				for f in 8:
+					await get_tree().physics_frame
+			"strike":
+				player._strike()
+				await _frames(int(_user_args().get("gap", "14")))
+				player._strike()
+				await _frames(int(_user_args().get("into", "3")))
+		await _pose_shots(path, view, front)
+		for action in [&"weave", &"guard", &"charge_chakra"]:
+			Input.action_release(action)
+		await _frames(24)
+
+
+## One stance for the mc_poses demo: the game camera's view, then the view
+## from `front` set up in front of the player.
+func _pose_shots(path: String, view: String, front: Camera3D) -> void:
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s_back.png" % view))
+	var ahead := -player.global_basis.z
+	ahead.y = 0.0
+	var dist := float(_user_args().get("dist", "2.6"))
+	front.global_position = player.global_position + ahead.normalized() * dist + Vector3.UP * 1.3
+	front.look_at(player.global_position + Vector3.UP * 1.1)
+	front.current = true
+	await _frames(2)
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%s_front.png" % view))
+	player.camera_rig.camera.current = true
+	await _frames(2)
+
+
+## The skill_stages demo: a skill-screen stage on its own, shown on each
+## tree in turn.
+func _demo_skill_stages(path: String) -> void:
+	hud.visible = false
+	player.visible = false
+	var stage := SkillStage.new()
+	stage.size = get_viewport().get_visible_rect().size
+	stage.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(stage)
+	var trees := str(_user_args().get("trees", "body,chakra,mind,kenjutsu,eye")).split(",", false)
+	for id in trees:
+		stage.show_tree(id, false)
+		await _frames(14)
+		await RenderingServer.frame_post_draw
+		stage.get_texture().get_image().save_png(path.replace(".png", "_%s.png" % id))
+	stage.queue_free()
 
 
 ## A camera off to the side, framing the player and what they're locked on
