@@ -11,13 +11,21 @@ done. Written so a new session can pick the work up cold.
   missing). Over-the-shoulder camera, two rush jutsu, height and headband
   size sliders, enemy difficulty that grows with the story part
   (`scripts/enemies/enemy_tier.gd`, see STORY.md), the 60-second trailer.
-- **Merged but not yet the game's world:** the streamed procedural
-  continent (`scripts/world/continent/`, 13 tests). It is a prototype. Try it
-  with `--demo=continent_aerial` and `--demo=continent`.
+- **A second world to choose:** the streamed continent now runs the open
+  world, the story and the quests (`ContinentWorld`, see
+  [OPEN_WORLD.md](OPEN_WORLD.md)), with camps, shrines, villages, ruins and
+  ten wanted shinobi in lairs. The sea of islands is still the default.
 - **The honest problem:** a full playthrough takes about 30 minutes (17
   missions, under two minutes each). The target is far longer, see below.
 
 ## Phase 2: the continent becomes the world
+
+**Status:** steps 1 and 2 are done (drop-in world behind a setting, map, fast
+travel, quests, day/night) and step 3 has begun (sites, contracts, bounties).
+What is left of step 3 is region palettes and pad paths, roads' look, music
+for the wilds and more kinds of site. Step 4 (make it the default, retire the
+islands) waits for someone to play it and for a performance check on a real
+GPU.
 
 The open world is `Archipelago` (six islands in a sea, `LAYOUT`) driven by
 `OpenWorld`. Story missions are written with their island at the origin;
