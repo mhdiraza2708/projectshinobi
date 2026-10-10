@@ -275,6 +275,32 @@ func _slope(x: float, z: float) -> float:
 	return 1.0 - Vector3(-dx, 2.0, -dz).normalized().y
 
 
+## What the ground is at a world position, for footsteps: the terrain layer
+## that dominates there (the same blend _build_terrain paints), named as a
+## Sfx surface: grass, dirt, stone, sand or snow (what the preset's textures
+## make of grass and sand).
+func surface_at(world_position: Vector3) -> StringName:
+	var local := to_local(world_position)
+	var x := local.x
+	var z := local.z
+	var r := sqrt(x * x + z * z)
+	var clearing: float = preset["clearing"]
+	var dirt := 1.0 - smoothstep(clearing - 11.0, clearing - 5.0, r + 2.0 * _detail.get_noise_2d(x * 0.5, z * 0.5))
+	if not _paths.is_empty() and r > clearing - 8.0:
+		dirt = lerpf(dirt, 1.0, 1.0 - smoothstep(-0.5, 0.8, _path_distance(Vector2(x, z))))
+	var sand := smoothstep(water_level + 1.1, water_level + 0.3, height_at(x, z))
+	var rock := smoothstep(0.28, 0.5, _slope(x, z))
+	var layers := {&"rock": rock, &"sand": (1.0 - rock) * sand,
+		&"dirt": (1.0 - rock) * (1.0 - sand) * dirt, &"grass": (1.0 - rock) * (1.0 - sand) * (1.0 - dirt)}
+	var best := &"grass"
+	for layer: StringName in layers:
+		if float(layers[layer]) > float(layers[best]):
+			best = layer
+	var textures: Dictionary = preset.get("textures", {})
+	var made_of := StringName(textures.get(String(best), String(best)))
+	return &"stone" if made_of == &"rock" else made_of
+
+
 func _path_distance(p: Vector2) -> float:
 	var best := INF
 	for path: Array in _paths:

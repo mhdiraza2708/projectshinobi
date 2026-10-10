@@ -377,7 +377,7 @@ func _show_node(id: String) -> void:
 func _learn(id: String) -> void:
 	_shown = id
 	if SkillTrees.learn(id):
-		Sfx.ui(&"ui_select")
+		Sfx.ui(&"skill_learn")
 		(_nodes[id] as SkillNodeButton).pop()
 	else:
 		Sfx.ui(&"ui_back")

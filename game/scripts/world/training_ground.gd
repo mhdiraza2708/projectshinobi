@@ -731,7 +731,7 @@ func _flash_lightning() -> void:
 		sky.set_shader_parameter(&"flash", 1.0)
 		tw.tween_method(func(v: float) -> void: sky.set_shader_parameter(&"flash", v), 1.0, 0.0, 0.35).set_delay(0.08)
 	await get_tree().create_timer(randf_range(0.4, 1.4)).timeout
-	Sfx.play(&"thunder", -2.0, 0.1)
+	Sfx.play(&"thunder", -4.0, 0.1)
 
 
 func _exit_tree() -> void:

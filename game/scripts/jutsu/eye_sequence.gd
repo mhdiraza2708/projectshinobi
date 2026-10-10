@@ -185,7 +185,7 @@ func _awaken() -> void:
 	var from := _cam_base.origin
 	var to := eyes + fwd * 1.5 + fwd.cross(Vector3.UP).normalized() * 0.35 - Vector3.UP * 0.25
 	_overlay.flash(Color(1, 1, 1, 0.85), 0.3)
-	Sfx.play(&"thunder", -6.0, 0.05)
+	Sfx.play(&"thunder", -8.0, 0.05)
 	_card = CinematicKit.title_card(self, "覚醒  AWAKENED", str(form.get("kanji", art["kanji"])),
 		str(form.get("name", art["name"])), color, AWAKEN_TIME)
 	var t := 0.0

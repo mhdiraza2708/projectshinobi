@@ -182,7 +182,7 @@ func release() -> bool:
 		world.add_child(p)
 		p.global_position = origin
 	Vfx.shockwave(world, origin, Color(str(art()["color"])), 1.6, 0.4, aim)
-	Sfx.play(StringName("cast_" + Element.NAMES[int(held[0]["element"])]), 2.0)
+	Sfx.play(StringName("cast_" + Element.NAMES[int(held[0]["element"])]))
 	if player.animator:
 		player.animator.cast()
 	player.feedback.emit("Returned %d jutsu" % held.size(), &"info")

@@ -512,7 +512,7 @@ func talk_to(who: String) -> void:
 			await _talk(q["intro"])
 			if Quests.accept(q["id"]):
 				hud.show_banner("Quest:  %s" % q["name"], &"info")
-				Sfx.play(&"buff", -2.0)
+				Sfx.play(&"quest_accept")
 				refresh()
 				if q["type"] == "duel":
 					_start_fight(q, archipelago.on_island(str(q["island"]), Vector2(q["at"][0], q["at"][1])))
@@ -542,7 +542,7 @@ func _finish_quest(id: String, outro: Array) -> void:
 	if not Quests.complete(id):
 		return
 	hud.show_banner("Quest complete:  %s   +%d XP" % [q["name"], int(q.get("xp", 0))], &"cast")
-	Sfx.play(&"victory", -4.0)
+	Sfx.play(&"quest_done")
 	refresh()
 	await _talk(outro)
 

@@ -505,7 +505,7 @@ func _cast(s: Dictionary) -> void:
 	match s["kind"]:
 		"blast":
 			Vfx.area_blast(stage, Vector3(target.x, 0.0, target.z), element, 3.0)
-			Sfx.play_at(&"explosion", target, -3.0)
+			Sfx.play_at(&"explosion", target, -7.0)
 			_shake_now(0.12, 0.5)
 		"bolt":
 			_lightning(target, color)
@@ -542,7 +542,7 @@ func _lightning(at: Vector3, color: Color) -> void:
 	if stage.has_method(&"_flash_lightning"):
 		stage._flash_lightning()
 	else:
-		Sfx.play(&"thunder", -2.0)
+		Sfx.play(&"thunder", -4.0)
 	_shake_now(0.18, 0.5)
 
 
@@ -562,7 +562,7 @@ func _fx(s: Dictionary) -> void:
 		"blast":
 			var at := _point(s["at"], 0.0)
 			Vfx.area_blast(stage, Vector3(at.x, 0.0, at.z), s["element"], 3.0 * size)
-			Sfx.play_at(&"explosion", at, -3.0)
+			Sfx.play_at(&"explosion", at, -7.0)
 			_shake_now(0.12 * size, 0.5)
 		"smoke":
 			Vfx.smoke_puff(stage, _point(s["at"], 0.5), size)

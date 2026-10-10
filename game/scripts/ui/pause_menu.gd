@@ -130,6 +130,7 @@ func _input(event: InputEvent) -> void:
 			step = 1
 		if step != 0:
 			_select_tab(wrapi(_tabs.current_tab + step, 0, _tabs.get_tab_count()))
+			Sfx.ui(&"map_open" if _tabs.current_tab == TAB_MAP else &"ui_tab")
 			_focus_first(_tabs.get_current_tab_control())
 			get_viewport().set_input_as_handled()
 
@@ -194,6 +195,8 @@ func _build() -> void:
 		b.text = "%s  %s" % [TABS[i][0], TABS[i][1]]
 		b.add_theme_font_size_override(&"font_size", 24)
 		b.pressed.connect(_select_tab.bind(i))
+		# The tab's own sound instead of the generic click (the map unrolls).
+		b.set_meta(&"sfx", &"map_open" if i == TAB_MAP else &"ui_tab")
 		tab_row.add_child(b)
 		_tab_buttons.append(b)
 	vbox.add_child(_rule())

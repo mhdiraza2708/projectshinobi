@@ -87,7 +87,7 @@ func play() -> void:
 	add_child(_overlay)
 	_overlay.show_bars()
 	_overlay.flash(Color(color, 0.8), 0.3)
-	Sfx.play(&"weave_start", 2.0)
+	Sfx.play(&"weave_start")
 	Sfx.play(&"buff", 0.0)
 	Music.duck(true)
 
@@ -161,7 +161,7 @@ func _release() -> void:
 	if player.animator:
 		player.animator.pose = HumanoidPoser.Pose.LOCOMOTION
 		player.animator.cast()
-	Sfx.play(StringName("cast_" + Element.NAMES[element]), 2.0)
+	Sfx.play(StringName("cast_" + Element.NAMES[element]))
 	_wide_shot()
 	if not _skipping:
 		match str(ult["style"]):
@@ -263,7 +263,7 @@ func _meteor() -> void:
 		var a := TAU * i / 6.0
 		Vfx._pillar(_world, _ground(target_point + Vector3(cos(a), 0, sin(a)) * radius * 0.6), Color(1.0, 0.45, 0.12), 7.0, 0.9)
 	Vfx.debris(_world, target_point, Color(0.3, 0.22, 0.18), 18, 9.0, 1.4)
-	Sfx.play_at(&"explosion", target_point, 4.0)
+	Sfx.play_at(&"explosion", target_point)
 	_shake_now(0.6, 0.8)
 	_strike_area(target_point, radius)
 	await _wait(0.6)
@@ -273,7 +273,7 @@ func _meteor() -> void:
 func _cyclone() -> void:
 	var radius := float(ult["radius"])
 	Vfx._tornado(_world, _ground(target_point), radius * 0.55)
-	Sfx.play_at(&"cast_wind", target_point, 3.0)
+	Sfx.play_at(&"cast_wind", target_point)
 	var caught := _foes_near(target_point, radius)
 	var starts := {}
 	for f in caught:
@@ -327,7 +327,7 @@ func _chain() -> void:
 		Vfx.flash(_world, p, Color(1.0, 0.95, 0.6), 3.4, 0.25)
 		Vfx.impact(_world, p, Element.LIGHTNING, 1.6)
 		_overlay.flash(Color(1, 1, 0.85, 0.45), 0.12)
-		Sfx.play_at(&"thunder", p, 2.0, 0.15)
+		Sfx.play_at(&"thunder", p, 0.0, 0.15)
 		_shake_now(0.3, 0.3)
 		if i < foes.size() and is_instance_valid(foes[i]):
 			if Combat.apply_hit(foes[i], power, element, player) > 0.0:
@@ -351,7 +351,7 @@ func _fist() -> void:
 		var a := TAU * i / 8.0
 		Vfx._spike(_world, ground + Vector3(cos(a), 0, sin(a)) * radius * 0.75, Color(0.55, 0.42, 0.3), 2.6)
 	Vfx.dust(_world, ground, 2.0)
-	Sfx.play_at(&"wall_rise", ground, 3.0)
+	Sfx.play_at(&"wall_rise", ground)
 	_shake_now(0.25, 0.5)
 	await _wait(0.35)
 	var fist := _stone_fist()
@@ -363,7 +363,7 @@ func _fist() -> void:
 	tw.tween_property(fist, "global_position", ground + Vector3.UP * 3.0, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	Vfx.debris(_world, ground, Color(0.45, 0.36, 0.28), 24, 11.0, 1.6)
 	Vfx.area_blast(_world, ground, Element.EARTH, radius)
-	Sfx.play_at(&"explosion", ground, 3.0)
+	Sfx.play_at(&"explosion", ground, -1.0)
 	_shake_now(0.7, 0.7)
 	var foes := _foes_near(target_point, radius)
 	_strike_area(target_point, radius)
@@ -412,7 +412,7 @@ func _wave() -> void:
 	var end := _ground(target_point + fwd * 1.5)
 	wave.global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), start)
 	wave.scale = Vector3(1.0, 0.15, 1.0)
-	Sfx.play(&"cast_water", 3.0)
+	Sfx.play(&"cast_water")
 	Sfx.play(&"wind_loop", -6.0)
 	var t := 0.0
 	var run := 1.1
@@ -439,7 +439,7 @@ func _wave() -> void:
 		var a := TAU * i / 10.0
 		Vfx.sparks(_world, _ground(target_point + Vector3(cos(a), 0, sin(a)) * radius * 0.5) + Vector3.UP,
 			Color(0.85, 0.95, 1.0), 12, 9.0)
-	Sfx.play_at(&"explosion", target_point, 0.0)
+	Sfx.play_at(&"explosion", target_point, -4.0)
 	_shake_now(0.5, 0.6)
 	_strike_area(target_point, radius)
 	await _wait(0.4)
@@ -471,7 +471,7 @@ func _shades_strike() -> void:
 				Vfx.slash(_world, Transform3D(m.global_basis, m.global_position + Vector3.UP * 1.1),
 					Color(0.6, 0.65, 1.0), 2.0, randf_range(-1.2, 1.2))
 		Vfx.hit_spark(_world, target_point + Vector3.UP * 1.1, Color(0.8, 0.85, 1.0), 2.0)
-		Sfx.play_at(&"strike_hit", target_point, 2.0, 0.15)
+		Sfx.play_at(&"strike_hit", target_point, 0.0, 0.15)
 		_shake_now(0.25, 0.25)
 		await _wait(0.24)
 	Vfx.area_blast(_world, _ground(target_point), Element.NONE, radius * 0.7)
