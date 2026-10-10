@@ -71,6 +71,8 @@ const ROAD_HALF := 2.6
 const ROAD_FALLOFF := 5.0
 const ROAD_SPACING := 8.0
 const ROAD_DIRT_FADE := 1.8
+## The footpaths of a region are only looked for this close to its centre.
+const FOOTPATH_REACH := 90.0
 ## Rivers: where they start (a point, or a lake by index) and the sea they
 ## run toward. The route finds its own way down.
 const RIVERS: Array[Dictionary] = [
@@ -97,6 +99,9 @@ var _rx := PackedFloat32Array()
 var _rz := PackedFloat32Array()
 var _pad_h := PackedFloat32Array()
 var _yard := PackedFloat32Array()
+## Each region's own footpaths (its island preset's "paths"): per region a list
+## of [PackedVector2Array of world points, half width].
+var _footpaths: Array = []
 var _snow := PackedFloat32Array()
 ## Tint of every region's layers relative to the continent's base colours:
 ## 4 per region (grass, dirt, rock, sand), as multipliers.
@@ -167,6 +172,13 @@ func _place_regions() -> void:
 		_yard.append(YARD)
 		_snow.append(float(REGION_SNOW.get(id, 0.0)))
 		var preset: Dictionary = Island.PRESETS[id]
+		var walks: Array = []
+		for path: Array in preset.get("paths", []):
+			var pts := PackedVector2Array()
+			for q: Array in path[0]:
+				pts.append(at + Vector2(q[0], q[1]))
+			walks.append([pts, float(path[1]) * 0.5])
+		_footpaths.append(walks)
 		for layer in ["grass", "dirt", "rock", "sand"]:
 			var want := (preset[layer] as Color).srgb_to_linear()
 			var have := (base_palette[layer] as Color).srgb_to_linear()
@@ -371,6 +383,12 @@ func paint(x: float, z: float, h: float, ny: float, out: PackedFloat32Array) -> 
 			wd += (wg + ws) * take
 			wg *= 1.0 - take
 			ws *= 1.0 - take
+		if d < FOOTPATH_REACH:
+			var walk := _footpath_weight(i, x, z) * (1.0 - rock)
+			if walk > 0.0:
+				wd += (wg + ws) * walk
+				wg *= 1.0 - walk
+				ws *= 1.0 - walk
 		var w := 1.0 - smoothstep(BIOME_INNER, BIOME_OUTER, d)
 		if w > 0.0:
 			var b := i * 4
@@ -394,6 +412,21 @@ func paint(x: float, z: float, h: float, ny: float, out: PackedFloat32Array) -> 
 	out[6] = clampf(mul.b * shade / TINT_RANGE, 0.0, 1.0)
 	out[7] = snow
 
+
+
+## How much of (x, z) a region's footpaths cover (0-1): beaten earth along the
+## paths the island presets draw, fading over ROAD_DIRT_FADE at the edge.
+func _footpath_weight(region: int, x: float, z: float) -> float:
+	var best := 1.0e9
+	for walk: Array in _footpaths[region]:
+		var pts: PackedVector2Array = walk[0]
+		for k in range(pts.size() - 1):
+			var a := pts[k]
+			var b := pts[k + 1]
+			var ab := b - a
+			var t := clampf(((x - a.x) * ab.x + (z - a.y) * ab.y) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+			best = minf(best, Vector2(x, z).distance_to(a + ab * t) - float(walk[1]))
+	return 1.0 - smoothstep(0.0, ROAD_DIRT_FADE, best)
 
 
 ## What the ground is at (x, z), for footsteps: grass, dirt, stone, sand,

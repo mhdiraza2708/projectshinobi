@@ -409,3 +409,13 @@ func test_chunk_build_time_stays_in_budget() -> void:
 	var t3 := Time.get_ticks_usec()
 	var built := ContinentLand.new()
 	print("  land + roads + rivers built in %.0f ms" % ((Time.get_ticks_usec() - t3) / 1000.0), " ", built.regions.size(), " regions")
+
+
+func test_a_regions_footpaths_are_beaten_earth() -> void:
+	var land := ContinentLand.new()
+	var c := land.region_center("emberwood")
+	# Emberwood's path runs north from the gate: [0, -20] to [-6, -52], 3.5 wide.
+	for p: Vector2 in [Vector2(0, -30), Vector2(-2, -40), Vector2(-5, -50)]:
+		assert_eq(land.surface_at(c.x + p.x, c.y + p.y), &"dirt", "on the path at %s" % p)
+	for p: Vector2 in [Vector2(9, -40), Vector2(-12, -42)]:
+		assert_eq(land.surface_at(c.x + p.x, c.y + p.y), &"grass", "beside it at %s" % p)

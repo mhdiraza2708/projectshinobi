@@ -10,13 +10,19 @@ done. Written so a new session can pick the work up cold.
   Tripo models (Hisame is still her VRoid model; her Tripo model is
   missing). Over-the-shoulder camera, two rush jutsu, height and headband
   size sliders, enemy difficulty that grows with the story part
-  (`scripts/enemies/enemy_tier.gd`, see STORY.md), the 60-second trailer.
-- **A second world to choose:** the streamed continent now runs the open
-  world, the story and the quests (`ContinentWorld`, see
-  [OPEN_WORLD.md](OPEN_WORLD.md)), with camps, shrines, villages, ruins and
-  ten wanted shinobi in lairs. The sea of islands is still the default.
-- **The honest problem:** a full playthrough takes about 30 minutes (17
-  missions, under two minutes each). The target is far longer, see below.
+  (`scripts/enemies/enemy_tier.gd`) plus a Difficulty setting and New Game+,
+  boss signature attacks (`boss_specials.gd`), the 60-second trailer.
+- **The open world is the continent** (`ContinentWorld`, see
+  [OPEN_WORLD.md](OPEN_WORLD.md)): the story and quests run on it, with
+  camps, shrines, villages, ruins and ten wanted shinobi in lairs between the
+  regions. The sea of islands is a choice in the pause menu.
+- **Story and quests:** 24 missions in seven parts (Part Seven, "The Hollow
+  Court", was added after the first ending) and 24 side quests.
+- **The honest length:** a first full clear is now roughly 6-8 hours
+  (story ~1 h, side quests ~2 h, the continent's ~60 places and ten
+  bounties ~3-4 h, plus walking), not the 44 hours first asked for. More hours
+  come from authored content (story, quests, region-specific sites), not from
+  systems: see "How long the game should be".
 
 ## Phase 2: the continent becomes the world
 
