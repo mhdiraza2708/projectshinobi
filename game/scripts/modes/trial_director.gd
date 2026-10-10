@@ -23,6 +23,10 @@ const BREATHER := 2.5
 ## Share of max health restored between waves.
 const BREATHER_HEAL := 0.35
 const SPAWN_DISTANCE := 11.0
+## Nobody appears closer than this to the player: with their back to the
+## arena's edge, the fan would be squeezed onto the player's lap, so it opens
+## toward the middle instead.
+const MIN_SPAWN_DISTANCE := 7.0
 const ARENA_RADIUS := 19.0
 
 var player: Player
@@ -104,13 +108,26 @@ func spawn_point(index: int, count: int) -> Vector3:
 	var spread := deg_to_rad(40.0)
 	var angle := (index - (count - 1) * 0.5) * spread
 	var p := player.global_position + look.rotated(Vector3.UP, angle) * SPAWN_DISTANCE
-	var flat := Vector2(p.x - center.x, p.z - center.z)
-	if flat.length() > arena_radius:
-		flat = flat.normalized() * arena_radius
-	var at := Vector3(center.x + flat.x, center.y, center.z + flat.y)
+	var flat := _inside_arena(p)
+	var mine := Vector2(player.global_position.x, player.global_position.z)
+	if flat.distance_to(mine) < MIN_SPAWN_DISTANCE:
+		# Turn the fan around: from the player toward the arena's middle.
+		var inward := Vector3(center.x - player.global_position.x, 0.0, center.z - player.global_position.z)
+		inward = inward.normalized() if inward.length() > 0.5 else -look
+		var turned := inward.rotated(Vector3.UP, angle)
+		flat = _inside_arena(player.global_position + turned * SPAWN_DISTANCE)
+	var at := Vector3(flat.x, center.y, flat.y)
 	if is_inside_tree() and player.is_inside_tree():
 		at.y = Combat.ground_height(player.get_world_3d(), at + Vector3.UP * 10.0, center.y)
 	return at + Vector3.UP * 0.2
+
+
+## `p` as a flat point, pulled back inside the arena.
+func _inside_arena(p: Vector3) -> Vector2:
+	var flat := Vector2(p.x - center.x, p.z - center.z)
+	if flat.length() > arena_radius:
+		flat = flat.normalized() * arena_radius
+	return Vector2(center.x + flat.x, center.z + flat.y)
 
 
 func _on_enemy_defeated(e: EnemyShinobi) -> void:

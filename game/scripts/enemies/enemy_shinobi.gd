@@ -3,10 +3,13 @@ extends CharacterBody3D
 ## A hostile shinobi. In the trials they are chakra clones summoned by the
 ## trial scroll, so defeat is a puff of smoke.
 ##
-## They fight with the player's tools: kunai, strikes and woven jutsu. While
-## one weaves, its seals appear above its head, so you can read what's coming
-## and interrupt it: a hit at least as big as its rank's `interrupt` value
-## breaks the weave (a kunai is enough for a genin).
+## They fight with the player's tools: kunai, strikes and woven jutsu. Every
+## attack announces itself: a thrower stops and glints before the kunai
+## leaves, a striker winds up under a "!", a weaver's seals appear above its
+## head (and an area jutsu marks the ground it will hit), so you can read
+## what's coming. A hit at least as big as its rank's `interrupt` value breaks
+## a weave (a kunai is enough for a genin). In a crowd they take turns (see
+## AttackTokens) instead of all attacking at once.
 
 signal defeated(enemy: EnemyShinobi)
 ## A story boss crossed one of its `phases` health thresholds.
@@ -14,26 +17,33 @@ signal phase_reached(phase: Dictionary)
 ## A hit from `by` broke this fighter's weave.
 signal interrupted(by: Node)
 
-enum State { SPAWNING, FIGHT, WEAVING, WINDUP, GUARDING, DODGING, STAGGERED, DEFEATED }
+enum State { SPAWNING, FIGHT, WEAVING, WINDUP, AIMING, GUARDING, DODGING, STAGGERED, DEFEATED }
 
+## Per rank: `windup` is how long a striker winds up before its first blow,
+## `aim` how long a thrower holds still before the kunai leaves, `poise` how
+## much damage in quick succession it takes before it reels, and `engage` the
+## seconds between its runs in to fight up close.
 const RANKS := {
 	&"genin": {
 		"title": "Genin", "health": 80.0, "run": 5.0, "seal_time": 0.46, "interrupt": 4.5,
-		"power": 0.55, "melee": 6.0, "windup": 0.45, "combo": 2, "think": Vector2(0.7, 1.3),
+		"power": 0.55, "melee": 6.0, "windup": 0.5, "combo": 2, "think": Vector2(0.7, 1.3),
 		"dodge": 0.15, "guard": 0.0, "range": 7.0, "kunai_cd": Vector2(2.2, 3.6),
 		"jutsu_cd": Vector2(4.0, 6.5), "max_cost": 15.0,
+		"aim": 0.55, "poise": 14.0, "engage": Vector2(7.0, 11.0),
 	},
 	&"chunin": {
 		"title": "Chunin", "health": 130.0, "run": 5.8, "seal_time": 0.34, "interrupt": 6.0,
-		"power": 0.65, "melee": 8.0, "windup": 0.36, "combo": 3, "think": Vector2(0.5, 1.0),
+		"power": 0.65, "melee": 8.0, "windup": 0.42, "combo": 3, "think": Vector2(0.5, 1.0),
 		"dodge": 0.35, "guard": 0.3, "range": 9.0, "kunai_cd": Vector2(1.6, 2.8),
-		"jutsu_cd": Vector2(3.0, 5.0), "max_cost": 22.0,
+		"jutsu_cd": Vector2(3.0, 5.0), "max_cost": 26.0,
+		"aim": 0.45, "poise": 22.0, "engage": Vector2(5.0, 8.0),
 	},
 	&"jonin": {
 		"title": "Jonin", "health": 240.0, "run": 6.4, "seal_time": 0.26, "interrupt": 10.0,
-		"power": 0.75, "melee": 10.0, "windup": 0.3, "combo": 3, "think": Vector2(0.35, 0.8),
+		"power": 0.75, "melee": 10.0, "windup": 0.4, "combo": 3, "think": Vector2(0.35, 0.8),
 		"dodge": 0.5, "guard": 0.45, "range": 10.0, "kunai_cd": Vector2(1.2, 2.2),
 		"jutsu_cd": Vector2(2.2, 3.8), "max_cost": 100.0,
+		"aim": 0.38, "poise": 40.0, "engage": Vector2(3.5, 6.0),
 	},
 }
 
@@ -44,7 +54,47 @@ const DODGE_SPEED := 15.0
 const DODGE_TIME := 0.22
 const STAGGER_TIME := 0.55
 const GUARD_TIME := 0.9
+## Seconds a fighter that guarded won't raise its guard again, so holding a
+## combo on it isn't a wall of blocks.
+const GUARD_REST := 2.5
 const MELEE_REACH := 1.1
+## Follow-up blows of a combo come this much sooner than the first.
+const COMBO_FOLLOW := 0.8
+## How long a runner-in keeps coming before it gives up.
+const RUSH_TIME := 3.0
+## Within this distance (m) a fighter that has the turn swings.
+const RUSH_STRIKE_RANGE := 2.2
+## Reeling from a stagger, a fighter shrugs off further staggers this long (it
+## still takes the damage), so a flurry can't hold it down for good.
+const ARMOR_TIME := 1.0
+## Boss poise is this much deeper than its rank's.
+const BOSS_POISE := 1.6
+## Seconds unhurt before poise is whole again.
+const POISE_REST := 1.6
+## A light hit stops a fighter's own moves this long and pushes it back by
+## this many m/s per point of damage (within RECOIL_PUSH_RANGE).
+const RECOIL_TIME := 0.16
+const RECOIL_PUSH := 0.5
+const RECOIL_PUSH_RANGE := Vector2(1.5, 5.0)
+## How hard a recoil slide is braked (m/s^2).
+const RECOIL_DRAG := 16.0
+## A stagger throws the fighter back this fast (m/s) and slows it by RECOIL_DRAG.
+const STAGGER_PUSH := 6.0
+## Thrown kunai turn toward their mark this quickly (rad/s): a dash sideways beats them.
+const KUNAI_HOMING := 1.4
+## Fast enemy jutsu home less so a late dash still beats them: the cap is
+## HOMING_SPEED / speed within HOMING_CAP_RANGE.
+const HOMING_SPEED := 36.0
+const HOMING_CAP_RANGE := Vector2(0.5, 1.3)
+## The arm cocks this long before a kunai leaves.
+const THROW_CUE := 0.16
+## The colour of a thrower's tell.
+const AIM_COLOR := Color(0.88, 0.94, 1.0)
+## Fighters hold their range within this share either way, so a crowd
+## doesn't stand in one ring.
+const RANGE_SPREAD := 0.18
+## Teammates closer than this angle (rad) around the target push each other apart.
+const SPREAD_ANGLE := 0.75
 ## Enemies steer back toward the arena centre beyond this radius.
 const ARENA_RADIUS := 22.0
 const GRAVITY := 24.0
@@ -97,6 +147,25 @@ var jutsu_list: Array[JutsuDefinition] = []
 
 var _r: Dictionary
 var _state_time := 0.0
+## Physics frame this fighter last began an attack (-1 = never), for AttackTokens.
+var _attack_frame := -1
+## Stagger and recoil: poise left, seconds unhurt, immunity to reeling, and the stun of a light hit.
+var _max_poise := 1.0
+var _poise := 1.0
+var _poise_rest := 0.0
+var _armor := 0.0
+var _recoil := 0.0
+var _guard_rest := 0.0
+## Seconds until the next run in to fight up close.
+var _engage := 0.0
+var _range_bias := 1.0
+var _cued := false
+var _tamed: Dictionary = {}
+var _lean: Tween
+var _flare: Tween
+var _danger: MeshInstance3D
+var _danger_edge: MeshInstance3D
+var _danger_jutsu: JutsuDefinition
 var _think := 0.0
 var _kunai_cd := 0.0
 var _jutsu_cd := 0.0
@@ -130,10 +199,14 @@ func _ready() -> void:
 		_r["dodge"] = 0.0
 		_r["guard"] = 0.0
 	_life_left = lifetime
+	_max_poise = float(_r["poise"]) * (BOSS_POISE if is_boss() else 1.0)
+	_poise = _max_poise
+	_range_bias = randf_range(1.0 - RANGE_SPREAD, 1.0 + RANGE_SPREAD)
+	var engage: Vector2 = _r["engage"]
+	_engage = randf_range(engage.x, engage.y)
 	_r["power"] = float(_r["power"]) * damage_scale
 	_r["melee"] = float(_r["melee"]) * damage_scale
 	if not is_ally():
-		add_to_group(&"lockable")
 		# Seal Eye: rivals' hands are slower to read.
 		_r["seal_time"] = float(_r["seal_time"]) * (1.0 + Perks.value(&"enemy_seal_slow"))
 	add_to_group(team)
@@ -200,7 +273,7 @@ func _ready() -> void:
 	_kunai.chakra_cost = 0.0
 	_kunai.cooldown = 0.0
 	_kunai.visual = &"kunai"
-	_kunai.homing = 2.5
+	_kunai.homing = KUNAI_HOMING
 	jutsu_list = jutsu_for(element, _r["max_cost"])
 
 	_build_overhead()
@@ -467,6 +540,12 @@ func _physics_process(delta: float) -> void:
 	_jutsu_cd -= delta
 	_melee_cd -= delta
 	_rush -= delta
+	_armor -= delta
+	_guard_rest -= delta
+	_engage -= delta
+	_poise_rest += delta
+	if _poise_rest >= POISE_REST:
+		_poise = _max_poise
 
 	match state:
 		State.SPAWNING:
@@ -480,6 +559,7 @@ func _physics_process(delta: float) -> void:
 		State.FIGHT: _fight(delta)
 		State.WEAVING: _weaving(delta)
 		State.WINDUP: _windup(delta)
+		State.AIMING: _aiming(delta)
 		State.GUARDING:
 			_decelerate(delta)
 			_face_target(delta)
@@ -492,7 +572,8 @@ func _physics_process(delta: float) -> void:
 			if _state_time >= DODGE_TIME:
 				_enter(State.FIGHT)
 		State.STAGGERED:
-			_decelerate(delta)
+			velocity.x = move_toward(velocity.x, 0.0, RECOIL_DRAG * delta)
+			velocity.z = move_toward(velocity.z, 0.0, RECOIL_DRAG * delta)
 			if _state_time >= STAGGER_TIME:
 				_enter(State.FIGHT)
 		State.DEFEATED:
@@ -506,11 +587,25 @@ func _physics_process(delta: float) -> void:
 
 func _enter(new_state: State) -> void:
 	match state:
-		State.GUARDING: stats.guard_multiplier = 1.0
+		State.SPAWNING:
+			# Out of the smoke, it can be locked on to (and hit).
+			if not is_ally() and new_state != State.DEFEATED:
+				add_to_group(&"lockable")
+		State.GUARDING:
+			stats.guard_multiplier = 1.0
+			_guard_rest = GUARD_REST
 		State.DODGING: stats.is_invulnerable = false
-		State.WEAVING, State.WINDUP: _seal_label.text = ""
+		State.WEAVING:
+			_seal_label.text = ""
+			_hide_danger()
+		State.WINDUP, State.AIMING: _seal_label.text = ""
+		State.STAGGERED:
+			# Back on its feet: whole again, and not to be knocked down at once.
+			_armor = ARMOR_TIME
+			_poise = _max_poise
 	state = new_state
 	_state_time = 0.0
+	_cued = false
 	if new_state == State.GUARDING:
 		stats.guard_multiplier = 0.3
 
@@ -538,32 +633,47 @@ func _fight(delta: float) -> void:
 	var fwd := to / maxf(dist, 0.01)
 	_face_target(delta)
 
+	if _recoil > 0.0:
+		# Rocked by a blow: sliding back, not deciding anything yet.
+		_recoil -= delta
+		velocity.x = move_toward(velocity.x, 0.0, RECOIL_DRAG * delta)
+		velocity.z = move_toward(velocity.z, 0.0, RECOIL_DRAG * delta)
+		return
 	if _incoming_projectile() and randf() < float(_r["dodge"]):
 		_dodge()
 		return
 
 	# Hold a preferred distance and circle; close in when rushing.
-	var desired: float = 1.4 if _rush > 0.0 else float(_r["range"])
+	var desired: float = 1.4 if _rush > 0.0 else float(_r["range"]) * _range_bias
 	var side := fwd.cross(Vector3.UP) * _strafe_sign
 	var dir := side * 0.7
-	if dist > desired + 1.5:
+	if _rush > 0.0 and dist > RUSH_STRIKE_RANGE - 0.3:
+		# Straight in until it is close enough to swing.
+		dir = fwd
+	elif dist > desired + 1.5:
 		dir = fwd + side * 0.2
 	elif dist < desired - 1.5:
 		dir = -fwd * 0.8 + side * 0.5
-	dir += _separation()
+	dir += _separation() + _spacing(fwd)
 	if global_position.length() > ARENA_RADIUS:
 		dir += -Vector3(global_position.x, 0, global_position.z).normalized()
 	var speed: float = _r["run"] * (1.15 if _rush > 0.0 else 1.0)
 	_move(dir.limit_length(1.0) * speed, delta)
 
-	if dist < 2.2 and _melee_cd <= 0.0 and not drill:
-		_start_windup()
-		return
+	if dist < RUSH_STRIKE_RANGE and _melee_cd <= 0.0 and not drill:
+		if _rush > 0.0 or AttackTokens.may_attack(self, true):
+			_start_windup()
+			return
+		# Somebody else has the blow: give them room.
+		_rush = 0.0
 	_think -= delta
 	if _think > 0.0:
 		return
 	var span: Vector2 = _r["think"]
 	_think = randf_range(span.x, span.y)
+	if _rush > 0.0:
+		# Running in: nothing else on its mind.
+		return
 	if hunt and randf() < 0.35:
 		var better := pick_target()
 		if better:
@@ -577,13 +687,19 @@ func _fight(delta: float) -> void:
 		return
 	if _jutsu_cd <= 0.0:
 		var j := _pick_jutsu(dist)
-		if j:
+		if j and AttackTokens.may_attack(self, false):
 			_start_weave(j)
 			return
-	if _kunai_cd <= 0.0 and dist > 3.5 and dist < 26.0:
-		_throw_kunai()
-	elif _melee_cd <= 0.0 and _rush <= 0.0 and randf() < 0.3:
-		_rush = 3.0
+	if _kunai_cd <= 0.0 and dist > 3.5 and dist < 26.0 and AttackTokens.may_attack(self, false):
+		_start_aim()
+	elif _engage <= 0.0 and _rush <= 0.0 and _melee_cd <= 0.0 and dist > 3.0:
+		# Time to stop plinking and fight up close, if it's this one's turn.
+		if AttackTokens.may_attack(self, true):
+			_rush = RUSH_TIME
+			var engage: Vector2 = _r["engage"]
+			_engage = randf_range(engage.x, engage.y)
+		else:
+			_engage = 0.6
 
 
 ## A jutsu that suits the distance and can be paid for, or null.
@@ -605,15 +721,19 @@ func _start_weave(j: JutsuDefinition) -> void:
 	_weave = j
 	_weave_index = 0
 	_seal_timer = float(_r["seal_time"]) * 0.6
+	_attack_frame = Engine.get_physics_frames()
 	_enter(State.WEAVING)
 	_seal_label.modulate = Element.color(element).lightened(0.25)
 	_seal_label.text = "印"
 	Sfx.play_at(&"weave_start", global_position)
+	if j.form == JutsuDefinition.Form.AREA:
+		_show_danger(j)
 
 
 func _weaving(delta: float) -> void:
 	_decelerate(delta)
 	_face_target(delta)
+	_update_danger()
 	_seal_timer -= delta
 	if _seal_timer > 0.0:
 		return
@@ -631,17 +751,42 @@ func _weaving(delta: float) -> void:
 		return
 	if _target_ok():
 		_face_now(target.global_position - global_position)
-		if caster.cast(_weave, target) and model.animator:
+		if caster.cast(_tamed_jutsu(_weave), target) and model.animator:
 			model.animator.cast()
 	var span: Vector2 = _r["jutsu_cd"]
 	_jutsu_cd = randf_range(span.x, span.y)
 	_enter(State.FIGHT)
 
 
+## Stops and glints, arm drawn back: the cue to move before the kunai leaves.
+func _start_aim() -> void:
+	_attack_frame = Engine.get_physics_frames()
+	_enter(State.AIMING)
+	_seal_label.modulate = AIM_COLOR
+	_seal_label.text = "投"
+	_flare_ring(AIM_COLOR, 0.8)
+	Vfx.flash(get_parent(), global_position + Vector3.UP * 1.3 - global_basis.z * 0.4, AIM_COLOR, 0.9 * size, 0.22)
+	Sfx.play_at(&"dash", global_position + Vector3.UP, -9.0)
+
+
+func _aiming(delta: float) -> void:
+	_decelerate(delta)
+	_face_target(delta)
+	var aim: float = _r["aim"]
+	# The arm cocks just before it lets go, so the whip is the release.
+	if not _cued and _state_time >= aim - THROW_CUE:
+		_cued = true
+		if model.animator:
+			model.animator.throw()
+	if _state_time < aim:
+		return
+	if _target_ok():
+		_throw_kunai()
+	_enter(State.FIGHT)
+
+
 func _throw_kunai() -> void:
 	_face_now(target.global_position - global_position)
-	if model.animator:
-		model.animator.throw()
 	caster.cast(_kunai, target)
 	var span: Vector2 = _r["kunai_cd"]
 	_kunai_cd = randf_range(span.x, span.y)
@@ -650,6 +795,9 @@ func _throw_kunai() -> void:
 func _start_windup() -> void:
 	_rush = 0.0
 	_combo = 0
+	_attack_frame = Engine.get_physics_frames()
+	_flare_ring(UiKit.CRIMSON.lightened(0.15), 1.25)
+	Vfx.flash(get_parent(), global_position + Vector3.UP * 1.2, UiKit.CRIMSON.lightened(0.3), 1.0 * size, 0.2)
 	_enter(State.WINDUP)
 	_seal_label.modulate = UiKit.CRIMSON.lightened(0.2)
 	_seal_label.text = "!"
@@ -659,7 +807,7 @@ func _start_windup() -> void:
 func _windup(delta: float) -> void:
 	_decelerate(delta)
 	_face_target(delta)
-	var windup: float = _r["windup"] * (1.0 if _combo == 0 else 0.7)
+	var windup: float = _r["windup"] * (1.0 if _combo == 0 else COMBO_FOLLOW)
 	if _state_time < windup:
 		return
 	_melee_hit()
@@ -729,6 +877,32 @@ func _separation() -> Vector3:
 	return push
 
 
+## Slides sideways, around the target, away from a teammate that stands on
+## nearly the same bearing, so a crowd fans out instead of queueing in a line.
+## `fwd` points at the target.
+func _spacing(fwd: Vector3) -> Vector3:
+	var push := Vector3.ZERO
+	var side := fwd.cross(Vector3.UP)
+	for node in get_tree().get_nodes_in_group(team):
+		var other := node as EnemyShinobi
+		if other == null or other == self or other.target != target or other.state == State.DEFEATED:
+			continue
+		var mine := global_position - target.global_position
+		var theirs := other.global_position - target.global_position
+		mine.y = 0.0
+		theirs.y = 0.0
+		if mine.length() < 0.5 or theirs.length() < 0.5:
+			continue
+		var gap := mine.angle_to(theirs)
+		if gap >= SPREAD_ANGLE:
+			continue
+		# Which side of me they stand on, along my circling direction.
+		var lateral := (other.global_position - global_position).dot(side)
+		var share := 1.0 - gap / SPREAD_ANGLE
+		push += side * (-signf(lateral) if absf(lateral) > 0.05 else _strafe_sign) * share
+	return push
+
+
 # --- Taking hits -------------------------------------------------------------------
 
 func take_hit(amount: float, hit_element: int, source: Node) -> float:
@@ -738,16 +912,24 @@ func take_hit(amount: float, hit_element: int, source: Node) -> float:
 	if dealt <= 0.0 or stats.is_dead():
 		return dealt
 	var interrupt: float = _r["interrupt"]
+	_poise_rest = 0.0
 	if state == State.WEAVING and dealt >= interrupt:
 		_interrupted()
 		interrupted.emit(source)
 		if source is Player:
 			(source as Player).gain_ultimate(Ultimates.PER_INTERRUPT)
-	elif dealt >= interrupt * 2.5 or (state == State.WINDUP and dealt >= interrupt * 1.5):
-		_stagger()
-	elif state == State.FIGHT and source is Player and randf() < float(_r["guard"]):
+		return dealt
+	var reeling := _armor > 0.0 or state == State.STAGGERED
+	if not reeling:
+		_poise -= dealt
+	var committed := state == State.WINDUP or state == State.AIMING
+	if dealt >= interrupt * 2.5 or (not reeling and (_poise <= 0.0 or (committed and dealt >= interrupt * 1.5))):
+		_stagger(source)
+	elif state == State.FIGHT and source is Player and _guard_rest <= 0.0 and randf() < float(_r["guard"]):
 		_enter(State.GUARDING)
 		Sfx.play_at(&"guard", global_position + Vector3.UP, -3.0)
+	elif state != State.GUARDING:
+		_recoil_from(dealt, source)
 	return dealt
 
 
@@ -756,6 +938,45 @@ func _interrupted() -> void:
 	Sfx.play_at(&"seal_break", global_position + Vector3.UP)
 	_jutsu_cd = maxf(_jutsu_cd, 1.5)
 	_stagger()
+
+
+## A blow too light to stagger still rocks the fighter: it slides back and
+## leans away (whatever the model, with or without a hit clip), and between
+## moves it loses its own for a beat. A fighter in the middle of an attack or
+## guarding is nudged, not stopped.
+func _recoil_from(dealt: float, source: Node) -> void:
+	var push := clampf(dealt * RECOIL_PUSH, RECOIL_PUSH_RANGE.x, RECOIL_PUSH_RANGE.y)
+	var away := _away_from(source)
+	if state == State.FIGHT:
+		_recoil = RECOIL_TIME
+		_rush = 0.0
+		velocity.x = away.x * push
+		velocity.z = away.z * push
+	else:
+		velocity += away * push * 0.4
+	_lean_back(dealt)
+
+
+## Flat direction from `source` to this fighter (straight back if unknown).
+func _away_from(source: Node) -> Vector3:
+	var away := global_basis.z
+	if source is Node3D and is_instance_valid(source):
+		away = global_position - (source as Node3D).global_position
+	elif _target_ok():
+		away = global_position - target.global_position
+	away.y = 0.0
+	return away.normalized() if away.length() > 0.01 else global_basis.z
+
+
+## The body tips back from the blow and rights itself.
+func _lean_back(dealt: float) -> void:
+	if model == null or state == State.DEFEATED:
+		return
+	if _lean:
+		_lean.kill()
+	model.rotation.x = clampf(0.1 + dealt * 0.015, 0.12, 0.3)
+	_lean = create_tween()
+	_lean.tween_property(model, "rotation:x", 0.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 ## Knocked off balance by something other than a hit (Opening Flash).
@@ -768,15 +989,17 @@ func stagger() -> void:
 		_stagger()
 
 
-func _stagger() -> void:
+func _stagger(source: Node = null) -> void:
 	_rush = 0.0
+	_recoil = 0.0
+	_poise = _max_poise
 	_enter(State.STAGGERED)
 	if model.animator:
 		model.animator.hit(true)
-	if _target_ok():
-		var away := global_position - target.global_position
-		away.y = 0.0
-		velocity += away.normalized() * 3.0
+	_lean_back(12.0)
+	var away := _away_from(source)
+	velocity.x = away.x * STAGGER_PUSH
+	velocity.z = away.z * STAGGER_PUSH
 
 
 func _check_phases() -> void:
@@ -835,6 +1058,109 @@ func _on_died() -> void:
 	model.visible = false
 	await get_tree().create_timer(0.8).timeout
 	queue_free()
+
+
+# --- Attack tells ----------------------------------------------------------------
+
+## True while an attack is under way: weaving, aiming a throw or winding up.
+func is_attacking() -> bool:
+	return state == State.WEAVING or state == State.WINDUP or state == State.AIMING
+
+
+## True while closing in for a blow: running at the target or winding up.
+func is_closing_in() -> bool:
+	return state == State.WINDUP or _rush > 0.0
+
+
+## Seconds since this fighter last began an attack (INF if it never has).
+func since_attack_began() -> float:
+	if _attack_frame < 0:
+		return INF
+	return float(Engine.get_physics_frames() - _attack_frame) / float(Engine.physics_ticks_per_second)
+
+
+## `j` as this fighter casts it: fast shots home less, so a dash sideways
+## still beats them once they've left.
+func _tamed_jutsu(j: JutsuDefinition) -> JutsuDefinition:
+	if is_ally() or j.form != JutsuDefinition.Form.PROJECTILE or j.speed <= 0.0:
+		return j
+	var cap := clampf(HOMING_SPEED / j.speed, HOMING_CAP_RANGE.x, HOMING_CAP_RANGE.y)
+	if j.homing <= cap:
+		return j
+	if not _tamed.has(j.id):
+		var copy := j.duplicate() as JutsuDefinition
+		copy.homing = cap
+		_tamed[j.id] = copy
+	return _tamed[j.id]
+
+
+## Flares the ground disc under the fighter in `color`, `grow` times its size,
+## then lets it settle back to its nature's glow.
+func _flare_ring(color: Color, grow: float) -> void:
+	if _ring == null:
+		return
+	var m := _ring.material_override as StandardMaterial3D
+	if _flare:
+		_flare.kill()
+	m.albedo_color = Color(color, 1.0)
+	_ring.scale = Vector3.ONE * grow
+	_flare = create_tween().set_parallel(true)
+	_flare.tween_property(m, "albedo_color", Color(Element.color(element), 0.75), 0.45).set_delay(0.2)
+	_flare.tween_property(_ring, "scale", Vector3.ONE, 0.45).set_delay(0.2)
+
+
+## A quad lying on the ground that stays where it is put (not turning with
+## the fighter).
+func _ground_disc(texture: StringName, additive: bool) -> MeshInstance3D:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2.0, 2.0)
+	quad.orientation = PlaneMesh.FACE_Y
+	var disc := MeshInstance3D.new()
+	disc.mesh = quad
+	disc.material_override = Vfx.surface_material(Vfx.tex(texture), additive)
+	disc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	disc.top_level = true
+	add_child(disc)
+	return disc
+
+
+## Marks the ground an area jutsu will hit, and fills in as the seals come.
+func _show_danger(j: JutsuDefinition) -> void:
+	_danger_jutsu = j
+	if _danger == null:
+		_danger = _ground_disc(&"glow", true)
+		_danger_edge = _ground_disc(&"ring", false)
+	_danger.visible = true
+	_danger_edge.visible = true
+	_update_danger()
+
+
+func _hide_danger() -> void:
+	_danger_jutsu = null
+	if _danger:
+		_danger.visible = false
+		_danger_edge.visible = false
+
+
+func _update_danger() -> void:
+	if _danger_jutsu == null or _weave == null:
+		return
+	# Exactly where JutsuCaster will centre the blast.
+	var forward := -global_basis.z
+	forward.y = 0.0
+	forward = forward.normalized() if forward.length() > 0.01 else Vector3.FORWARD
+	var at := global_position + forward * _danger_jutsu.max_range
+	at.y = Combat.ground_height(get_world_3d(), at, global_position.y) + 0.07
+	var seals := float(_weave.seals.size())
+	var seal_time := maxf(float(_r["seal_time"]), 0.01)
+	var progress := clampf((float(_weave_index) + 1.0 - clampf(_seal_timer / seal_time, 0.0, 1.0)) / (seals + 1.0), 0.0, 1.0)
+	var c := UiKit.CRIMSON.lerp(Element.color(element), 0.3).lightened(0.15)
+	_danger.global_position = at
+	_danger.scale = Vector3.ONE * _danger_jutsu.radius
+	(_danger.material_override as StandardMaterial3D).albedo_color = Color(c, lerpf(0.1, 0.5, progress))
+	_danger_edge.global_position = at + Vector3.UP * 0.01
+	_danger_edge.scale = Vector3.ONE * _danger_jutsu.radius
+	(_danger_edge.material_override as StandardMaterial3D).albedo_color = Color(c.lightened(0.2), lerpf(0.45, 1.0, progress))
 
 
 # --- Presentation ------------------------------------------------------------------
