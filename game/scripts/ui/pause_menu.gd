@@ -500,6 +500,7 @@ func _build_accessibility() -> Control:
 	list.add_child(_section("World"))
 	list.add_child(_option_row("Difficulty (fighters, from their next fight)", _choice(&"difficulty", ["normal", "hard", "nightmare"],
 		["Normal", "Hard  (+2 tiers)", "Nightmare  (+4 tiers)"])))
+	list.add_child(_option_row("Cutscenes at the start and end of fights", _toggle(&"fight_cutscenes")))
 	list.add_child(_option_row("Open world (applies next time you enter it)", _choice(&"world_layout", ["continent", "islands"],
 		["Continent", "Sea of islands (classic)"])))
 

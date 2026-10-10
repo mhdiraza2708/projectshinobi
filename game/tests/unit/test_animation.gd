@@ -309,3 +309,24 @@ func test_a_teleport_does_not_whip_the_hair() -> void:
 	for i in before.size():
 		worst = maxf(worst, before[i].distance_to(after[i]))
 	assert_true(worst < 0.12, "the hair hangs where it did (a tip strayed %.2f m)" % worst)
+
+
+func test_the_thumb_and_fingers_wrap_round_a_drawn_sword() -> void:
+	_armed("ninjato")
+	await _frames(2)
+	var poser := model.poser
+	var skel: Skeleton3D = poser._skel
+	var tip: int = poser._b[&"RightThumbDistal"]
+	var finger_tip: int = poser._b[&"RightMiddleDistal"]
+	var knuckle := finger_tip   # the thumb's tip is measured to the middle fingertip
+	var palm: int = poser._b[&"RightHand"]
+	var thumb_before := skel.get_bone_global_pose(tip).origin.distance_to(skel.get_bone_global_pose(knuckle).origin)
+	var finger_before := skel.get_bone_global_pose(finger_tip).origin.distance_to(skel.get_bone_global_pose(palm).origin)
+	model.animator.strike()
+	await seconds(HumanoidPoser.DRAW_TIME + 0.4)
+	model.animator.speed_ratio = 0.0
+	await _frames(20)
+	var thumb_after := skel.get_bone_global_pose(tip).origin.distance_to(skel.get_bone_global_pose(knuckle).origin)
+	var finger_after := skel.get_bone_global_pose(finger_tip).origin.distance_to(skel.get_bone_global_pose(palm).origin)
+	assert_true(thumb_after < thumb_before * 0.8, "the thumb comes round to meet the fingers (%.3f -> %.3f)" % [thumb_before, thumb_after])
+	assert_true(finger_after < finger_before * 0.85, "the fingers close on the grip (%.3f -> %.3f)" % [finger_before, finger_after])

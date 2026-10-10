@@ -32,6 +32,9 @@ const DEFAULTS := {
 	# How hard the fighters are on top of the story's own climb: "normal",
 	# "hard" (+2 tiers) or "nightmare" (+4). See EnemyTier.
 	&"difficulty": "normal",
+	# Short films as a boss or an ambush begins and as a boss falls (hold Pause
+	# to skip one).
+	&"fight_cutscenes": true,
 	&"stick_deadzone": 0.2,
 	&"vibration": true,
 	&"screen_shake": 1.0,

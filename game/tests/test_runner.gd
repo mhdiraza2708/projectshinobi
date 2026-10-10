@@ -38,6 +38,9 @@ func _ready() -> void:
 	Game.persist = false
 	Game.load_records()
 	Game.start_mode = Game.Mode.TRAINING
+	# The films that open and close fights take seconds each: only their own
+	# tests play them.
+	FightCinema.enabled = false
 	var catcher := ScriptErrorCatcher.new()
 	OS.add_logger(catcher)
 

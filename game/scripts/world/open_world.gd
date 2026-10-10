@@ -78,6 +78,9 @@ var _fights := 0                   # quest fights begun (they take turns at the 
 var _save_left := SAVE_EVERY
 var _ripple_left := 0.0
 var _respawning := false
+var _film_host: CutsceneStage
+## Fights whose opening film has played this session (by quest or lair id).
+var _films_seen: Dictionary = {}
 ## Seconds into the day (saved with the slot).
 var clock := START_CLOCK * DAY_LENGTH
 
@@ -668,6 +671,12 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	busy = true
 	var battle := Music.battle_for(_fights)
 	_fights += 1
+	var first := not _films_seen.has(q["id"])
+	_films_seen[q["id"]] = true
+	if first and q["type"] != "duel":
+		await _film(FightCinema.ambush(str(q["name"]), "they have seen you", Color(1.0, 0.45, 0.3)))
+		if not is_inside_tree() or not placed:
+			return
 	if q["type"] == "duel":
 		var npc: StoryNpc = _givers.get(str(q["giver"]))
 		var foe: Dictionary = q["foe"]
@@ -688,12 +697,19 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 			npc.queue_free()
 		_givers.erase(str(q["giver"]))
 		_duelist = e
-		hud.show_boss(e, "%s  %s" % [e.kanji_override, e.title_override])
-		hud.show_banner("Duel:  %s" % e.title_override, &"cast")
-		Music.play(battle)
 		e.defeated.connect(func(_x: EnemyShinobi) -> void:
 			hud.hide_boss()
 			_end_fight(true))
+		if first:
+			e.hold = true
+			await _film(FightCinema.boss_entrance("%s  %s" % [e.kanji_override, e.title_override],
+				"%s  ·  %s" % [str(info.get("title", "")), Element.display_name(e.element)], Element.color(e.element)), {"boss": e})
+			if not is_instance_valid(e):
+				return
+			e.hold = false
+		hud.show_boss(e, "%s  %s" % [e.kanji_override, e.title_override])
+		hud.show_banner("Duel:  %s" % e.title_override, &"cast")
+		Music.play(battle)
 		return
 	_fight = TrialDirector.new()
 	_fight.tier = _story_tier()
@@ -720,6 +736,25 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	_fight.finished.connect(func(won: bool, _s: float, _r: bool) -> void: _end_fight(won))
 	Music.play(battle)
 	_fight.start(player)
+
+
+## Plays a fight's film under a stage of our own, then gives the player and
+## the HUD back.
+func _film(steps: Array, extra := {}) -> void:
+	if _film_host == null:
+		_film_host = CutsceneStage.new()
+		_film_host.name = "FilmStage"
+		add_child(_film_host)
+	_film_host.player = player
+	_film_host.hud = hud
+	_film_host.dialogue = dialogue
+	_film_host.stage = archipelago
+	_film_host.story = story
+	await FightCinema.play(_film_host, steps, extra)
+	if is_instance_valid(player):
+		player.input_enabled = true
+	if is_instance_valid(hud):
+		hud.visible = true
 
 
 ## A fight begun by something other than a quest of the log (a camp).
@@ -758,12 +793,20 @@ func start_bounty(b: Dictionary, spot: Vector3, quest_id: String) -> void:
 		specials.boss = e
 		specials.specs = (b["specials"] as Array).duplicate(true)
 		e.add_child(specials)
-	hud.show_boss(e, "%s  %s" % [e.kanji_override, e.title_override])
-	hud.show_banner("Wanted:  %s" % e.title_override, &"cast")
-	Music.play(battle)
 	e.defeated.connect(func(_x: EnemyShinobi) -> void:
 		hud.hide_boss()
 		_end_fight(true))
+	if not _films_seen.has(quest_id):
+		_films_seen[quest_id] = true
+		e.hold = true
+		await _film(FightCinema.boss_entrance("%s  %s" % [e.kanji_override, e.title_override],
+			"Wanted  ·  %s" % Element.display_name(e.element), Element.color(e.element)), {"boss": e})
+		if not is_instance_valid(e):
+			return
+		e.hold = false
+	hud.show_boss(e, "%s  %s" % [e.kanji_override, e.title_override])
+	hud.show_banner("Wanted:  %s" % e.title_override, &"cast")
+	Music.play(battle)
 
 
 func story_tier() -> int:

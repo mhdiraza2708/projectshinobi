@@ -211,7 +211,7 @@ func _target_params() -> Dictionary:
 		"hand_L": Vector3(0, -1, 0), "hand_R": Vector3(0, -1, 0),
 		"thumb_L": Vector3(0, 0, -1), "thumb_R": Vector3(0, 0, -1),
 		"foot_L": Vector3.ZERO, "foot_R": Vector3.ZERO,
-		"curl": 0.35, "use_legs": true, "use_arms": true, "use_spine": true,
+		"curl": 0.35, "wrap_L": 0.0, "wrap_R": 0.0, "use_legs": true, "use_arms": true, "use_spine": true,
 	}
 	var breath := sin(_time * 2.2)
 	p["arm_L"].y += breath * 0.01
@@ -469,6 +469,7 @@ func _sword(p: Dictionary) -> void:
 			p["use_arm_R"] = true
 			p["hilt_w"] = 1.0 - smoothstep(SHEATHE_HOME, 1.0, t)
 			p["curl_R"] = lerpf(1.25, 0.35, smoothstep(SHEATHE_HOME, 1.0, t))
+			p["wrap_R"] = lerpf(1.0, 0.0, smoothstep(SHEATHE_HOME, 1.0, t))
 	elif _cut_t > 0.0:
 		var keys: Array = [CUT_DOWN, CUT_UP, CUT_OVERHEAD][_cut]
 		var t := 1.0 - _cut_t / CUT_TIME
@@ -515,7 +516,8 @@ func _sword_key(p: Dictionary, arm: Vector3, blade: Vector3, edge: Vector3, twis
 	p["thumb_R"] = b
 	p["hand_R"] = e.normalized() if e.length_squared() > 1e-6 else Vector3.DOWN
 	p["pole_R"] = Vector3(1.0, -0.6, 0.4)
-	p["curl_R"] = 1.25
+	p["curl_R"] = 1.5
+	p["wrap_R"] = 1.0
 	p["use_arm_R"] = true
 	p["twist"] = float(p["twist"]) + twist
 	p["use_spine"] = true
@@ -630,6 +632,7 @@ func _process_modification_with_delta(delta: float) -> void:
 			goal, _frame * p["pole_" + side])
 		_aim_hand(pre, _frame * p["hand_" + side], _frame * p["thumb_" + side])
 		_curl_fingers(pre, p.get("curl_" + side, p["curl"]))
+		_curl_thumb(pre, float(p.get("wrap_" + side, 0.0)))
 
 	# Clip or pose alike: share each wrist's twist with its forearm.
 	for pre in ["Left", "Right"]:
@@ -746,6 +749,53 @@ func _share_wrist_twist(pre: String, share: float) -> void:
 	lt.basis = Basis(axis, angle * share) * lt.basis
 	_skel.set_bone_global_pose(lower, lt)
 	_skel.set_bone_global_pose(hand, ht)
+
+
+## The thumb's bones, base to tip, and how much of the wrap each takes.
+const THUMB_SEGMENTS: Array[String] = ["ThumbMetacarpal", "ThumbProximal", "ThumbIntermediate", "ThumbDistal"]
+const THUMB_SHARE := [0.35, 0.6, 0.6, 0.45]
+
+
+## Wraps the thumb across the palm toward the little-finger side, as it lies
+## over the fingers round a sword's grip (0 = at rest, 1 = round the grip).
+func _curl_thumb(pre: String, amount: float) -> void:
+	if amount < 0.01:
+		return
+	var hand_name := StringName(pre + "Hand")
+	var mid := StringName(pre + "MiddleProximal")
+	if not _b.has(hand_name) or not _b.has(mid):
+		return
+	var hand: int = _b[hand_name]
+	var ht := _skel.get_bone_global_pose(hand)
+	var rest := _skel.get_bone_global_rest(hand)
+	var turn := ht.basis * rest.basis.inverse()
+	var palm := (turn * (_frame * Vector3.DOWN)).normalized()
+	var fingers := (_pos(mid) - ht.origin).normalized()
+	# Where the thumb side is (as the hand carries it), and so the way across
+	# the palm, away from it.
+	var base_name := StringName(pre + "ThumbMetacarpal") if _b.has(StringName(pre + "ThumbMetacarpal")) else StringName(pre + "ThumbProximal")
+	if not _b.has(base_name):
+		return
+	var side := turn * (_skel.get_bone_global_rest(_b[base_name]).origin - rest.origin)
+	side = (side - fingers * side.dot(fingers)).normalized()
+	var toward := (palm * 0.75 - side * 0.65).normalized()
+	for k in THUMB_SEGMENTS.size():
+		var bone_name := StringName(pre + THUMB_SEGMENTS[k])
+		if not _b.has(bone_name):
+			continue
+		var i: int = _b[bone_name]
+		var t := _skel.get_bone_global_pose(i)
+		var children := _skel.get_bone_children(i)
+		var along: Vector3
+		if children.is_empty():
+			along = t.origin - _skel.get_bone_global_pose(_skel.get_bone_parent(i)).origin
+		else:
+			along = _skel.get_bone_global_pose(children[0]).origin - t.origin
+		var axis := along.normalized().cross(toward)
+		if axis.length_squared() < 1e-8:
+			continue
+		t.basis = Basis(axis.normalized(), amount * float(THUMB_SHARE[k])) * t.basis
+		_skel.set_bone_global_pose(i, t)
 
 
 ## Curls the four fingers toward the palm (0 = flat, ~1.3 = fist).

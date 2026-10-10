@@ -44,6 +44,9 @@ var _survive_spawned := 0
 var _survive_timer := 0.0
 ## The cutscene playing, if any.
 var cutscene: Cutscene
+## Fights whose opening film has played (by beat), so a retry goes straight in.
+var _films_seen: Dictionary = {}
+var _slowed := false
 
 
 func setup(p: Player, h: Hud, d: DialogueBox, where: Node3D, s: Story) -> void:
@@ -327,7 +330,22 @@ func _show_task() -> void:
 
 # --- Fights ------------------------------------------------------------------------
 
+## Plays a film under the director, then gives the player and HUD back.
+func _film(steps: Array, extra := {}) -> void:
+	await FightCinema.play(self, steps, extra)
+	if is_instance_valid(player):
+		player.input_enabled = true
+	if is_instance_valid(hud):
+		hud.visible = true
+
+
 func _start_fight(b: Dictionary) -> void:
+	if not _films_seen.has(beat_index):
+		_films_seen[beat_index] = true
+		var waves: Array = b["waves"]
+		await _film(FightCinema.ambush(str(b["text"]), "%d waves" % waves.size(), Color(1.0, 0.45, 0.3)))
+		if not running:
+			return
 	fight = TrialDirector.new()
 	fight.tier = _tier()
 	fight.ground_at = _ground_at()
@@ -498,6 +516,16 @@ func _start_boss(b: Dictionary) -> void:
 		specials.boss = boss
 		specials.specs = (b["specials"] as Array).duplicate(true)
 		boss.add_child(specials)
+	if not _films_seen.has(beat_index):
+		# The entrance: the boss waits, unhittable, while the camera has them.
+		_films_seen[beat_index] = true
+		boss.hold = true
+		var line := "%s  ·  %s" % [info.get("title", ""), Element.display_name(boss.element)]
+		await _film(FightCinema.boss_entrance("%s  %s" % [info["kanji"], info["name"]], line, Element.color(boss.element)),
+			{"boss": boss})
+		if not running or not is_instance_valid(boss):
+			return
+		boss.hold = false
 	hud.show_boss(boss, "%s %s" % [info["kanji"], info["name"]])
 	hud.set_objective("Defeat %s" % info["name"])
 	Sfx.play(&"wave_start")
@@ -523,7 +551,7 @@ func _on_boss_phase(phase: Dictionary, who: String) -> void:
 		stage.add_child(e)
 
 
-func _on_boss_defeated(_e: EnemyShinobi) -> void:
+func _on_boss_defeated(fallen: EnemyShinobi) -> void:
 	hud.hide_boss()
 	# The boss's clones go with it.
 	for a in adds:
@@ -532,6 +560,14 @@ func _on_boss_defeated(_e: EnemyShinobi) -> void:
 	adds.clear()
 	boss = null
 	Sfx.play(&"victory", -4.0)
+	if running and is_instance_valid(fallen) and Cutscene.active == null:
+		# The last blow in slow motion, seen from beside them.
+		var before := Engine.time_scale
+		Engine.time_scale = FightCinema.FINISH_SPEED
+		_slowed = true
+		await _film(FightCinema.finish(Element.color(fallen.element)), {"boss": fallen})
+		Engine.time_scale = before
+		_slowed = false
 	await get_tree().create_timer(1.2, false).timeout
 	if running:
 		_end_fight()
@@ -543,6 +579,12 @@ func _end_fight() -> void:
 	if fight:
 		fight.queue_free()
 		fight = null
+
+
+func _exit_tree() -> void:
+	# Never leave the game in slow motion.
+	if _slowed:
+		Engine.time_scale = 1.0
 
 
 func _on_player_defeated() -> void:

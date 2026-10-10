@@ -360,7 +360,7 @@ const SCABBARD_SURFACES := [Vector2i(0, -1), 3]
 const HILT_SURFACES := [1, 2, Vector2i(0, 1)]
 ## Model units (hilt up, +Y): the guard's face and the middle of the grip.
 const GUARD_Y := 0.157
-const GRIP_Y := 0.29
+const GRIP_Y := 0.235
 ## The blade the scabbard hides, in model units below the guard.
 const BLADE_LENGTH := 0.6
 const BLADE_COLOR := Color("cdd3db")

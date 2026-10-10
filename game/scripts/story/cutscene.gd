@@ -21,7 +21,14 @@ const EYES := 0.93
 ## leave it alone).
 static var active: Cutscene
 
-var director: StoryDirector
+## Whoever the film plays under: a StoryDirector, or a CutsceneStage for films
+## outside the story (a fight's opening in the open world).
+var director
+## More actors the steps can name besides the player and the cast on stage
+## (id -> Node3D): a fight's boss, say.
+var extra: Dictionary = {}
+## A fight's film (FightCinema) rather than a scene of the story.
+var film := false
 var skipping := false
 var camera: Camera3D
 var overlay: CutsceneOverlay
@@ -36,7 +43,7 @@ var _prev_camera: Camera3D
 var _player_was_visible := true
 
 
-func _init(d: StoryDirector) -> void:
+func _init(d: Node) -> void:
 	name = "Cutscene"
 	director = d
 
@@ -46,7 +53,7 @@ func play(steps: Array) -> void:
 	if UltimateSequence.active != null:
 		await UltimateSequence.active.finished
 	active = self
-	var player := director.player
+	var player: Player = director.player
 	_player_was_visible = player.visible
 	player.input_enabled = false
 	player._set_lock(null)
@@ -107,7 +114,7 @@ func _process(delta: float) -> void:
 
 
 func _finish() -> void:
-	var player := director.player
+	var player: Player = director.player
 	player.scripted_velocity = Vector3.ZERO
 	player.scripted_pose = -1
 	player.visible = _player_was_visible or player.visible
@@ -188,6 +195,8 @@ func _sleep(seconds: float) -> void:
 func _actor(who: String) -> Node3D:
 	if who == Story.PLAYER:
 		return director.player
+	if extra.has(who):
+		return extra[who] if is_instance_valid(extra[who]) else null
 	var npc: Variant = director.npcs.get(who)
 	return npc if is_instance_valid(npc) else null
 
@@ -334,7 +343,7 @@ func _shot_transform(s: Dictionary, k: float) -> Transform3D:
 func _say(s: Dictionary) -> void:
 	if skipping:
 		return
-	var box := director.dialogue
+	var box: DialogueBox = director.dialogue
 	box.auto = true
 	box.play(s["lines"], director.story)
 	while box.is_open() and not skipping:
@@ -346,7 +355,7 @@ func _say(s: Dictionary) -> void:
 
 func _enter(s: Dictionary) -> void:
 	var from: Variant = s["from"] if not skipping else null
-	var npc := director.add_npc(s["who"], s["at"], skipping or not s["puff"], from)
+	var npc: StoryNpc = director.add_npc(s["who"], s["at"], skipping or not s["puff"], from)
 	if s["facing"] != null:
 		_face({"who": s["who"], "to": s["facing"]})
 
@@ -500,7 +509,7 @@ func _cast(s: Dictionary) -> void:
 	var element: int = s["element"]
 	var color := Element.color(element)
 	var target := _point(s["at"], 0.55)
-	var stage := director.stage
+	var stage: Node3D = director.stage
 	Sfx.play_at(StringName("cast_" + Element.NAMES[element]), a.global_position, -2.0)
 	match s["kind"]:
 		"blast":
@@ -535,7 +544,7 @@ func _cast(s: Dictionary) -> void:
 
 
 func _lightning(at: Vector3, color: Color) -> void:
-	var stage := director.stage
+	var stage: Node3D = director.stage
 	Vfx.bolt(stage, at + Vector3(randf_range(-3, 3), 26.0, randf_range(-3, 3)), at, color.lightened(0.4), 0.14, 0.3)
 	Vfx.flash(stage, at, color.lightened(0.5), 3.0, 0.25, &"glow")
 	Vfx.sparks(stage, at, color, 18, 9.0)
@@ -549,7 +558,7 @@ func _lightning(at: Vector3, color: Color) -> void:
 func _fx(s: Dictionary) -> void:
 	if skipping:
 		return
-	var stage := director.stage
+	var stage: Node3D = director.stage
 	var color: Color = s["color"]
 	var size: float = s["size"]
 	match s["fx"]:

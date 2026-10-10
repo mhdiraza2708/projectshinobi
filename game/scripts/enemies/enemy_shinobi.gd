@@ -139,6 +139,9 @@ var size := 1.0
 ## How far into the story this fighter is (see EnemyTier): 0 is a rank's
 ## plain table. Set before it is added to the scene.
 var tier := 0
+## Held back from the fight (a cinematic is playing): it stays as it spawned,
+## unhittable, until released.
+var hold := false
 ## A glowing aura in this colour (alpha 0 = none), for possessed bosses.
 var aura_color := Color(0, 0, 0, 0)
 var state := State.SPAWNING
@@ -561,7 +564,7 @@ func _physics_process(delta: float) -> void:
 			# loaded model stands in a T-pose for its first frames).
 			if model:
 				model.visible = _state_time >= SPAWN_SHOW
-			if _state_time >= SPAWN_TIME:
+			if _state_time >= SPAWN_TIME and not hold:
 				_enter(State.FIGHT)
 		State.FIGHT: _fight(delta)
 		State.WEAVING: _weaving(delta)

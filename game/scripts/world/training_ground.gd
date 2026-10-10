@@ -1117,8 +1117,11 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			await _frames(3)
 			var cam := Camera3D.new()
 			add_child(cam)
-			cam.position = Vector3(0.0, 1.15, float(_user_args().get("cam_z", "1.6")))
-			cam.look_at(Vector3(0.0, 0.95, -3.0))
+			# --cam_z, --cam_x, --cam_y and --look_x, --look_y place the camera (close-ups of a hand).
+			cam.position = Vector3(float(_user_args().get("cam_x", "0.0")), float(_user_args().get("cam_y", "1.15")),
+				float(_user_args().get("cam_z", "1.6")))
+			cam.look_at(Vector3(float(_user_args().get("look_x", "0.0")), float(_user_args().get("look_y", "0.95")), -3.0))
+			cam.fov = float(_user_args().get("fov", "70"))
 			cam.current = true
 			for f in 24:
 				for i in models.size():
@@ -1151,6 +1154,16 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 							poser._cut_t = HumanoidPoser.CUT_TIME * (1.0 - t)
 					poser.sword_drawn = a.gear.is_drawn()
 				await get_tree().process_frame
+			if _user_args().has("hand"):
+				# --hand=dx,dy,dz puts the camera that far from the first model's right hand,
+				# looking at it (a close-up of the grip).
+				var off := str(_user_args()["hand"]).split(",")
+				var poser0 = models[0].animator.poser
+				var skel: Skeleton3D = poser0._skel
+				var hp: Vector3 = skel.global_transform * skel.get_bone_global_pose(poser0._b[&"RightHand"]).origin
+				cam.position = hp + Vector3(float(off[0]), float(off[1]), float(off[2]))
+				cam.look_at(hp)
+				await _frames(2)
 			if _user_args().has("debug"):
 				for i in models.size():
 					var a := models[i].animator
