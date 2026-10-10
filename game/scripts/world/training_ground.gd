@@ -50,6 +50,9 @@ var story_in_world := false
 ## Build every island at once instead of a frame apart (screenshots, tests).
 var instant_world := false
 var _arena: ArenaWall
+## Where the practice dummies stood in the training ground (transform and
+## affinity), so they can be stood up again in Emberwood's yard.
+var _dummy_spots: Array[Dictionary] = []
 var _time_tween: Tween
 ## Skip the teleport effects (chapters started with skip_card, i.e. tests).
 var _quick := false
@@ -299,10 +302,36 @@ func start_world() -> void:
 	if not is_inside_tree():
 		return
 	# The Academy's practice dummies belong to Emberwood now.
-	for dummy in find_children("*", "TrainingDummy", true, false):
-		if dummy.get_parent() != world.archipelago:
-			dummy.reparent(world.archipelago)
+	place_dummies()
 	world.update_music()
+
+
+## Stands the Academy's practice dummies in Emberwood's yard, on its ground,
+## where the training ground had them (it is laid out like the yard), and
+## makes them again if a chapter cleared them away. On the continent the
+## yard is far from the world's origin, so they go on Emberwood itself and
+## travel with it.
+func place_dummies() -> void:
+	if world == null:
+		return
+	var dummies := find_children("*", "TrainingDummy", true, false)
+	if _dummy_spots.is_empty():
+		for d: TrainingDummy in dummies:
+			_dummy_spots.append({"at": d.transform, "affinity": d.affinity})
+	if dummies.is_empty():
+		for spot: Dictionary in _dummy_spots:
+			var d: TrainingDummy = preload("res://scenes/training_dummy.tscn").instantiate()
+			d.affinity = spot["affinity"]
+			d.transform = spot["at"]
+			add_child(d)
+			dummies.append(d)
+	var yard: Node3D = world.archipelago.islands.get("emberwood", world.archipelago)
+	for d: TrainingDummy in dummies:
+		if d.get_parent() == yard:
+			continue
+		var t: Transform3D = d.transform
+		d.reparent(yard)
+		d.global_transform = Transform3D(t.basis, world.archipelago.on_island("emberwood", Vector2(t.origin.x, t.origin.z)))
 
 
 ## Plays a chapter where its pillar stands: the world shifts to put its island
@@ -323,7 +352,9 @@ func start_story_in_world(chapter_id: String) -> void:
 	_arena = ArenaWall.new()
 	_arena.radius = island.walk_radius() if island else 38.0
 	add_child(_arena)
-	if not chapter["dummies"]:
+	if chapter["dummies"]:
+		place_dummies()
+	else:
 		for dummy in find_children("*", "TrainingDummy", true, false):
 			dummy.queue_free()
 	_quick = false
@@ -462,7 +493,7 @@ func _on_chapter_finished(chapter: Dictionary) -> void:
 			return
 		return_to_world()
 		if next.is_empty():
-			hud.show_banner("The story is told. The islands are still yours.", &"cast")
+			hud.show_banner("The story is told. The %s still yours." % ("land is" if world.sites != null else "islands are"), &"cast")
 		elif next["part"] != chapter["part"]:
 			hud.show_banner("第%s章  %s" % [Story.numeral(next["part"]), story.part(next["part"]).get("title", "")], &"cast")
 		else:

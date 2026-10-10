@@ -872,6 +872,8 @@ func _on_player_defeated() -> void:
 		for e in _fight.alive:
 			if is_instance_valid(e):
 				e.leave()
+		# Its fighters stand beside it, not under it: they leave on their own.
+		_fight.queue_free()
 	if is_instance_valid(_duelist):
 		_duelist.leave()
 		hud.hide_boss()

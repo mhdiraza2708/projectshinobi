@@ -205,6 +205,32 @@ func test_the_story_waits_at_a_pillar_and_plays_in_place() -> void:
 	assert_false(is_instance_valid(npc), "the chapter's cast leaves with it")
 
 
+func test_the_practice_dummies_stand_in_emberwoods_yard_and_come_back_for_chapter_one() -> void:
+	await _load()
+	var dummies := scene.find_children("*", "TrainingDummy", true, false)
+	assert_eq(dummies.size(), 3, "the Academy's three dummies")
+	var yard := world.archipelago.on_island("emberwood", Vector2(0.0, -7.0))
+	for d: TrainingDummy in dummies:
+		var flat := Vector2(d.global_position.x - yard.x, d.global_position.z - yard.z).length()
+		assert_true(flat < 12.0, "%s stands in Emberwood's yard (%.0f m from it)" % [d.name, flat])
+		var ground := world.archipelago.on_island("emberwood", Vector2(d.position.x, d.position.z))
+		assert_near(d.global_position.y, ground.y, 0.5, "%s stands on the ground" % d.name)
+	# A chapter without them clears them away; chapter one sets them up again.
+	for d in dummies:
+		d.free()
+	scene.start_story_in_world("ch1_graduation")
+	await physics_frames(3)
+	dummies = scene.find_children("*", "TrainingDummy", true, false)
+	assert_eq(dummies.size(), 3, "chapter one has its dummies again")
+	var affinities := dummies.map(func(d: TrainingDummy) -> String: return d.affinity)
+	affinities.sort()
+	assert_eq(affinities, ["earth", "none", "wind"], "each with its nature (the weak-hit lesson needs Wind)")
+	for d: TrainingDummy in dummies:
+		assert_true(Vector2(d.global_position.x, d.global_position.z).length() < 15.0,
+			"%s is in the yard, which the chapter brought to the origin" % d.name)
+	scene.return_to_world()
+
+
 func test_a_gather_quest_from_offer_to_reward() -> void:
 	await _load()
 	assert_eq(Quests.status("practice_kunai"), Quests.LOCKED, "it waits for the story")

@@ -30,6 +30,24 @@ func _load() -> void:
 	await physics_frames(5)
 
 
+func test_a_task_names_the_button_of_the_device_in_your_hands() -> void:
+	await _load()
+	var was := InputDevice.current
+	InputDevice.current = Binding.Device.GAMEPAD
+	scene.start_story("ch1_graduation", true)
+	await _await_beat("task")
+	var pad := InputDevice.glyph_for_device(&"throw_tool", Binding.Device.GAMEPAD)
+	var keys := InputDevice.glyph_for_device(&"throw_tool", Binding.Device.KEYBOARD_MOUSE)
+	assert_true(pad != keys, "the two devices name the button differently (%s, %s)" % [pad, keys])
+	assert_true(scene.hud.objective().contains("(%s)" % pad), scene.hud.objective())
+	# Picking up the keyboard rewrites the task.
+	InputDevice.current = Binding.Device.KEYBOARD_MOUSE
+	InputDevice.device_changed.emit(InputDevice.current)
+	assert_true(scene.hud.objective().contains("(%s)" % keys), "now it names the key: %s" % scene.hud.objective())
+	assert_true(scene.hud.objective().contains("(0/2)"), "and keeps the count")
+	InputDevice.current = was
+
+
 ## Advances any open dialogue until a non-dialogue beat is reached, skipping
 ## cutscenes (holding Pause does that for a player).
 func _talk_through() -> void:

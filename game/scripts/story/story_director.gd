@@ -59,6 +59,13 @@ func setup(p: Player, h: Hud, d: DialogueBox, where: Node3D, s: Story) -> void:
 	dialogue.finished.connect(_on_dialogue_finished)
 	if not player.defeated.is_connected(_on_player_defeated):
 		player.defeated.connect(_on_player_defeated)
+	# A task's text names its buttons: picking up the other device rewrites it.
+	InputDevice.device_changed.connect(_on_device_changed)
+
+
+func _on_device_changed(_device: Binding.Device) -> void:
+	if running and not task.is_empty() and current_beat() == task:
+		_show_task()
 
 
 ## `at_beat` starts partway through (screenshots): the stage is set as it
