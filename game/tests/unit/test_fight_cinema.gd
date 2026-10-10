@@ -186,6 +186,11 @@ func test_a_wave_fight_opens_with_an_ambush_film() -> void:
 
 func test_a_wanted_shinobi_makes_an_entrance_in_the_open_world() -> void:
 	await _load_world()
+	if not OpenWorld.uses_continent():
+		# Wanted shinobi keep lairs on the continent; the sea of islands has
+		# no places of interest (CI runs the open-world tests on both).
+		assert_true(world.sites == null, "the islands have no lairs")
+		return
 	var lair := world.sites.plan.of_kind("lair")[0]
 	var node := world.sites.build_site(lair["id"])
 	await world._put_player_at(node.spot("den") + Vector3(12, 0, 0))
