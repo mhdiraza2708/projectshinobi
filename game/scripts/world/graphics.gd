@@ -131,9 +131,11 @@ static func apply(env: Environment, sun: DirectionalLight3D, mood := "day") -> v
 	env.volumetric_fog_enabled = rich
 	if rich:
 		var night := mood == "night"
-		env.volumetric_fog_density = {"day": 0.0035, "dawn": 0.012, "dusk": 0.012, "night": 0.02}.get(mood, 0.005)
+		# (Dawn's was as thick as dusk's, and the first morning of the story
+		# opened in a lilac fog that washed the yard out.)
+		env.volumetric_fog_density = {"day": 0.0035, "dawn": 0.0065, "dusk": 0.012, "night": 0.02}.get(mood, 0.005)
 		# The haze takes the hour's colour: amber at dusk, pink at dawn, blue by night.
-		env.volumetric_fog_albedo = {"dusk": Color(0.95, 0.82, 0.68), "dawn": Color(0.9, 0.8, 0.88),
+		env.volumetric_fog_albedo = {"dusk": Color(0.95, 0.82, 0.68), "dawn": Color(0.92, 0.86, 0.88),
 			"night": Color(0.62, 0.72, 0.95)}.get(mood, Color(0.82, 0.84, 0.9))
 		env.volumetric_fog_anisotropy = 0.55
 		env.volumetric_fog_length = 90.0

@@ -27,8 +27,8 @@ const LOOKS := {
 	"day": {"sky": 0.8, "sun": 1.5, "ambient": 0.55, "disc": 1.0},
 	# Cool pink: a rose sun, lilac haze and a bluer sky overhead.
 	"dawn": {"sky": 0.7, "sun": 1.3, "ambient": 0.6, "disc": 0.9,
-		"sun_color": [1.0, 0.5, 0.55], "tint": [0.95, 0.9, 1.08], "horizon_tint": [1.35, 0.8, 0.95],
-		"halo": 0.3, "fog": [1.25, 0.9, 1.05]},
+		"sun_color": [1.0, 0.5, 0.55], "tint": [0.97, 0.94, 1.04], "horizon_tint": [1.25, 0.88, 0.95],
+		"halo": 0.3, "fog": [1.15, 0.95, 1.0]},
 	# Golden hour. The photo is a bright blue afternoon, so it's regraded to
 	# amber haze under a violet sky, lit by a low orange sun (low light on
 	# flat ground, so the sun is stronger to keep the ground from going dark).
