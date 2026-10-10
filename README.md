@@ -25,6 +25,8 @@ controls can be remapped.
 
 | | |
 |---|---|
+| ![The continent: Emberwood's academy yard, its gate, houses and the pillar of light, with mountains on the horizon](docs/images/continent_academy.jpg) | ![A raiders' camp on the continent: a fire, shacks, a fence and boulders, with snowy peaks behind](docs/images/continent_camp.jpg) |
+| ![A wayside shrine in the snow: torii, lanterns and a blue light to attune to](docs/images/continent_shrine.jpg) | ![Pause → Map: the continent charted with roads, rivers and mountains, the regions named once found](docs/images/continent_map.jpg) |
 | ![Emberwood's academy yard at dusk: lanterns, practice dummies and the pillar of light where the next mission waits](docs/images/world_emberwood.jpg) | ![Out at sea between islands, Autumn Wood and the Frozen Road on the horizon](docs/images/world_islands.jpg) |
 | ![Pause → Map: the islands charted, found ones named and travelled to](docs/images/world_map.jpg) | ![Pause → Quests: the story mission, a side quest under way, one on offer and two done](docs/images/world_quests.jpg) |
 | ![The Kenjutsu skill tree beside your shinobi on a lit stage, katana drawn](docs/images/skills_kenjutsu.jpg) | ![The Dojutsu skill tree: the camera pushes in on your face with your eyes open](docs/images/skills_dojutsu.jpg) |
