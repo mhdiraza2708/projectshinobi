@@ -139,7 +139,7 @@ static func _place(node: SiteNode, body: StaticBody3D, prop: Dictionary, yaw: fl
 	var scene_name: String = prop["scene"]
 	var local: Vector2 = (prop["at"] as Vector2).rotated(-yaw)
 	var s := float(prop.get("scale", 1.0))
-	var model := (load(Island.MODELS + scene_name + ".gltf") as PackedScene).instantiate() as Node3D
+	var model := (load(model_path(scene_name)) as PackedScene).instantiate() as Node3D
 	model.name = scene_name.capitalize().replace(" ", "")
 	model.scale = Vector3.ONE * s
 	model.rotation = Vector3(float(prop.get("tilt", 0.0)), yaw + deg_to_rad(float(prop.get("yaw", 0.0))), 0.0)
@@ -165,6 +165,14 @@ static func _place(node: SiteNode, body: StaticBody3D, prop: Dictionary, yaw: fl
 		col.transform = model.transform * Transform3D(Basis.IDENTITY, box[0])
 		col.basis = col.basis.orthonormalized()
 		body.add_child(col)
+
+
+## A prop's model file: a Blender-built .gltf, or a .glb dropped in beside it.
+static func model_path(scene_name: String) -> String:
+	var gltf := Island.MODELS + scene_name + ".gltf"
+	if not ResourceLoader.exists(gltf) and ResourceLoader.exists(Island.MODELS + scene_name + ".glb"):
+		return Island.MODELS + scene_name + ".glb"
+	return gltf
 
 
 ## The lowest ground under a footprint, so a prop never floats on a slope.
