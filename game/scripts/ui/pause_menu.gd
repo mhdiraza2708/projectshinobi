@@ -751,7 +751,7 @@ func _refresh_quests() -> void:
 			_quest_list.add_child(_quest_row(str(q["kanji"]), str(q["name"]), line,
 				q["id"] if group[0] == Quests.ACTIVE else "", tracked))
 	var hint := _hint_label()
-	hint.text = "Talk with %s beside someone. Run on the sea between islands; hold %s on open water to sprint faster." % [
+	hint.text = "Press %s beside someone to talk. Run on the sea between islands; hold %s on open water to sprint faster." % [
 		InputDevice.glyph(&"interact"), InputDevice.glyph(&"evade")]
 	_quest_list.add_child(hint)
 
