@@ -21,7 +21,7 @@ controls can be remapped.
 
 ![Running on the sea toward Autumn Wood, its red maples ahead; the side quest Red Leaf Remedy tracked at the top right](docs/images/world_sea.jpg)
 
-![Swordwork, left to right: the right hand at the hilt as the blade leaves the scabbard at the left hip, the draw sweeping level across, a cut down across from the shoulder, the rising cut ending high, and the overhead finisher coming down](docs/images/sword.jpg)
+![Swordwork, left to right: the right hand at the hilt as the blade leaves the scabbard at the left hip, a one-handed cut down across from the shoulder, the rising backhand, the level sweep, and the first stroke of the X finisher, the free hand thrown back for balance throughout](docs/images/sword.jpg)
 
 | | |
 |---|---|
