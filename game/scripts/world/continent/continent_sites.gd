@@ -10,7 +10,9 @@ const CAMP := "camp"
 const SHRINE := "shrine"
 const VILLAGE := "village"
 const RUIN := "ruin"
-const KINDS: Array[String] = [CAMP, SHRINE, VILLAGE, RUIN]
+## A wanted shinobi's hideout (see Bounties): one lair for each of them.
+const LAIR := "lair"
+const KINDS: Array[String] = [CAMP, SHRINE, VILLAGE, RUIN, LAIR]
 
 const SEED := 4242
 ## No two sites closer than this (metres).
@@ -44,7 +46,8 @@ const NAMES := {
 		"Burnt Waystation", "Forgotten Hall", "Leaning Pillars"],
 }
 
-## [{id, kind, name, at (Vector2), y, yaw, region, danger, seed}]
+## [{id, kind, name, at (Vector2), y, yaw, region, danger, seed}] (a lair also
+## has "bounty": the id of who holds it).
 var sites: Array[Dictionary] = []
 
 const CELL := 128.0
@@ -52,6 +55,7 @@ const CELL := 128.0
 var _land: ContinentLand
 var _rng := RandomNumberGenerator.new()
 var _grid: Dictionary = {}
+var _taken: Dictionary = {}
 
 
 func _init(land: ContinentLand) -> void:
@@ -130,12 +134,19 @@ func _plan() -> void:
 		var region := str(_land.nearest_region(at.x, at.y)["id"])
 		var count: int = counts[kind]
 		counts[kind] = count + 1
-		var names: Array = NAMES[kind]
+		var danger := int(DANGER.get(region, 0))
 		var s := {
-			"id": "site_%02d" % sites.size(), "kind": kind, "name": names[count % names.size()], "at": at,
+			"id": "site_%02d" % sites.size(), "kind": kind, "at": at,
 			"y": _land.height_at(at.x, at.y), "yaw": _rng.randf() * TAU, "region": region,
-			"danger": int(DANGER.get(region, 0)), "seed": _rng.randi(),
+			"danger": danger, "seed": _rng.randi(),
 		}
+		if kind == LAIR:
+			var b := _take_bounty(danger)
+			s["bounty"] = b["id"]
+			s["name"] = b["lair"]
+		else:
+			var names: Array = NAMES[kind]
+			s["name"] = names[count % names.size()]
 		sites.append(s)
 	_index()
 
@@ -169,6 +180,21 @@ func _index() -> void:
 				_grid[key] = list
 
 
+## The next wanted shinobi whose lair suits `danger` (any, once those run out).
+func _take_bounty(danger: int) -> Dictionary:
+	var fallback := {}
+	for b: Dictionary in Bounties.all():
+		if _taken.has(b["id"]):
+			continue
+		if int(b["danger"]) == danger:
+			_taken[b["id"]] = true
+			return b
+		if fallback.is_empty():
+			fallback = b
+	_taken[fallback["id"]] = true
+	return fallback
+
+
 func _shuffle(list: Array[Vector2]) -> void:
 	for i in range(list.size() - 1, 0, -1):
 		var j := _rng.randi_range(0, i)
@@ -195,6 +221,8 @@ func _kind_for(at: Vector2, index: int, counts: Dictionary) -> String:
 	var kind := PATTERN[index % PATTERN.size()]
 	var road := _land.roads.query(at.x, at.y).x
 	var h := _land.height_at(at.x, at.y)
+	if int(counts[LAIR]) < Bounties.all().size() and index % 6 == 4 and road >= 40.0:
+		return LAIR
 	var village_ground := road < 90.0 and h <= 90.0
 	if village_ground and int(counts[VILLAGE]) < MAX_VILLAGES and index % 3 == 0:
 		return VILLAGE

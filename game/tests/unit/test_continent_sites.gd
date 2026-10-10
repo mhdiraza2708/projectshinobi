@@ -20,6 +20,7 @@ func test_there_are_many_of_every_kind() -> void:
 	assert_true(plan.sites.size() <= ContinentSites.MAX_SITES)
 	for kind in ContinentSites.KINDS:
 		assert_true(plan.of_kind(kind).size() >= 4, "%d of %s" % [plan.of_kind(kind).size(), kind])
+	assert_true(plan.of_kind(ContinentSites.LAIR).size() <= Bounties.all().size(), "no more lairs than wanted shinobi")
 
 
 func test_sites_are_apart_clear_of_regions_and_on_level_dry_ground() -> void:
@@ -60,3 +61,18 @@ func test_the_regions_set_the_danger() -> void:
 		assert_eq(int(s["danger"]), int(ContinentSites.DANGER[s["region"]]), "%s" % s["id"])
 	assert_eq(plan.site("site_00")["id"], "site_00")
 	assert_true(plan.site("nope").is_empty())
+
+
+func test_every_lair_holds_a_different_wanted_shinobi_in_a_region_that_suits_them() -> void:
+	var plan := ContinentSites.new(land)
+	var seen := {}
+	var matched := 0
+	for s: Dictionary in plan.of_kind(ContinentSites.LAIR):
+		var b := Bounties.get_bounty(s["bounty"])
+		assert_false(b.is_empty(), "%s names a real bounty" % s["id"])
+		assert_false(seen.has(s["bounty"]), "%s is held twice" % s["bounty"])
+		seen[s["bounty"]] = true
+		assert_eq(s["name"], b["lair"])
+		if int(b["danger"]) == int(s["danger"]):
+			matched += 1
+	assert_true(matched >= seen.size() / 2, "most lairs are in the region danger that suits them (%d of %d)" % [matched, seen.size()])

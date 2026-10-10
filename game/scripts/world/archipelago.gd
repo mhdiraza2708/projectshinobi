@@ -151,6 +151,12 @@ func ground_ready() -> void:
 	pass
 
 
+## The world's ground follows the player from now on (a ContinentWorld's: it
+## has been waiting for them to be placed).
+func follow_player() -> void:
+	pass
+
+
 ## Waits until there is ground to stand on at `point` (world space), after
 ## someone is moved there from far away. The islands are always built.
 func settle_ground(_point: Vector3) -> void:

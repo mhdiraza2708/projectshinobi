@@ -7,7 +7,7 @@ extends RefCounted
 
 ## How far each kind spreads from its middle (metres): the scatter keeps
 ## trees out of it.
-const RADIUS := {"camp": 15.0, "shrine": 11.0, "village": 30.0, "ruin": 15.0}
+const RADIUS := {"camp": 15.0, "shrine": 11.0, "village": 30.0, "ruin": 15.0, "lair": 17.0}
 const SCENERY_RANGE := 560.0
 const FIRE := Color("ff8a2e")
 
@@ -33,6 +33,8 @@ static func build(site: Dictionary, height_at: Callable) -> SiteNode:
 			_village(props, node, rng)
 		ContinentSites.RUIN:
 			_ruin(props, node, rng)
+		ContinentSites.LAIR:
+			_lair(props, node, rng)
 	var body := StaticBody3D.new()
 	body.name = "Body"
 	body.collision_layer = Combat.LAYER_WORLD
@@ -111,6 +113,24 @@ static func _ruin(props: Array[Dictionary], node: SiteNode, rng: RandomNumberGen
 	for i in 2:
 		var a := rng.randf_range(0.0, TAU)
 		props.append({"scene": "dead_tree", "at": Vector2(cos(a), sin(a)) * rng.randf_range(8.0, 13.0), "yaw": rng.randf() * 360.0, "solid": false})
+
+
+static func _lair(props: Array[Dictionary], node: SiteNode, rng: RandomNumberGenerator) -> void:
+	node.anchors["den"] = Vector3.ZERO
+	# A war-banner pole and a burnt gate across the way in, a hut behind, boulders round.
+	props.append({"scene": "gate_broken", "at": Vector2(0.0, 11.0), "scale": 0.8, "tint": Color("57463f")})
+	props.append({"scene": "pillar", "at": Vector2(-3.5, 2.5), "scale": 0.55, "tint": Color("7a2a24")})
+	props.append({"scene": "pillar", "at": Vector2(3.5, 2.5), "scale": 0.55, "tint": Color("7a2a24")})
+	props.append({"scene": "house", "at": Vector2(0.0, -8.0), "scale": 0.7, "yaw": 180.0, "tint": Color("6b5a52")})
+	props.append({"scene": "lantern", "at": Vector2(-6.0, 6.0), "yaw": 15.0})
+	props.append({"scene": "lantern", "at": Vector2(6.0, 6.0), "yaw": -15.0})
+	for i in 6:
+		var a := TAU * i / 6.0 + rng.randf_range(-0.2, 0.2)
+		props.append({"scene": "rock", "at": Vector2(cos(a), sin(a)) * rng.randf_range(12.0, 15.0), "scale": rng.randf_range(0.9, 1.6),
+			"yaw": rng.randf() * 360.0})
+	for i in 3:
+		var a := rng.randf_range(0.0, TAU)
+		props.append({"scene": "dead_tree", "at": Vector2(cos(a), sin(a)) * rng.randf_range(9.0, 14.0), "yaw": rng.randf() * 360.0, "solid": false})
 
 
 # --- Placing ------------------------------------------------------------------------

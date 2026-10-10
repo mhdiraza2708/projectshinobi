@@ -192,9 +192,10 @@ func start(instant := false) -> void:
 		return
 	_make_sites()
 	var ground := archipelago.to_global(at)
-	ground.y = Combat.ground_height(player.get_world_3d(), ground + Vector3.UP * 30.0, ground.y)
+	ground.y = _ground_y(player.get_world_3d(), ground)
 	player.global_position = ground + Vector3.UP * 0.2
 	player.velocity = Vector3.ZERO
+	archipelago.follow_player()
 	placed = true
 	refresh()
 
@@ -239,6 +240,14 @@ func respawn() -> void:
 	_respawning = false
 
 
+## The height of the ground at `at` (x, z), found from well above and below
+## (the saved height may be a few metres off), or `at.y` where there is none.
+static func _ground_y(world: World3D, at: Vector3) -> float:
+	var query := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 80.0, at + Vector3.DOWN * 80.0, Combat.LAYER_WORLD)
+	var hit := world.direct_space_state.intersect_ray(query)
+	return (hit["position"] as Vector3).y if not hit.is_empty() else at.y
+
+
 ## Stands the player at a place in world space, once there is ground under it
 ## (the continent streams it in when they arrive from far away).
 func _put_player_at(at: Vector3, lift := 0.3) -> void:
@@ -248,7 +257,7 @@ func _put_player_at(at: Vector3, lift := 0.3) -> void:
 	await archipelago.settle_ground(at)
 	if not is_instance_valid(player):
 		return
-	var ground := Combat.ground_height(player.get_world_3d(), at + Vector3.UP * 30.0, at.y)
+	var ground := _ground_y(player.get_world_3d(), at)
 	player.global_position = Vector3(at.x, ground + lift, at.z)
 	player.velocity = Vector3.ZERO
 	player.set_physics_process(true)
@@ -716,6 +725,40 @@ func start_fight(q: Dictionary, spot: Vector3) -> void:
 	_start_fight(q, spot)
 
 
+## A wanted shinobi speaks and the duel begins at `spot` (a lair); winning
+## it is `quest_id` finished (see SiteActivities).
+func start_bounty(b: Dictionary, spot: Vector3, quest_id: String) -> void:
+	var model := Bounties.model_path(b)
+	story.add_cast({str(b["id"]): {"name": b["name"], "title": "Wanted", "kanji": b["kanji"], "model": model,
+		"element": b["element"], "style": EnemyShinobi.RIVAL_STYLE.duplicate()}})
+	await _talk([{"who": str(b["id"]), "text": str(b["taunt"])}])
+	if not is_instance_valid(player) or not is_inside_tree():
+		return
+	_fight_quest = quest_id
+	busy = true
+	var battle := Music.battle_for(_fights)
+	_fights += 1
+	var e := EnemyShinobi.new()
+	e.rank = &"jonin"
+	e.element = Element.from_name(str(b["element"]))
+	e.title_override = str(b["name"])
+	e.kanji_override = str(b["kanji"])
+	e.health_override = float(b["health"])
+	e.tier = _story_tier()
+	e.style_override = EnemyShinobi.RIVAL_STYLE.duplicate()
+	e.model_path = model
+	e.target = player
+	archipelago.add_child(e)
+	e.global_position = spot + Vector3.UP * 0.2
+	_duelist = e
+	hud.show_boss(e, "%s  %s" % [e.kanji_override, e.title_override])
+	hud.show_banner("Wanted:  %s" % e.title_override, &"cast")
+	Music.play(battle)
+	e.defeated.connect(func(_x: EnemyShinobi) -> void:
+		hud.hide_boss()
+		_end_fight(true))
+
+
 func story_tier() -> int:
 	return _story_tier()
 
@@ -741,7 +784,7 @@ func _end_fight(won: bool) -> void:
 	busy = false
 	update_music()
 	if won and id.begins_with(SiteActivities.PREFIX):
-		activities.finish_camp(id)
+		activities.finish_fight(id)
 	elif won:
 		_finish_quest(id, Quests.quest(id).get("outro", []))
 	else:

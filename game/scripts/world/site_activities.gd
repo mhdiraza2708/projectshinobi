@@ -6,13 +6,14 @@ extends Node
 ## board offers a contract to clear a camp.
 
 const CAMP_TRIGGER := 24.0
+const LAIR_TRIGGER := 30.0
 const RELIC_RANGE := 2.4
 const SHRINE_RANGE := 3.6
 const BOARD_RANGE := 3.6
 ## How far a contract's camp may be from the board that offers it.
 const CONTRACT_REACH := 1100.0
 ## The mark each kind has on the location card and the map.
-const KANJI := {"camp": "賊", "shrine": "社", "village": "村", "ruin": "跡"}
+const KANJI := {"camp": "賊", "shrine": "社", "village": "村", "ruin": "跡", "lair": "賞"}
 ## What the fighters of a region use.
 const REGION_ELEMENTS := {
 	"emberwood": ["fire", "earth"], "autumn_wood": ["wind", "earth"], "ashen_pass": ["fire", "lightning"],
@@ -55,6 +56,10 @@ static func camp_xp(site: Dictionary, tier: int) -> int:
 	return 120 + 40 * int(site["danger"]) + 25 * tier
 
 
+static func bounty_xp(b: Dictionary, tier: int) -> int:
+	return 250 + 100 * int(b["danger"]) + 40 * tier
+
+
 static func relic_xp(site: Dictionary, tier: int) -> int:
 	return 70 + 20 * int(site["danger"]) + 10 * tier
 
@@ -78,6 +83,8 @@ func on_found(site: Dictionary) -> void:
 			hint = "  ·  its notice board has work"
 		"ruin":
 			hint = "  ·  something lies among the stones"
+		"lair":
+			hint = "  ·  a wanted shinobi holds it"
 	world.hud.show_banner("Found %s%s" % [site["name"], hint], &"info")
 
 
@@ -90,6 +97,10 @@ func check() -> void:
 	var camp := sites.nearest(pos, ["camp"], "fire", CAMP_TRIGGER)
 	if not camp.is_empty() and not sites.is_done(camp["site"]["id"]):
 		start_camp(camp["site"], camp["node"])
+		return
+	var lair := sites.nearest(pos, ["lair"], "den", LAIR_TRIGGER)
+	if not lair.is_empty() and not sites.is_done(lair["site"]["id"]):
+		start_lair(lair["site"], lair["node"])
 		return
 	var relic := sites.nearest(pos + Vector3.UP * 0.6, ["ruin"], "relic", RELIC_RANGE)
 	if not relic.is_empty() and not sites.is_done(relic["site"]["id"]):
@@ -135,23 +146,35 @@ func start_camp(site: Dictionary, node: SiteNode) -> void:
 	world.start_fight(q, node.spot("fire"))
 
 
-## A camp's fight is won: it is cleared for good, and pays (twice over when a
-## contract named it).
-func finish_camp(quest_id: String) -> void:
+## A wanted shinobi at their lair: they speak, then the duel begins.
+func start_lair(site: Dictionary, node: SiteNode) -> void:
+	world.busy = true
+	await world.start_bounty(Bounties.get_bounty(str(site["bounty"])), node.spot("den"), PREFIX + str(site["id"]))
+
+
+## A camp's or lair's fight is won: it is cleared for good, and pays (twice
+## over when a contract named it).
+func finish_fight(quest_id: String) -> void:
 	var id := quest_id.trim_prefix(PREFIX)
 	var site := sites.plan.site(id)
 	if site.is_empty():
 		return
 	sites.set_state(id, WorldSites.DONE)
-	var xp := camp_xp(site, world.story_tier())
+	var tier := world.story_tier()
+	var lair := str(site["kind"]) == "lair"
+	var xp := bounty_xp(Bounties.get_bounty(str(site["bounty"])), tier) if lair else camp_xp(site, tier)
 	var note := ""
 	if contract() == id:
 		xp *= 2
 		note = "  ·  contract fulfilled"
 		Game.set_record("world", "contract", "")
 		Game.set_record("world", "contracts_done", int(Game.record("world", "contracts_done", 0)) + 1)
-	Game.add_xp(xp, "camp")
-	world.hud.show_banner("%s cleared   +%d XP%s" % [site["name"], xp, note], &"cast")
+	Game.add_xp(xp, "bounty" if lair else "camp")
+	if lair:
+		Game.set_record("world", "bounties", int(Game.record("world", "bounties", 0)) + 1)
+		world.hud.show_banner("%s is finished   +%d XP%s" % [Bounties.get_bounty(str(site["bounty"]))["name"], xp, note], &"cast")
+	else:
+		world.hud.show_banner("%s cleared   +%d XP%s" % [site["name"], xp, note], &"cast")
 	Sfx.play(&"quest_done")
 	Game.save_records()
 
@@ -191,33 +214,44 @@ func contract() -> String:
 	return str(Game.record("world", "contract", ""))
 
 
-## The nearest camp not yet cleared within reach of a board.
+## The nearest camp not yet cleared within reach of a board; every third
+## contract is a wanted shinobi's lair instead (when one is left in reach).
 func contract_target(board_site: Dictionary) -> Dictionary:
-	var best := {}
-	var best_d := CONTRACT_REACH
-	for s: Dictionary in sites.plan.of_kind("camp"):
-		if sites.is_done(s["id"]):
-			continue
-		var d := (s["at"] as Vector2).distance_to(board_site["at"])
-		if d < best_d:
-			best_d = d
-			best = s
-	return best
+	var want_lair := int(Game.record("world", "contracts_done", 0)) % 3 == 2
+	var kinds: Array = ["lair", "camp"] if want_lair else ["camp", "lair"]
+	for kind: String in kinds:
+		var best := {}
+		var best_d := CONTRACT_REACH
+		for s: Dictionary in sites.plan.of_kind(kind):
+			if sites.is_done(s["id"]):
+				continue
+			var d := (s["at"] as Vector2).distance_to(board_site["at"])
+			if d < best_d:
+				best_d = d
+				best = s
+		if not best.is_empty():
+			return best
+	return {}
+
+
+func _contract_line(s: Dictionary) -> String:
+	if str(s["kind"]) == "lair":
+		return "%s is held at %s near %s" % [Bounties.get_bounty(str(s["bounty"]))["name"], s["name"], Island.display_name(str(s["region"]))]
+	return "clear %s near %s" % [s["name"], Island.display_name(str(s["region"]))]
 
 
 func read_board(id: String) -> void:
 	var board := sites.plan.site(id)
 	var have := contract()
 	if have != "":
-		var s := sites.plan.site(have)
-		world.hud.show_banner("Contract:  clear %s near %s" % [s["name"], Island.display_name(str(s["region"]))], &"info")
+		world.hud.show_banner("Contract:  %s" % _contract_line(sites.plan.site(have)), &"info")
 		return
 	var target := contract_target(board)
 	if target.is_empty():
-		world.hud.show_banner("The board is bare: every camp hereabouts is cleared", &"info")
+		world.hud.show_banner("The board is bare: nothing hereabouts is left to do", &"info")
 		return
 	Game.set_record("world", "contract", target["id"])
-	sites.set_state(target["id"], WorldSites.FOUND if not sites.is_done(target["id"]) else WorldSites.DONE)
-	world.hud.show_banner("Contract:  clear %s near %s   (double pay)" % [target["name"], Island.display_name(str(target["region"]))], &"cast")
+	sites.set_state(target["id"], WorldSites.FOUND)
+	world.hud.show_banner("Contract:  %s   (double pay)" % _contract_line(target), &"cast")
 	Sfx.play(&"quest_accept")
 	Game.save_records()

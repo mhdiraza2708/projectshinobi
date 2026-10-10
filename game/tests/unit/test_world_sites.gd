@@ -39,7 +39,7 @@ func _stand_at(s: Dictionary) -> void:
 
 func test_every_kind_builds_with_its_anchors_and_props_on_the_ground() -> void:
 	var sites := _make()
-	var expect := {"camp": "fire", "shrine": "interact", "village": "board", "ruin": "relic"}
+	var expect := {"camp": "fire", "shrine": "interact", "village": "board", "ruin": "relic", "lair": "den"}
 	for kind: String in ContinentSites.KINDS:
 		var s: Dictionary = sites.plan.of_kind(kind)[0]
 		var node := sites.build_site(s["id"])

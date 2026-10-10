@@ -153,7 +153,9 @@ func test_the_ground_comes_up_where_asked_and_then_follows_the_player() -> void:
 	var hit := space.intersect_ray(q)
 	assert_false(hit.is_empty(), "ground under Five Winds' pad")
 	assert_near(hit.get("position", Vector3.ZERO).y, c.y, 0.5, "at the pad's height")
-	assert_eq(world.continent.target, marker, "the ground follows the player once it is up")
+	assert_eq(world.continent.target, null, "it waits for the player to be placed")
+	world.follow_player()
+	assert_eq(world.continent.target, marker, "then follows them")
 	# And follows them: walk to Emberwood.
 	c = world.to_global(world.offset("emberwood"))
 	marker.global_position = c

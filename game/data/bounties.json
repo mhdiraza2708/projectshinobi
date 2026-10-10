@@ -1,0 +1,25 @@
+{
+  "_about": "Wanted shinobi who hold a lair out in the wilds. Each is a jonin-class fight with one of the rival models. 'danger' (0-2) says which regions' wilds they hide in; 'health' is for the first part of the story and grows with EnemyTier. 'model' is a file in assets/characters/rivals.",
+  "bounties": [
+    {"id": "kiln_hand", "name": "Goro Kiln-Hand", "kanji": "窯", "element": "fire", "model": "fire_raider", "health": 330, "danger": 0,
+     "lair": "Kiln-Hand's Forge", "taunt": "Forty years I fired their roof-tiles. Then the roof fell in on me. Come, let me show you what a kiln can do."},
+    {"id": "reed_widow", "name": "Sayo the Reed Widow", "kanji": "蘆", "element": "water", "model": "water_tide_runner", "health": 350, "danger": 0,
+     "lair": "Reedbed Hideout", "taunt": "The river keeps what it takes. It took my husband's name. It will take yours."},
+    {"id": "millstone", "name": "Daigo Millstone", "kanji": "臼", "element": "earth", "model": "earth_stone_warden", "health": 400, "danger": 1,
+     "lair": "Millstone Quarry", "taunt": "Slow, they called me. Slow grinds fine. Stand still and I will show you."},
+    {"id": "hollow_drum", "name": "Tsuzumi the Hollow Drum", "kanji": "鼓", "element": "lightning", "model": "lightning_storm_caller", "health": 420, "danger": 1,
+     "lair": "Drum Hollow", "taunt": "Hear that? Every beat is a bolt I have not thrown yet."},
+    {"id": "ember_tail", "name": "Ruri Ember-Tail", "kanji": "狐", "element": "fire", "model": "fire_raider", "health": 450, "danger": 1,
+     "lair": "Ember-Tail Den", "taunt": "They put a price on me, so I put a price on them. Fair trade."},
+    {"id": "gale_tithe", "name": "Hayate Gale-Tithe", "kanji": "疾", "element": "wind", "model": "wind_gale_shinobi", "health": 460, "danger": 1,
+     "lair": "Tithe Crossing", "taunt": "Every wind has a toll. You are standing in mine."},
+    {"id": "long_frost", "name": "Warden Fuyuki of the Long Frost", "kanji": "霜", "element": "water", "model": "water_tide_runner", "health": 500, "danger": 2,
+     "lair": "Frostwatch Cairn", "taunt": "I kept this road for the Leaf of Winter until the war forgot me. I will not be forgotten twice."},
+    {"id": "stormwake", "name": "Ikazuchi the Stormwake", "kanji": "雷", "element": "lightning", "model": "lightning_storm_caller", "health": 520, "danger": 2,
+     "lair": "Stormwake Ridge", "taunt": "The sky owes me a hundred storms. Let me collect them on you."},
+    {"id": "cairn_breaker", "name": "Ishizue the Cairn-Breaker", "kanji": "岩", "element": "earth", "model": "earth_stone_warden", "health": 540, "danger": 2,
+     "lair": "Broken Cairns", "taunt": "I have broken a hundred cairns. The dead never complain. Will you?"},
+    {"id": "nameless_blade", "name": "The Nameless Blade", "kanji": "無", "element": "wind", "model": "jonin_rogue_elite", "health": 600, "danger": 2,
+     "lair": "Empty Dojo", "taunt": "I gave my name away to be free of it. Do not ask for it. Draw."}
+  ]
+}

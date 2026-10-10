@@ -47,6 +47,15 @@ func _stand_at(at: Vector3) -> void:
 	await physics_frames(3)
 
 
+func _skip_dialogue() -> void:
+	for i in 40:
+		if not world.dialogue.is_open():
+			return
+		world.dialogue.advance()
+		world.dialogue.advance()
+		await physics_frames(1)
+
+
 func _first(kind: String) -> Dictionary:
 	return world.sites.plan.of_kind(kind)[0]
 
@@ -156,7 +165,7 @@ func test_a_board_gives_one_contract_for_a_camp_and_it_pays_double() -> void:
 	var camp := world.sites.plan.site(camp_id)
 	var normal := SiteActivities.camp_xp(camp, world.story_tier())
 	var before := Game.xp()
-	world.activities.finish_camp(SiteActivities.PREFIX + camp_id)
+	world.activities.finish_fight(SiteActivities.PREFIX + camp_id)
 	assert_eq(Game.xp() - before, 2 * normal, "double pay")
 	assert_eq(world.activities.contract(), "", "the contract is done")
 	assert_eq(int(Game.record("world", "contracts_done", 0)), 1)
@@ -171,3 +180,51 @@ func test_the_lanterns_of_a_place_built_at_night_are_lit() -> void:
 	for lantern in node.lanterns:
 		assert_true(lantern.get_children().any(func(c: Node) -> bool: return c is OmniLight3D), "%s is lit" % lantern.name)
 	assert_true(world.sites.lanterns().size() >= node.lanterns.size())
+
+
+func test_continuing_far_from_home_stands_on_the_ground_there() -> void:
+	# A save in the far north: the ground must come up there (not at the origin
+	# where the player waits) and stay while they are placed on it.
+	var site := OpenWorld.demo_site("shrine", 0)
+	Game.set_record("world", "position_continent", site + Vector3(0, 0, 24))
+	await _load()
+	var land := (world.archipelago as ContinentWorld).continent.land
+	var p := player.global_position
+	assert_near(p.y, land.height_at(p.x, p.z) + 0.2, 0.6, "on the ground, not under it")
+
+
+func test_a_wanted_shinobi_speaks_then_duels_and_is_finished_for_good() -> void:
+	await _load()
+	var lair := _first("lair")
+	var bounty := Bounties.get_bounty(lair["bounty"])
+	var node := world.sites.build_site(lair["id"])
+	var before := Game.xp()
+	await _stand_at(node.spot("den") + Vector3(12, 0, 0))
+	assert_true(world.busy, "the encounter has begun")
+	assert_true(world.dialogue.is_open(), "they speak first")
+	await _skip_dialogue()
+	await physics_frames(3)
+	assert_true(is_instance_valid(world._duelist), "then the duel")
+	assert_eq(world._duelist.title_override, bounty["name"])
+	assert_eq(world._duelist.rank, &"jonin")
+	assert_eq(world._duelist.element, Element.from_name(bounty["element"]))
+	assert_true(world._duelist.health_override >= 300.0)
+	assert_eq(world._fight_quest, SiteActivities.PREFIX + lair["id"])
+	world._duelist.defeated.emit(world._duelist)
+	assert_true(world.sites.is_done(lair["id"]), "finished")
+	assert_true(Game.xp() - before >= SiteActivities.bounty_xp(bounty, world.story_tier()), "a bounty pays well")
+	assert_eq(int(Game.record("world", "bounties", 0)), 1)
+	world.busy = false
+	await _stand_at(node.spot("den") + Vector3(8, 0, 0))
+	assert_false(world.busy, "they do not come back")
+
+
+func test_every_third_contract_is_a_wanted_shinobi() -> void:
+	await _load()
+	var village := _first("village")
+	var node := world.sites.build_site(village["id"])
+	Game.set_record("world", "contracts_done", 2)
+	await _stand_at(node.spot("board") + Vector3(1.5, 0, 0))
+	world.activities.use("board", village["id"])
+	var target := world.sites.plan.site(world.activities.contract())
+	assert_eq(target["kind"], "lair", "the third contract names a lair")

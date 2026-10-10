@@ -71,6 +71,10 @@ func build_now(near := Vector3.ZERO) -> void:
 func ground_ready() -> void:
 	while not _ground_ok and is_inside_tree():
 		await get_tree().process_frame
+	# The ground's colliders count for rays only after a physics step.
+	if is_inside_tree():
+		await get_tree().physics_frame
+		await get_tree().physics_frame
 
 
 ## Waits until the streamer has built everything it wants round you (more
@@ -82,16 +86,24 @@ func settle(limit_seconds := 120.0) -> void:
 		await get_tree().process_frame
 
 
-## The ground comes up where `near` is, and only then follows the player (who
-## stands somewhere else until the world places them).
+## Waits for ground at `point` after someone is moved there from far away.
 func settle_ground(point: Vector3) -> void:
 	await continent.start(point)
+	if is_inside_tree():
+		await get_tree().physics_frame
+		await get_tree().physics_frame
 
 
+## The ground comes up where `near` is and stays there until the world has
+## placed the player (who stands somewhere else until then) and calls
+## follow_player(): following them sooner would drop the ground just built.
 func _start_ground(near: Vector3) -> void:
 	await continent.start(to_global(near))
-	continent.target = player
 	_ground_ok = true
+
+
+func follow_player() -> void:
+	continent.target = player
 
 
 func _build_region(id: String) -> void:
