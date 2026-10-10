@@ -43,6 +43,8 @@ const ISLAND_KANJI := {
 const SEA_TRACK := &"sea"
 const NIGHT_TRACK := &"night"
 const SHORE_HOLD := 14.0
+## The weather that settles over a region while you are in it.
+const REGION_WEATHER := {"frozen_road": "snow", "autumn_wood": "leaves"}
 
 var player: Player
 var hud: Hud
@@ -829,6 +831,10 @@ func _check_island() -> void:
 	if here == _island:
 		return
 	_island = here
+	if not busy and get_parent().has_method(&"set_weather"):
+		var want := str(REGION_WEATHER.get(here, "none"))
+		if str(get_parent().get(&"weather")) != want:
+			get_parent().set_weather(want)
 	if here != "":
 		var first := not discovered(here)
 		discover(here)

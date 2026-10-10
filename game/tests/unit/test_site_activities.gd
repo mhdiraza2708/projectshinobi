@@ -246,3 +246,17 @@ func test_every_quarter_of_a_kind_pays_a_growing_bonus() -> void:
 	var xp := Game.xp()
 	world.activities.take_relic(_first("ruin"))
 	assert_true(Game.xp() > xp)
+
+
+func test_snow_settles_over_the_frozen_road_and_lifts_when_you_leave() -> void:
+	await _load()
+	assert_eq(scene.weather, "none", "clear at home")
+	await world._put_player_at(world.archipelago.on_island("frozen_road", Vector2(0, 12)))
+	await physics_frames(5)
+	assert_eq(scene.weather, "snow", "snow on the Frozen Road")
+	await world._put_player_at(world.archipelago.on_island("emberwood", Vector2(0, 12)))
+	await physics_frames(5)
+	assert_eq(scene.weather, "none", "and clear again elsewhere")
+	await world._put_player_at(world.archipelago.on_island("autumn_wood", Vector2(0, 12)))
+	await physics_frames(5)
+	assert_eq(scene.weather, "leaves", "leaves fall in Autumn Wood")
