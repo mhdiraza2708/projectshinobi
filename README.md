@@ -39,24 +39,27 @@ controls can be remapped.
 
 ## What you can do right now
 
-- **An open world of islands.** Continue a save (or start one) and you're
-  on Emberwood with the whole archipelago around you: six islands in one
-  sea, and shinobi run on water, so you cross on foot (hold Sprint on open
-  water to run faster). Each island announces itself as you arrive; Five
-  Winds is a summit you reach from leap stones at the foot of its cliffs.
-  The story waits at a **pillar of light** where the next chapter happens;
-  step in and press **Interact (T, or X beside someone)** to play it right
-  there. People around the islands ask for help: **eight original side
-  quests** (gather, drive off bandits, a duel, a delivery across the sea,
-  and a post-game trial), opened as the story goes on, tracked on screen
-  with a marker and listed in **Pause → Quests**, and paid in XP. The day
-  turns while you roam (a 24-minute day: dawn, day, dusk and night, the
-  photographed skies crossfading and every island's lanterns lit at night),
-  **Pause → Map** charts the islands with you, the story's pillar and
-  quest-givers on it, and any island you've set foot on can be travelled
-  back to from there. Your place and the time of day are saved with the
-  slot. (Chapters can still be replayed on their own from the title's
-  chapter list.)
+- **An open world: one continent.** Continue a save (or start one) and
+  you're on Emberwood, on a landmass 4 km across that streams in as you run:
+  river valleys, a lake, roads between the six regions, forests, and
+  mountains with snowy peaks in the north. Each region keeps its landmarks
+  (the academy, a burned pass, a dam, a frozen road, a summit) and shows its
+  name as you arrive. Between them lie about sixty **places of interest**:
+  raiders' camps that ambush you in waves, shrines to attune to (rest, XP,
+  and a fast-travel point), ruins with relics, villages whose notice board
+  offers double-pay contracts, and the lairs of **ten wanted shinobi**, each
+  a duel with signature attacks. The story waits at a **pillar of light**
+  where the next chapter happens; step in and press **Interact (T, or X
+  beside someone)** to play it right there. People ask for help: **24 side
+  quests** (gather, drive off bandits, duels, deliveries), opened as the
+  story goes on, tracked with a marker and listed in **Pause → Quests**
+  beside a tally of deeds. The day turns while you roam (a 24-minute day,
+  lanterns lit at night), **Pause → Map** charts the land with roads and
+  rivers, the places you have found, and any region or attuned shrine can
+  be travelled to. Fighters keep pace with the story, and the Difficulty
+  setting and **New Game+** make them tougher still. The original **sea of
+  islands** is still there as a choice in the pause menu. See
+  [docs/OPEN_WORLD.md](docs/OPEN_WORLD.md).
 - **Story: seven chapters, twenty-four missions, across the islands.** A new
   genin, a loud rival, a stolen scroll and the five-beast spirit sealed in
   it: *The Graduation*, *The Ashen Trail*, *The Windward Watch*, *The Old

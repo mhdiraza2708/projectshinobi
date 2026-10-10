@@ -1,10 +1,10 @@
 # The open world
 
-Free roam happens in one of two worlds. The **sea of islands** (the original;
-six islands in a sea, `Archipelago`) and the **continent** (one streamed
-landmass, `ContinentWorld`). Choose in the pause menu (Accessibility tab,
-"World": applies next time you enter the world), or run with
-`--world=continent` / `--world=islands`. Each layout keeps its own saved
+Free roam happens in one of two worlds. The **continent** (one streamed
+landmass, `ContinentWorld`) is the default; the **sea of islands** (the
+original; six islands in a sea, `Archipelago`) is a choice. Choose in the
+pause menu (Accessibility tab, "World": applies next time you enter the
+world), or run with `--world=continent` / `--world=islands`. Each layout keeps its own saved
 position, so switching never strands you; quests, story progress, XP and
 attunements are shared.
 
@@ -38,12 +38,19 @@ of the regions.
 | shrine | torii, shrine, lanterns, a blue light | Interact to attune: rest, XP once, and it is a fast-travel destination |
 | village | houses, fences, lanterns, a board | Interact at the board for a contract |
 | ruin | broken gate, fallen pillars, a gold light | walk over the relic |
-| lair | a banner, a burnt gate, a hut | a wanted shinobi (`data/bounties.json`) speaks, then duels you |
+| lair | a banner, a burnt gate, a hut | a wanted shinobi (`data/bounties.json`) speaks, then duels you (signature attacks) |
 
 A contract names a camp (every third: a wanted shinobi's lair) near the
 board and pays double. Found sites show on the map; shrines you attuned to
 join the Travel list. State is kept in the slot's `sites` record
 (`found` / `done`); `world.contract`, `relics`, `bounties` count progress.
+
+Finishing a quarter, half, three quarters and all of a kind pays a growing
+bonus (`SiteActivities.milestone`). The Quests tab lists the tally.
+
+Side quests (`data/quests.json`, 24 of them, three or more on every region)
+unlock with the story and each other; their positions are in the region's own
+metres, so they work on both layouts (a test checks every spot is walkable).
 
 Code: `SiteBuilder` (layouts from the island props), `SiteNode`, `SiteMarker`,
 `WorldSites` (streams sites by distance, state), `SiteActivities` (what to
