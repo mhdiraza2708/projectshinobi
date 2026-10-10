@@ -30,6 +30,10 @@ func _stage(tree: String) -> void:
 	root.add_child(stage)
 	stage.show_tree(tree, false)
 	await physics_frames(8)
+	# The camera follows the head in _process: on a loaded machine several
+	# physics steps can pass between frames, so let a few frames run too.
+	for i in 3:
+		await root.get_tree().process_frame
 
 
 ## Whether a world point lands inside the stage's frame (the camera is
