@@ -765,8 +765,11 @@ func _refresh_quests() -> void:
 				q["id"] if group[0] == Quests.ACTIVE else "", tracked))
 	_add_deeds(world)
 	var hint := _hint_label()
-	hint.text = "Press %s beside someone to talk. Run on the sea between islands; hold %s on open water to sprint faster." % [
-		InputDevice.glyph(&"interact"), InputDevice.glyph(&"evade")]
+	if world.sites != null:
+		hint.text = "Press %s beside someone, a shrine or a notice board. Roads join the regions; attune to shrines to travel back to them." % InputDevice.glyph(&"interact")
+	else:
+		hint.text = "Press %s beside someone to talk. Run on the sea between islands; hold %s on open water to sprint faster." % [
+			InputDevice.glyph(&"interact"), InputDevice.glyph(&"evade")]
 	_quest_list.add_child(hint)
 
 
