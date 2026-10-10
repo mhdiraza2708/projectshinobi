@@ -148,31 +148,21 @@
 		"title": "Spirit",
 		"kanji": "鵺",
 		"element": "fire",
-		"model": "sendagaya_shibu",
+		"model": "res://assets/characters/bosses/nue.glb",
 		"voice": {
 			"speaker": "bm_fable*0.35+am_onyx*0.65",
 			"speed": 0.85,
 			"effect": "spirit"
 		},
 		"style": {
-			"tints": {
-				"outfit": "#1a1020",
-				"lower": "#140c18",
-				"hair": "#6a2f8f",
-				"shoes": "#140c18"
-			},
-			"headband": "hachigane",
-			"headband_color": "#3b1f4f",
-			"mask": true,
-			"mask_color": "#0d0a10",
-			"scarf": true,
-			"scarf_color": "#4a2266",
-			"back": "ninjato",
+			"tints": {},
+			"headband": "none",
+			"mask": false,
+			"scarf": false,
+			"back": "none",
 			"pouch": false,
 			"expression": "angry",
-			"height": 1.08,
-			"hair_from": "darkness_shibu",
-			"outfit_from": "sakurada_fumiriya"
+			"height": 1.12
 		}
 	},
 	"tobi": {"name": "Tobi", "title": "Academy Instructor", "kanji": "教", "element": "fire", "model": "darkness_shibu", "voice": {"speaker": "am_eric", "speed": 1.0}, "style": {"tints": {"outfit": "#3b3530", "lower": "#26232a"}, "headband": "cloth", "headband_color": "#b8321f", "scarf": false, "back": "none", "pouch": true}},

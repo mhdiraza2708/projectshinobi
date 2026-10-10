@@ -169,16 +169,21 @@ of the eyes, so it doesn't need eyes on the model.
 ### Masked rivals (Tripo models)
 
 The rank and file of each nature can wear a masked rival made in Tripo
-instead of a VRoid face. Genin and chunin of that nature wear it. Jonin and
-story characters keep their VRoid faces, because only VRoid models have
-the talking mouths, expressions, eye patterns and hair physics.
+instead of a VRoid face. Genin and chunin of that nature wear it, and jonin
+wear the jonin rival. Story characters keep their VRoid faces (Nue aside),
+because only VRoid models have the talking mouths, expressions, eye
+patterns and hair physics.
 
 1. Generate the character in a T-pose, then rig it in Tripo with the
    **Mixamo** skeleton preset.
 2. Export it as **GLB** with the skeleton. You don't need Tripo's animations.
 3. Save it as `game/assets/characters/rivals/<nature>_<name>.glb`, where
    `<nature>` is `fire`, `wind`, `lightning`, `earth` or `water`, for example
-   `fire_raider.glb`.
+   `fire_raider.glb`. Name it `jonin_<name>.glb` instead and jonin of every
+   nature wear it, with a katana at the hip. A story character can wear a
+   Tripo model too: put it in `game/assets/characters/bosses/` and give its
+   full `res://` path as the character's `model` in
+   `game/data/story/characters.json` (as Nue does).
 4. Run `make tripo`. It maps the skeleton to Godot's humanoid bones the
    same way as Mixamo clips.
 

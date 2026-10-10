@@ -2,11 +2,11 @@ extends SceneTree
 ## Configures every Tripo character (exported with the Mixamo skeleton
 ## preset) for Godot's humanoid retargeting, the same way as Mixamo clips:
 ## bone map, renamed bones and a unique "GeneralSkeleton", so the game's
-## clips and poser drive them. Covers the main character and the rivals.
+## clips and poser drive them. Covers the main character, rivals and bosses.
 ##
 ## Run via `make tripo`, which imports, runs this, and re-imports.
 
-const DIRS := ["res://assets/characters/main", "res://assets/characters/rivals"]
+const DIRS := ["res://assets/characters/main", "res://assets/characters/rivals", "res://assets/characters/bosses"]
 const SetupMixamo := preload("res://tools/setup_mixamo.gd")
 
 

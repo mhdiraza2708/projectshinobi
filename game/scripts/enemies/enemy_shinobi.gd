@@ -163,12 +163,15 @@ func _ready() -> void:
 	model.use_profile = clone_of != null
 	if clone_of == null:
 		var rivals: Array[String] = []
-		if model_path == "" and style_override.is_empty() and rank != &"jonin":
-			rivals = rival_models(element)
+		if model_path == "" and style_override.is_empty():
+			rivals = jonin_models() if rank == &"jonin" else rival_models(element)
 		if not rivals.is_empty():
-			# The rank and file of a nature wear its masked rival.
+			# The rank and file of a nature wear its masked rival; jonin of
+			# every nature wear the rogue elite, katana at the hip.
 			model.model_path = rivals.pick_random()
 			model.style = RIVAL_STYLE.duplicate()
+			if rank == &"jonin":
+				model.style["back"] = "ninjato"
 		else:
 			model.model_path = model_path if model_path != "" else pick_model()
 			model.style = (style_override if not style_override.is_empty() else style_for(element, rank)).duplicate()
@@ -247,7 +250,8 @@ static func jutsu_for(nature: int, max_cost: float) -> Array[JutsuDefinition]:
 
 ## Masked rivals made for the game: "<nature>_<name>.glb" in RIVAL_DIR
 ## (Tripo models, see docs/CHARACTERS.md). Genin and chunin of that nature
-## wear one; jonin and story characters keep a face.
+## wear one; jonin of any nature wear a "jonin_<name>.glb"; story
+## characters keep their own models.
 const RIVAL_DIR := "res://assets/characters/rivals"
 ## Rivals come dressed: their own colours, mask and gear.
 const RIVAL_STYLE := {"tints": {}, "headband": "none", "mask": false, "scarf": false,
@@ -255,10 +259,20 @@ const RIVAL_STYLE := {"tints": {}, "headband": "none", "mask": false, "scarf": f
 
 
 static func rival_models(nature: int) -> Array[String]:
+	if nature <= Element.NONE or nature >= Element.NAMES.size():
+		return [] as Array[String]
+	return _rivals_named(Element.NAMES[nature] + "_")
+
+
+## The rival models jonin wear, whatever their nature.
+static func jonin_models() -> Array[String]:
+	return _rivals_named("jonin_")
+
+
+static func _rivals_named(prefix: String) -> Array[String]:
 	var out: Array[String] = []
-	if nature <= Element.NONE or nature >= Element.NAMES.size() or not DirAccess.dir_exists_absolute(RIVAL_DIR):
+	if not DirAccess.dir_exists_absolute(RIVAL_DIR):
 		return out
-	var prefix := Element.NAMES[nature] + "_"
 	var files := Array(ResourceLoader.list_directory(RIVAL_DIR))
 	files.sort()
 	for file: String in files:

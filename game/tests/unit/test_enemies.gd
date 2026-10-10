@@ -55,7 +55,7 @@ func test_enemy_is_a_styled_lockable_fighter() -> void:
 		assert_eq(j.element, Element.WIND)
 
 
-func test_fire_genin_wear_the_masked_raider_and_jonin_keep_a_face() -> void:
+func test_fire_genin_wear_the_masked_raider_and_jonin_the_rogue_elite() -> void:
 	await _load()
 	var raider := EnemyShinobi.RIVAL_DIR.path_join("fire_raider.glb")
 	assert_true(EnemyShinobi.rival_models(Element.FIRE).has(raider))
@@ -71,7 +71,11 @@ func test_fire_genin_wear_the_masked_raider_and_jonin_keep_a_face() -> void:
 	var mat := body.get_active_material(0) as BaseMaterial3D
 	assert_eq(mat.diffuse_mode, BaseMaterial3D.DIFFUSE_TOON, "cel-shaded like the VRoid cast")
 	assert_true(mat.next_pass != null, "with an ink outline")
-	assert_false(jonin.model.loaded_path.begins_with(EnemyShinobi.RIVAL_DIR), "a jonin keeps a face")
+	assert_eq(jonin.model.loaded_path, EnemyShinobi.RIVAL_DIR.path_join("jonin_rogue_elite.glb"),
+		"a jonin of any nature wears the rogue elite")
+	assert_true(jonin.model.gear.has_sword(), "with a katana at the hip")
+	for nature in [Element.LIGHTNING, Element.EARTH, Element.WATER]:
+		assert_false(EnemyShinobi.rival_models(nature).is_empty(), "%s has its rival" % Element.NAMES[nature])
 
 
 func test_weave_shows_seals_then_casts() -> void:
