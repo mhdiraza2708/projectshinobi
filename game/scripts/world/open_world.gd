@@ -302,6 +302,10 @@ func set_people_visible(show: bool) -> void:
 	for npc in _givers.values():
 		if is_instance_valid(npc):
 			(npc as Node3D).visible = show
+	# The story's pillar goes too while its chapter plays (you stand in it at
+	# the start, and its pool of light ringed your feet the whole chapter).
+	if is_instance_valid(_beacon):
+		_beacon.visible = show
 
 
 ## Who should be standing where: one figure per person, marked "!" when
