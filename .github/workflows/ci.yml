@@ -31,8 +31,14 @@ jobs:
           unzip -q /tmp/godot.zip -d ~/godot
           mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
 
+      # A headless import has hung once (no output until the job's limit):
+      # give it a limit of its own, and one more try with a warning.
       - name: Import project
-        run: ~/godot/godot --headless --path game --import
+        run: |
+          timeout 600 ~/godot/godot --headless --path game --import || {
+            echo "::warning::The import did not finish; importing again"
+            timeout 600 ~/godot/godot --headless --path game --import
+          }
 
       - name: Run tests
         run: ~/godot/godot --headless --path game res://tests/test_runner.tscn
@@ -101,8 +107,14 @@ jobs:
           unzip -q -j /tmp/templates.tpz templates/windows_release_x86_64.exe templates/version.txt -d "$dir"
           rm /tmp/templates.tpz
 
+      # A headless import has hung once (no output until the job's limit):
+      # give it a limit of its own, and one more try with a warning.
       - name: Import project
-        run: ~/godot/godot --headless --path game --import
+        run: |
+          timeout 600 ~/godot/godot --headless --path game --import || {
+            echo "::warning::The import did not finish; importing again"
+            timeout 600 ~/godot/godot --headless --path game --import
+          }
 
       - name: Export
         run: |

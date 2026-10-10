@@ -73,6 +73,13 @@ func test_every_seal_bank_and_jutsu_has_a_sound() -> void:
 		var sound := JutsuCaster.cast_sound(jutsu)
 		if jutsu.form == JutsuDefinition.Form.WALL:
 			assert_eq(sound, &"", "walls make their own sound")
+		elif jutsu.form == JutsuDefinition.Form.RUSH:
+			# A rush sounds as it gathers, as it launches and as it lands.
+			assert_eq(sound, &"", "rushes make their own sound")
+			var own := [&"charge_start", &"charge_loop", &"wind_loop", &"dash", &"explosion", &"thunder",
+				&"strike_hit", StringName("cast_" + Element.NAMES[jutsu.element])]
+			for s: StringName in own:
+				assert_true(Sfx.has_sound(s), "%s -> %s" % [jutsu.id, s])
 		else:
 			assert_true(Sfx.has_sound(sound), "%s -> %s" % [jutsu.id, sound])
 
