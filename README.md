@@ -1,12 +1,12 @@
 # Project Shinobi
 
 <p align="center">
-  <a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@a64e01f234a69dc77695ea20ac532bb9c790bb56/docs/media/shinobi_trailer.mp4"><img src="docs/media/trailer_preview.webp" width="720" alt="Trailer highlights: the main character drawing their katana, weaving seals, mastering five natures, the dojutsu eyes snapping open, an ultimate, the fire spirit Nue, and the Project Shinobi title card"></a>
+  <a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@32a3162ac4c8ad46cffb80e1b0f067a7fd8b61f5/docs/media/shinobi_trailer.mp4"><img src="docs/media/trailer_preview.webp" width="720" alt="Trailer highlights: the main character drawing their katana, weaving seals, mastering five natures, the dojutsu eyes snapping open, an ultimate, the fire spirit Nue, and the Project Shinobi title card"></a>
   <br>
-  <b><a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@a64e01f234a69dc77695ea20ac532bb9c790bb56/docs/media/shinobi_trailer.mp4">▶ Watch the 60-second trailer (with sound)</a></b>
+  <b><a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@32a3162ac4c8ad46cffb80e1b0f067a7fd8b61f5/docs/media/shinobi_trailer.mp4">▶ Watch the 60-second trailer (with sound)</a></b>
   · <a href="docs/media/shinobi_trailer.mp4">download</a>
   <br>
-  <sub>Recorded in-engine. It predates the over-the-shoulder camera and the rush jutsu.</sub>
+  <sub>Recorded in-engine. It predates the over-the-shoulder camera, the rush jutsu and the new character models for the cast.</sub>
 </p>
 
 A third-person shinobi action game built around **weaving hand seals to cast
