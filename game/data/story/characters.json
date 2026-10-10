@@ -33,27 +33,19 @@
 		"title": "Rival",
 		"kanji": "朝",
 		"element": "lightning",
-		"model": "sakurada_fumiriya",
+		"model": "res://assets/characters/cast/asahi.glb",
 		"voice": {
 			"speaker": "af_heart",
 			"speed": 1.08
 		},
 		"style": {
-			"tints": {
-				"hair": "#f2c94c",
-				"outfit": "#3a3226",
-				"lower": "#2b2b31"
-			},
-			"headband": "hachigane",
-			"headband_color": "#c9a45c",
-			"scarf": true,
-			"scarf_color": "#d4a017",
-			"back": "none",
+			"tints": {},
+			"headband": "none",
 			"mask": false,
-			"pouch": true,
-			"expression": "happy",
-			"height": 1.0,
-			"hair_from": "vita"
+			"scarf": false,
+			"back": "none",
+			"pouch": false,
+			"height": 1.04
 		}
 	},
 	"iwao": {
@@ -61,26 +53,19 @@
 		"title": "Rogue",
 		"kanji": "巌",
 		"element": "earth",
-		"model": "hairsample_male",
+		"model": "res://assets/characters/cast/iwao.glb",
 		"voice": {
 			"speaker": "am_fenrir*0.5+am_onyx*0.5",
 			"speed": 0.88
 		},
 		"style": {
-			"tints": {
-				"outfit": "#5a4631",
-				"lower": "#3a3026",
-				"hair": "#3b3228"
-			},
-			"headband": "hachigane",
-			"headband_color": "#6b5433",
-			"mask": true,
-			"mask_color": "#2a2520",
+			"tints": {},
+			"headband": "none",
+			"mask": false,
 			"scarf": false,
 			"back": "none",
-			"pouch": true,
-			"expression": "angry",
-			"height": 1.1
+			"pouch": false,
+			"height": 1.12
 		}
 	},
 	"kagerou": {
@@ -88,30 +73,19 @@
 		"title": "Rogue",
 		"kanji": "陽",
 		"element": "fire",
-		"model": "sendagaya_shibu",
+		"model": "res://assets/characters/cast/kagerou.glb",
 		"voice": {
 			"speaker": "bm_fable",
 			"speed": 1.0
 		},
 		"style": {
-			"tints": {
-				"outfit": "#1d1b20",
-				"lower": "#18171b",
-				"hair": "#b53a2e",
-				"shoes": "#1b1a1f"
-			},
-			"headband": "hachigane",
-			"headband_color": "#7a1e12",
-			"mask": true,
-			"mask_color": "#111114",
-			"scarf": true,
-			"scarf_color": "#7a1e12",
-			"back": "ninjato",
+			"tints": {},
+			"headband": "none",
+			"mask": false,
+			"scarf": false,
+			"back": "none",
 			"pouch": false,
-			"expression": "angry",
-			"height": 1.08,
-			"hair_from": "darkness_shibu",
-			"outfit_from": "sakurada_fumiriya"
+			"height": 1.06
 		}
 	},
 	"tsumugi": {
@@ -119,28 +93,19 @@
 		"title": "Hunter",
 		"kanji": "紬",
 		"element": "wind",
-		"model": "sendagaya_shino",
+		"model": "res://assets/characters/cast/tsumugi.glb",
 		"voice": {
 			"speaker": "bf_emma",
 			"speed": 1.0
 		},
 		"style": {
-			"tints": {
-				"outfit": "#2f5a55",
-				"lower": "#243030",
-				"hair": "#26343a",
-				"shoes": "#252a2a"
-			},
-			"headband": "cloth",
-			"headband_color": "#3f8f6f",
-			"scarf": true,
-			"scarf_color": "#2f5a55",
-			"back": "ninjato",
+			"tints": {},
+			"headband": "none",
 			"mask": false,
-			"pouch": true,
-			"expression": "neutral",
-			"height": 1.0,
-			"outfit_from": "vita"
+			"scarf": false,
+			"back": "none",
+			"pouch": false,
+			"height": 1.0
 		}
 	},
 	"nue": {
@@ -165,7 +130,7 @@
 			"height": 1.12
 		}
 	},
-	"tobi": {"name": "Tobi", "title": "Academy Instructor", "kanji": "教", "element": "fire", "model": "darkness_shibu", "voice": {"speaker": "am_eric", "speed": 1.0}, "style": {"tints": {"outfit": "#3b3530", "lower": "#26232a"}, "headband": "cloth", "headband_color": "#b8321f", "scarf": false, "back": "none", "pouch": true}},
-	"chiyo": {"name": "Chiyo", "title": "Dam Keeper", "kanji": "守", "element": "water", "model": "hairsample_female", "voice": {"speaker": "bf_isabella", "speed": 0.95}, "style": {"tints": {"outfit": "#2f4a5c", "lower": "#23303a", "hair": "#1c1c22"}, "headband": "cloth", "headband_color": "#3b82c4", "scarf": false, "back": "none", "pouch": true}},
-	"renji": {"name": "Renji", "title": "Traveller", "kanji": "旅", "element": "wind", "model": "vita", "voice": {"speaker": "bm_lewis", "speed": 0.95}, "style": {"tints": {"outfit": "#6b5a44", "lower": "#3a3228", "hair": "#d8d0c4"}, "headband": "none", "scarf": true, "scarf_color": "#c9a45c", "back": "none", "pouch": true}}
+	"tobi": {"name": "Tobi", "title": "Academy Instructor", "kanji": "教", "element": "fire", "model": "res://assets/characters/cast/tobi.glb", "voice": {"speaker": "am_eric", "speed": 1.0}, "style": {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "none", "pouch": false, "height": 1.08}},
+	"chiyo": {"name": "Chiyo", "title": "Dam Keeper", "kanji": "守", "element": "water", "model": "res://assets/characters/cast/chiyo.glb", "voice": {"speaker": "bf_isabella", "speed": 0.95}, "style": {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "none", "pouch": false, "height": 0.98}},
+	"renji": {"name": "Renji", "title": "Traveller", "kanji": "旅", "element": "wind", "model": "res://assets/characters/cast/renji.glb", "voice": {"speaker": "bm_lewis", "speed": 0.95}, "style": {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "none", "pouch": false, "height": 1.05}}
 }

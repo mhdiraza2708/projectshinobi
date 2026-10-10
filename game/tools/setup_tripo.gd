@@ -6,7 +6,8 @@ extends SceneTree
 ##
 ## Run via `make tripo`, which imports, runs this, and re-imports.
 
-const DIRS := ["res://assets/characters/main", "res://assets/characters/rivals", "res://assets/characters/bosses"]
+const DIRS := ["res://assets/characters/main", "res://assets/characters/rivals", "res://assets/characters/bosses",
+		"res://assets/characters/cast"]
 const SetupMixamo := preload("res://tools/setup_mixamo.gd")
 
 
