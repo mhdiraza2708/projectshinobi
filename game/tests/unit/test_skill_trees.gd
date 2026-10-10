@@ -355,14 +355,14 @@ func test_kenjutsu_cuts_harder_faster_and_further() -> void:
 	foe.global_position = player.global_position + Vector3(0, 0.1, -1.4)
 	player._face_now(foe.global_position - player.global_position)
 	foe.stats.health = foe.stats.max_health
-	player._strike_combo = 2
+	player._strike_combo = player.combo_length() - 1
 	_strike_once()
 	var plain := foe.stats.max_health - foe.stats.health
 	assert_true(plain > 0.0, "the first cut lands")
 	var interval := player._strike_cooldown
 	Game.set_skill_ranks({"keen_edge": 3, "swift_draw": 3})
 	foe.stats.health = foe.stats.max_health
-	player._strike_combo = 2
+	player._strike_combo = player.combo_length() - 1
 	_strike_once()
 	assert_near(foe.stats.max_health - foe.stats.health, plain * 1.36, 0.6, "Keen Edge")
 	assert_near(player._strike_cooldown, interval * 0.76, 0.01, "Swift Draw")
@@ -385,17 +385,17 @@ func test_counter_edge_and_guard_breaker() -> void:
 	player.take_hit(5.0, Element.NONE, foe)
 	player._enter(Player.State.FREE)
 	foe.stats.health = foe.stats.max_health
-	player._strike_combo = 2
+	player._strike_combo = player.combo_length() - 1
 	_strike_once()
 	var countered := foe.stats.max_health - foe.stats.health
 	foe.stats.health = foe.stats.max_health
-	player._strike_combo = 2
+	player._strike_combo = player.combo_length() - 1
 	_strike_once()
 	var plain := foe.stats.max_health - foe.stats.health
 	assert_near(countered, plain * 2.0, 0.6, "the counter cuts twice as hard, once")
 
 
-func test_crescent_moon_flies_from_the_third_cut() -> void:
+func test_crescent_moon_flies_from_the_finisher() -> void:
 	await _load()
 	Game.set_skill_ranks({"crescent_moon": 1})
 	var flying := func() -> Array: return scene.find_children("*", "JutsuProjectile", true, false).filter(
@@ -403,6 +403,6 @@ func test_crescent_moon_flies_from_the_third_cut() -> void:
 	player._strike_combo = 0
 	_strike_once()
 	assert_eq(flying.call().size(), 0, "not from the first cut")
-	player._strike_combo = 1
+	player._strike_combo = player.combo_length() - 2
 	_strike_once()
-	assert_eq(flying.call().size(), 1, "the third cut of the combo flies")
+	assert_eq(flying.call().size(), 1, "the combo's finisher flies")

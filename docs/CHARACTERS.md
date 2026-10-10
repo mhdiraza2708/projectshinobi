@@ -203,7 +203,9 @@ the speed the character really moves (strides measured on all nine roster
 rigs by `tools/measure_strides.gd`). The procedural IK poser runs after the
 clips: hand seals, guard, chakra charge, the dash lean, the kunai throw, the
 arms-back sprint, punches or casts made on the move, and the sword: drawn
-from the hip in a cut, three cuts (down across, rising, overhead), held low
+from the hip in a cut, four one-handed cuts (down across, a rising backhand,
+a level sweep, and the X: two crossing strokes), the free hand thrown back
+for balance, held low
 or trailing while running, and sheathed after a quiet moment. The drawn
 blade is fitted to each rig's own resting hand (grip through the fingers,
 blade out of the thumb side, edge toward the knuckles), so the poser aims

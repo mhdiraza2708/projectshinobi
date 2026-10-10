@@ -91,9 +91,10 @@ controls can be remapped.
 - Run, sprint, **dash** with i-frames, **chakra double-jump**, **kunai**
   (soft-aimed, they stick where they land), **guard**, and **charge chakra**.
 - **Swordwork:** your ninjato is worn at the left hip. The first strike
-  draws it in a level cut across the front, the next cut down across from
-  the shoulder, back up, and straight down from overhead as the finisher,
-  standing or on the run (the blade trails behind you in the shinobi run).
+  draws it in a level cut across the front; then come four one-handed cuts,
+  the free hand thrown back for balance: down across from the shoulder, a
+  rising backhand, a level sweep, and the finisher, an X (two strokes that
+  cross, each landing, their arcs hanging in the air), standing or on the run (the blade trails behind you in the shinobi run).
   A few quiet seconds and it goes home to the scabbard; weaving seals puts
   it away at once (you need both hands). The Kenjutsu tree sharpens all of
   it. Jonin and anyone else wearing a sword fight the same way. The blade leaves a
@@ -134,7 +135,7 @@ controls can be remapped.
   Way of Chakra 気 (**Twin Weave**: every projectile jutsu fires an echo),
   Way of the Mind 心 (**Shadow Bloom**: Shade Clones burst when they go),
   Kenjutsu 剣 (faster, longer, harder cuts, a counter after a blocked blow,
-  guard breaking; **Crescent Moon**: a combo's third cut flies on as a blade
+  guard breaking; **Crescent Moon**: a combo's finisher flies on as a blade
   of chakra) and Dojutsu 瞳, for dojutsu users (**Unclosing Eye**: past its
   time the eye stays open on chakra). Deeper tiers open as you spend points in a tree,
   and points can be taken back for free. Saved per save slot.
@@ -269,7 +270,7 @@ them with IK (including the hand-seal pose). The step-by-step guide is in
   jogging, sprinting, jumping, two punches (boxing-style, not martial arts),
   a spell cast, flinches, a fall and a talking idle, retargeted onto every
   character. Hand seals, guard, chakra charge, the dash, the kunai throw and
-  all the swordwork (draw, three cuts, sheathe) are procedural IK: they read
+  all the swordwork (draw, four cuts and the X, sheathe) are procedural IK: they read
   as sword cuts, but they're keyed by hand, not motion-captured, and the
   sword is one-handed. There are no kicks. Mixamo
   clips you download can replace any of them (see

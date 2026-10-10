@@ -169,15 +169,17 @@ func test_drawing_the_sword_glints_and_rings() -> void:
 func test_cut_directions_follow_the_swing() -> void:
 	var down := HumanoidPoser.cut_direction(0)
 	var up := HumanoidPoser.cut_direction(1)
-	var overhead := HumanoidPoser.cut_direction(2)
+	var sweep := HumanoidPoser.cut_direction(2)
+	var x := HumanoidPoser.cut_direction(3)
 	var draw := HumanoidPoser.cut_direction(-1)
-	for d: Vector3 in [down, up, overhead, draw]:
+	for d: Vector3 in [down, up, sweep, x, draw]:
 		assert_near(d.length(), 1.0, 0.001, "unit length")
 	assert_true(down.x < -0.3 and down.y < -0.3, "the first cut goes down and to the left")
 	assert_true(up.x > 0.3 and up.y > 0.3, "the next rises back to the right")
-	assert_true(overhead.y < -0.9, "the finisher comes straight down")
+	assert_true(sweep.x < -0.95 and absf(sweep.y) < 0.2, "the third sweeps level to the left")
+	assert_true(x.x > 0.3 and x.y < -0.3, "the X's last stroke comes down the other way, to the right")
 	assert_true(draw.x > 0.8, "the draw sweeps across to the right")
-	assert_eq(HumanoidPoser.cut_direction(3), down, "the combo wraps")
+	assert_eq(HumanoidPoser.cut_direction(HumanoidPoser.CUTS.size()), down, "the combo wraps")
 
 
 # --- Hit-stop ----------------------------------------------------------------------
@@ -247,6 +249,47 @@ func test_a_landed_cut_holds_the_world_a_moment_and_throws_sparks() -> void:
 	player._strike_cooldown = 0.0
 	player._strike()
 	assert_false(HitStop.is_active(), "a miss doesn't hold anything")
+
+
+func test_the_finisher_is_an_x_two_strokes_that_land_apart_and_cross() -> void:
+	scene = Scene.instantiate()
+	root.add_child(scene)
+	var player: Player = scene.player
+	await physics_frames(10)
+	player.toggle_lock()
+	await physics_frames(2)
+	var dummy := player.lock_target as TrainingDummy
+	player.global_position = dummy.global_position + Vector3(0, 0, 1.4)
+	await physics_frames(2)
+	# Draw first, then go straight to the finisher.
+	player._strike()
+	await seconds(HumanoidPoser.DRAW_TIME + 0.1)
+	player._strike_combo = player.combo_length() - 2
+	player._strike_cooldown = 0.0
+	var arcs_before := _slash_arcs(scene)
+	var health := dummy.stats.health
+	player._strike()
+	assert_eq(player._strike_combo, player.combo_length() - 1, "the finisher")
+	assert_true(player.animator.poser.is_cutting() and player.animator.poser._cut == HumanoidPoser.CUTS.size() - 1, "the body throws the X")
+	var first := health - dummy.stats.health
+	assert_true(first > 0.0, "the first stroke lands")
+	assert_true(player._strike_cooldown > player.strike_interval * 1.5, "the X takes as long as two cuts")
+	# (A landed cut holds the world a moment, so wait for the stroke, not the clock.)
+	for i in 90:
+		if health - dummy.stats.health > first + 0.01:
+			break
+		await physics_frames(1)
+	var second := health - dummy.stats.health - first
+	assert_near(second, first, 0.01, "then the second, as hard")
+	var arcs := _slash_arcs(scene) - arcs_before
+	assert_true(arcs >= 4, "two arcs, crossing (%d layers)" % arcs)
+
+
+func _slash_arcs(where: Node) -> int:
+	return where.get_children().filter(func(n: Node) -> bool:
+		return n is MeshInstance3D and n.material_override is BaseMaterial3D \
+			and (n.material_override as BaseMaterial3D).albedo_texture != null \
+			and (n.material_override as BaseMaterial3D).albedo_texture.resource_path.get_file() == "slash.png").size()
 
 
 func test_leaving_the_scene_mid_hold_gives_time_back() -> void:

@@ -127,11 +127,11 @@ const SHEATHE_TIME := 0.34
 const SHEATHE_HOME := 0.7
 
 
-## A cut with the drawn sword: 0 down across from the right shoulder, 1
-## rising back, 2 straight down from overhead.
+## A cut with the drawn sword, one-handed: 0 down across from the right
+## shoulder, 1 a backhand rising back, 2 level across the chest, 3 the X.
 func cut(index: int) -> void:
-	_cut = posmod(index, 3)
-	_cut_t = CUT_TIME
+	_cut = posmod(index, CUTS.size())
+	_cut_t = cut_time(_cut)
 	_draw_t = 0.0
 	_sheathe_t = 0.0
 
@@ -148,6 +148,11 @@ func sheathe() -> void:
 	_sheathe_t = SHEATHE_TIME
 	_draw_t = 0.0
 	_cut_t = 0.0
+
+
+## How long cut `index` of the combo takes (the X, the finisher, longest).
+static func cut_time(index: int) -> float:
+	return CUT_X_TIME if posmod(index, CUTS.size()) == CUTS.size() - 1 else CUT_TIME
 
 
 func is_drawing() -> bool:
@@ -398,24 +403,39 @@ func _target_params() -> Dictionary:
 # the canonical frame (facing -Z, right +X). The edge (the knuckles) always
 # leads the blade's motion, so it's worked out, never keyed.
 
-## Down across from above the right shoulder to the left hip (kesa-giri).
+# All one-handed: the sword arm reaches its full length through each cut and
+# the free hand is thrown back for balance (_off_hand_back).
+
+## Down across from high over the right shoulder to the left hip (kesa-giri).
 const CUT_DOWN := [
-	[Vector3(0.42, 0.38, -0.3), Vector3(0.35, 0.85, 0.4), -0.3],
-	[Vector3(0.05, -0.08, -0.88), Vector3(-0.45, -0.1, -0.9), 0.1],
-	[Vector3(-0.42, -0.58, -0.48), Vector3(-0.55, -0.7, 0.45), 0.45],
+	[Vector3(0.55, 0.62, 0.05), Vector3(0.2, 0.75, 0.62), -0.45],
+	[Vector3(0.1, 0.1, -0.98), Vector3(-0.5, -0.1, -0.86), 0.0],
+	[Vector3(-0.62, -0.62, -0.42), Vector3(-0.5, -0.8, 0.3), 0.55],
 ]
-## Rising back from the left hip to above the right shoulder.
+## A backhand rising from the left hip to high over the right shoulder.
 const CUT_UP := [
-	[Vector3(-0.4, -0.58, -0.48), Vector3(-0.55, -0.7, 0.45), 0.45],
-	[Vector3(0.1, -0.1, -0.9), Vector3(0.45, 0.1, -0.9), 0.0],
-	[Vector3(0.5, 0.38, -0.3), Vector3(0.35, 0.85, 0.4), -0.35],
+	[Vector3(-0.55, -0.6, -0.5), Vector3(-0.6, -0.7, 0.35), 0.5],
+	[Vector3(0.1, -0.05, -0.98), Vector3(0.55, 0.15, -0.82), 0.0],
+	[Vector3(0.65, 0.55, -0.35), Vector3(0.45, 0.8, 0.35), -0.5],
 ]
-## Straight down from overhead (shomen), the finisher.
-const CUT_OVERHEAD := [
-	[Vector3(0.12, 0.78, -0.12), Vector3(0.0, 0.5, 0.85), 0.0],
-	[Vector3(0.06, 0.05, -0.96), Vector3(0.0, 0.15, -1.0), 0.05],
-	[Vector3(0.02, -0.55, -0.72), Vector3(0.0, -0.75, -0.65), 0.05],
+## Level across the chest, from wound back on the right round to the left.
+const CUT_SWEEP := [
+	[Vector3(0.85, 0.1, 0.25), Vector3(0.55, 0.0, 0.83), -0.6],
+	[Vector3(0.2, 0.05, -0.97), Vector3(-0.15, 0.0, -0.99), 0.0],
+	[Vector3(-0.75, 0.05, -0.55), Vector3(-0.95, 0.05, 0.25), 0.65],
 ]
+## The finisher, an X: down across from the right shoulder, the blade
+## whipped back up on the left, and down across the other way.
+const CUT_X := [
+	[Vector3(0.55, 0.62, 0.05), Vector3(0.2, 0.75, 0.62), -0.45],
+	[Vector3(-0.55, -0.62, -0.5), Vector3(-0.5, -0.8, 0.3), 0.45],
+	[Vector3(-0.45, 0.62, -0.2), Vector3(-0.25, 0.8, 0.55), 0.35],
+	[Vector3(0.6, -0.6, -0.5), Vector3(0.5, -0.8, 0.3), -0.45],
+]
+## The combo with a sword, in order: the last is the finisher.
+const CUTS := [CUT_DOWN, CUT_UP, CUT_SWEEP, CUT_X]
+## The X is two cuts, so it takes about twice as long.
+const CUT_X_TIME := 0.5
 ## Along the worn scabbard, hilt end first (CharacterGear.SCABBARD_ALONG).
 const SCABBARD := Vector3(0.2, 0.5, -1.0)
 ## The draw (nukitsuke): out of the scabbard with the blade still pointing
@@ -439,8 +459,10 @@ const SHEATHE_KEYS := [
 ## (-1): a unit vector in the canonical frame (facing -Z, right +X), without
 ## the depth. Where sparks and the like should fly.
 static func cut_direction(index: int) -> Vector3:
-	var keys: Array = DRAW_CUT.slice(1) if index < 0 else [CUT_DOWN, CUT_UP, CUT_OVERHEAD][posmod(index, 3)]
-	var d: Vector3 = keys[-1][0] - keys[0][0]
+	var keys: Array = DRAW_CUT.slice(1) if index < 0 else CUTS[posmod(index, CUTS.size())]
+	# The X goes by its last stroke (its first is that, mirrored).
+	var from: Vector3 = keys[-2][0] if keys.size() > 3 else keys[0][0]
+	var d: Vector3 = keys[-1][0] - from
 	return Vector3(d.x, d.y, 0.0).normalized()
 
 
@@ -471,13 +493,29 @@ func _sword(p: Dictionary) -> void:
 			p["curl_R"] = lerpf(1.25, 0.35, smoothstep(SHEATHE_HOME, 1.0, t))
 			p["wrap_R"] = lerpf(1.0, 0.0, smoothstep(SHEATHE_HOME, 1.0, t))
 	elif _cut_t > 0.0:
-		var keys: Array = [CUT_DOWN, CUT_UP, CUT_OVERHEAD][_cut]
-		var t := 1.0 - _cut_t / CUT_TIME
-		# A quick start, all the speed through the middle, a held finish.
-		_sword_keys(p, keys, ease(t, 0.6))
-		if _cut == 2:
-			p["lean"] = float(p["lean"]) + lerpf(-0.1, 0.32, t)
-			p["hips_drop"] = float(p["hips_drop"]) + 0.06 * sin(t * PI)
+		var keys: Array = CUTS[_cut]
+		var t := 1.0 - _cut_t / cut_time(_cut)
+		# A quick start, all the speed through the middle, a held finish:
+		# for the X, in each stroke and in the whip back up between them.
+		var span := float(keys.size() - 1)
+		var stroke := minf(floorf(t * span), span - 1.0)
+		_sword_keys(p, keys, (stroke + ease(t * span - stroke, 0.6)) / span)
+		_off_hand_back(p, t)
+		if _cut == CUTS.size() - 1:
+			# The X is thrown with the whole body.
+			p["lean"] = float(p["lean"]) + lerpf(0.0, 0.25, t)
+			p["hips_drop"] = float(p["hips_drop"]) + 0.07 * sin(t * PI)
+
+
+## A one-handed cut: the free hand swings back and out, open, against the
+## sword arm's reach (and comes in again as the cut ends).
+func _off_hand_back(p: Dictionary, t: float) -> void:
+	var k := sin(clampf(t, 0.0, 1.0) * PI) * 0.6 + 0.4
+	p["arm_L"] = (p["arm_L"] as Vector3).lerp(Vector3(-0.6, -0.45, 0.5), k)
+	p["pole_L"] = Vector3(-1.0, -0.4, 0.4)
+	p["hand_L"] = (p["hand_L"] as Vector3).lerp(Vector3(-0.2, -0.5, 0.85), k)
+	p["curl_L"] = 0.25
+	p["use_arm_L"] = true
 
 
 ## Holding the drawn sword: the way a swordsman waits, the arm hanging easy at

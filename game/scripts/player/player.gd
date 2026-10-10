@@ -556,35 +556,36 @@ func _start_dash() -> void:
 	get_tree().create_timer(dash_time + 0.4, false).timeout.connect(chest.queue_free)
 
 
+## How many blows make a combo: four cuts with a sword (the last the X),
+## three with fists.
+func combo_length() -> int:
+	return HumanoidPoser.CUTS.size() if animator != null and animator.has_sword() else 3
+
+
 func _strike() -> void:
 	if _strike_cooldown > 0.0:
 		return
-	# Kenjutsu (skill tree) makes the cuts faster, longer and harder.
-	_strike_cooldown = strike_interval * maxf(0.4, 1.0 - Perks.value(&"strike_speed"))
-	_strike_combo = (_strike_combo + 1) % 3
-	if is_instance_valid(lock_target):
-		_face_now(lock_target.global_position - global_position)
 	# With a sword at the hip the first blow draws it in a level cut.
 	var armed := animator != null and animator.has_sword()
 	var drawing := armed and not animator.sword_drawn()
+	var steps := combo_length()
+	_strike_combo = (_strike_combo + 1) % steps
+	var finisher := _strike_combo == steps - 1 and not drawing
+	var x_slash := finisher and armed
+	# Kenjutsu (skill tree) makes the cuts faster, longer and harder; the X
+	# takes as long as two cuts.
+	var length := HumanoidPoser.cut_time(_strike_combo) / HumanoidPoser.CUT_TIME if armed and not drawing else 1.0
+	_strike_cooldown = strike_interval * maxf(0.4, 1.0 - Perks.value(&"strike_speed")) * length
+	if is_instance_valid(lock_target):
+		_face_now(lock_target.global_position - global_position)
 	if animator:
 		animator.strike(_strike_combo)
 	Sfx.play(&"strike_whoosh", -2.0, 0.1)
 	var forward := -global_basis.z
-	velocity += forward * 3.0
-	var reach := 1.0 + Perks.value(&"strike_reach")
-	var center := global_position + forward * strike_reach * reach + Vector3.UP * 1.1
-	# The blade's arc: each blow of the combo cuts at a different angle.
-	var tilt: float = 0.05 if drawing else [0.7, -0.7, 1.35][_strike_combo]
-	# The blade has its own trail: the arc stays for the finisher, and is
-	# only a faint echo on the other cuts.
-	var finisher := _strike_combo == 2 and not drawing
-	var echo := armed and not finisher
-	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1), Color(0.3, 0.55, 1.0),
-		1.8 if echo else 2.2, tilt, 0.18, 0.35 if echo else 1.0)
+	velocity += forward * (4.5 if x_slash else 3.0)
 	var damage := strike_damage * (1.0 + 0.25 * _strike_combo) * (1.0 + stats.modifier(&"attack_power")) \
 		* (1.0 + Perks.value(&"strike_damage"))
-	if _strike_combo == 2:
+	if finisher:
 		damage *= 1.0 + Perks.value(&"finisher")
 	# Counter Edge: answering a blocked blow.
 	var counter := Perks.has(&"counter_strike") and _since_blocked < SkillTrees.COUNTER_WINDOW
@@ -592,6 +593,45 @@ func _strike() -> void:
 		damage *= 2.0
 		_since_blocked = INF
 		feedback.emit("Counter!", &"info")
+	if x_slash:
+		# Two strokes crossing: each a share of the blow, half the X apart.
+		var stroke := damage * X_STROKE_SHARE
+		_cut_stroke(0.7, stroke, counter, true, armed, false, true)
+		get_tree().create_timer(HumanoidPoser.CUT_X_TIME * 0.5, false).timeout.connect(func() -> void:
+			if is_instance_valid(self) and is_inside_tree() and not stats.is_dead():
+				_cut_stroke(-0.7, stroke, false, true, armed, false, false))
+	else:
+		# The blade's arc: each blow of the combo cuts at a different angle.
+		var tilt: float = 0.05 if drawing else (SWORD_TILTS if armed else FIST_TILTS)[_strike_combo]
+		_cut_stroke(tilt, damage, counter, finisher, armed, drawing, true)
+	# Crescent Moon: the finisher flies on.
+	if finisher and Perks.has(&"blade_wave"):
+		_blade_wave(forward, damage)
+
+
+## The arc each blow leaves (radians of tilt): with a sword, down, rising,
+## level (the X has its own two); with fists, left, right, uppercut.
+const SWORD_TILTS := [0.7, -0.7, 0.05, 0.7]
+const FIST_TILTS := [0.7, -0.7, 1.35]
+## Each stroke of the X carries this share of the finisher's blow.
+const X_STROKE_SHARE := 0.6
+
+
+## One stroke of a blow: its arc in the air, and what it hits in front of you.
+## `first` is the blow's first stroke (it alone carries a counter). Returns
+## whether it landed.
+func _cut_stroke(tilt: float, damage: float, counter: bool, finisher: bool, armed: bool, drawing: bool, first: bool) -> bool:
+	var forward := -global_basis.z
+	var reach := 1.0 + Perks.value(&"strike_reach")
+	var center := global_position + forward * strike_reach * reach + Vector3.UP * 1.1
+	# The blade has its own trail: the arc stays for the finisher (the X's two
+	# stay long enough to cross), and is only a faint echo on the other cuts.
+	var echo := armed and not finisher
+	var linger := 0.45 if finisher and armed else 0.18
+	Vfx.slash(get_parent(), Transform3D(global_basis, global_position + Vector3.UP * 1.1), Color(0.3, 0.55, 1.0),
+		1.8 if echo else 2.2, tilt, linger, 0.35 if echo else 1.0)
+	if not first:
+		Sfx.play(&"strike_whoosh", -1.0, 0.1)
 	var landed := false
 	var guarded := false
 	for victim in Combat.hittables_in_sphere(get_world_3d(), center, 0.9 * reach, [get_rid()]):
@@ -610,9 +650,12 @@ func _strike() -> void:
 			var at := (victim as Node3D).global_position + Vector3.UP * 1.1 - forward * 0.4 if victim is Node3D else center
 			Vfx.hit_spark(get_parent(), at, Color(1.0, 0.62, 0.15), 1.0, forward)
 			if armed:
-				# Steel sparks thrown along the line of the cut, a little forward.
-				var along := global_basis * (HumanoidPoser.cut_direction(-1 if drawing else _strike_combo) \
-					+ Vector3(0.0, 0.0, -0.35))
+				# Steel sparks thrown along the line of the cut, a little forward
+				# (the X's first stroke is its last, mirrored).
+				var line := HumanoidPoser.cut_direction(-1 if drawing else _strike_combo)
+				if finisher and first:
+					line.x = -line.x
+				var along := global_basis * (line + Vector3(0.0, 0.0, -0.35))
 				Vfx.blade_sparks(get_parent(), at, along.normalized(), 1.0 if finisher else 0.8)
 	if landed:
 		# Steel on a raised guard rings; a cut with the sword slices; fists thud.
@@ -620,16 +663,14 @@ func _strike() -> void:
 		Sfx.play_at(sound, center, 0.0, 0.1)
 		if armed:
 			HitStop.freeze(get_tree(), 0.07 if finisher else 0.05)
-		camera_rig.add_shake(0.25)
+		camera_rig.add_shake(0.3 if finisher else 0.25)
 		InputDevice.rumble(0.3, 0.2, 0.08)
 		# Drinking Steel: a landed cut feeds the chakra.
 		var drink := Perks.value(&"strike_chakra")
 		if drink > 0.0:
 			stats.chakra = minf(stats.max_chakra, stats.chakra + stats.max_chakra * drink)
 			stats.chakra_changed.emit(stats.chakra, stats.max_chakra)
-	# Crescent Moon: the third cut flies on.
-	if _strike_combo == 2 and Perks.has(&"blade_wave"):
-		_blade_wave(forward, damage)
+	return landed
 
 
 ## A crescent of chakra cut loose from the blade (Crescent Moon).

@@ -1154,8 +1154,12 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.look_at(Vector3(float(_user_args().get("look_x", "0.0")), float(_user_args().get("look_y", "0.95")), -3.0))
 			cam.fov = float(_user_args().get("fov", "70"))
 			cam.current = true
-			for f in 24:
+			# Every frame until the picture is taken (the scene settles for a
+			# while first, and a cut or a draw would have finished by then).
+			var pose_all := func() -> void:
 				for i in models.size():
+					if not is_instance_valid(models[i]):
+						continue
 					var a := models[i].animator
 					var poser := a.poser
 					a.set_process(false)
@@ -1184,7 +1188,8 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 							poser._cut = int(st[0].trim_prefix("cut"))
 							poser._cut_t = HumanoidPoser.CUT_TIME * (1.0 - t)
 					poser.sword_drawn = a.gear.is_drawn()
-				await get_tree().process_frame
+			get_tree().process_frame.connect(pose_all)
+			await _frames(24)
 			if _user_args().has("hand"):
 				# --hand=dx,dy,dz puts the camera that far from the first model's right hand,
 				# looking at it (a close-up of the grip).

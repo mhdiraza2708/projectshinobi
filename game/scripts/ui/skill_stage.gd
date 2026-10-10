@@ -337,12 +337,14 @@ func _process(delta: float) -> void:
 		if tree_id == "kenjutsu":
 			_cut_left -= delta
 			if _cut_left <= 0.0:
-				_cut_left = 0.45 if _cut < 2 else 1.6
-				_cut = (_cut + 1) % 3
+				var last := HumanoidPoser.CUTS.size() - 1
+				_cut_left = 0.45 if _cut < last - 1 else (0.7 if _cut == last - 1 else 1.6)
+				_cut = (_cut + 1) % HumanoidPoser.CUTS.size()
 				_swing()
 
 
-## One cut of a three-cut combo in the air, with the blade's arc.
+## One cut of the sword's combo in the air, with the blade's arc (the X's
+## two arcs crossing).
 func _swing() -> void:
 	if model.animator:
 		model.animator.strike(_cut)
@@ -350,6 +352,12 @@ func _swing() -> void:
 	facing.y = 0.0
 	var origin := Transform3D(Basis.looking_at(-facing.normalized(), Vector3.UP), model.global_position + Vector3.UP * 1.1 * _k)
 	var c := Color(str(SkillTrees.tree("kenjutsu").get("color", "#8fa7bf"))).lightened(0.3)
-	Vfx.slash(self, origin, c, 2.0, [0.7, -0.7, 1.35][_cut])
-	if _cut == 2:
-		Vfx.slash(self, origin, Color(1, 1, 1), 2.6, 1.35, 0.3)
+	var tilt: float = Player.SWORD_TILTS[_cut]
+	if _cut < HumanoidPoser.CUTS.size() - 1:
+		Vfx.slash(self, origin, c, 2.0, tilt)
+		return
+	Vfx.slash(self, origin, c, 2.2, 0.7, 0.45)
+	await get_tree().create_timer(HumanoidPoser.CUT_X_TIME * 0.5).timeout
+	if is_inside_tree():
+		Vfx.slash(self, origin, c, 2.2, -0.7, 0.45)
+		Vfx.slash(self, origin, Color(1, 1, 1), 2.6, -0.7, 0.3)

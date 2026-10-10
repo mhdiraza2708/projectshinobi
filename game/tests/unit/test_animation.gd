@@ -375,3 +375,32 @@ func test_the_hand_holds_the_grip_slanted_across_the_palm_and_the_sword_lands_wh
 	assert_true(back.distance_to(blade) < 1e-4, "the blade points where it was asked (%s)" % back)
 	assert_true(blade.angle_to(thumb) > deg_to_rad(20.0), "and leans off the thumb side toward the fingertips")
 	poser.free()
+
+
+func test_the_sword_combo_is_four_one_handed_cuts_ending_in_an_x() -> void:
+	assert_eq(HumanoidPoser.CUTS.size(), 4, "down, rising, level, and the X")
+	var x: Array = HumanoidPoser.CUT_X
+	assert_true(HumanoidPoser.cut_time(3) > HumanoidPoser.cut_time(0) * 1.5, "the X is two strokes, so it takes longer")
+	assert_eq(HumanoidPoser.cut_time(4), HumanoidPoser.cut_time(0), "and the combo wraps")
+	# Its two strokes cross: down to the left, then down to the right.
+	var first: Vector3 = x[1][0] - x[0][0]
+	var second: Vector3 = x[3][0] - x[2][0]
+	assert_true(first.x < -0.5 and first.y < -0.5, "the first stroke comes down to the left (%s)" % first)
+	assert_true(second.x > 0.5 and second.y < -0.5, "the second down to the right (%s)" % second)
+	for keys: Array in HumanoidPoser.CUTS:
+		var reach := 0.0
+		for k: Array in keys:
+			reach = maxf(reach, (k[0] as Vector3).length())
+		assert_true(reach > 0.95, "every cut reaches the arm's full length (%.2f)" % reach)
+	# In a cut the free hand swings back and out, for balance.
+	_armed("ninjato")
+	await _frames(12)
+	var poser := model.poser
+	model.animator.strike()
+	await seconds(HumanoidPoser.DRAW_TIME + 0.1)
+	model.animator.strike(2)
+	await seconds(HumanoidPoser.CUT_TIME * 0.5)
+	assert_true(poser.is_cutting(), "mid-cut")
+	assert_true(poser._cur.get("use_arm_L", false), "the free arm is posed")
+	var off: Vector3 = poser._cur["arm_L"]
+	assert_true(off.z > 0.2 and off.x < -0.3, "back and out to the left (%s)" % off)

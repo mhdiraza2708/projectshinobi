@@ -162,7 +162,7 @@ func strike(cut := -1) -> void:
 			return
 		# Struck again while putting it away: it stays out.
 		_swap_left = -1.0
-		_combo = cut if cut >= 0 else (_combo + 1) % 3
+		_combo = cut if cut >= 0 else (_combo + 1) % HumanoidPoser.CUTS.size()
 		poser.cut(_combo)
 		return
 	if _can_act(&"strike_1"):
