@@ -1,7 +1,8 @@
 extends TestCase
 ## The game's main character: everyone plays as them (a Tripo model on the
-## humanoid rig), wearing their own clothes and the katana at the hip; the
-## customize screen keeps only who they are (name, clan, dojutsu, jutsu).
+## humanoid rig), wearing their own clothes, the katana at the hip and the
+## headband the player picks; the customize screen keeps who they are
+## (name, clan, dojutsu, jutsu) and the headband.
 
 const Scene := preload("res://scenes/training_ground.tscn")
 
@@ -38,22 +39,38 @@ func test_everyone_plays_the_main_character_with_a_katana_at_the_hip() -> void:
 	assert_true(m.poser.active and m.animator.clips != null, "the game's poses and clips drive them")
 	assert_near(m.measure_height(), m.target_height, 0.05, "at shinobi height")
 	assert_true(m.gear.has_sword(), "the katana every strike draws")
-	assert_true(m.gear.headband == null, "and nothing over their own look")
 	var on := m.gear.attachments().map(func(n: BoneAttachment3D) -> StringName: return StringName(n.bone_name))
 	for bone: StringName in on:
-		assert_true(bone in [&"Hips", &"RightHand"], "only the sword's parts: %s" % bone)
+		assert_true(bone in [&"Hips", &"RightHand", &"Head"], "only the sword and a headband: %s" % bone)
 
 
-func test_customize_keeps_who_they_are_not_how_they_look() -> void:
+func test_the_player_picks_the_main_characters_headband() -> void:
+	Profile.set_value(&"headband", "none")
+	await _load()
+	var m := player.model
+	assert_true(m.gear.headband == null, "none")
+	Profile.set_value(&"headband", "hachigane")
+	await physics_frames(2)
+	assert_true(m.gear.headband != null, "a hachigane, fitted to their head and hair")
+	assert_true(m.gear.has_sword(), "the katana stays")
+	Profile.set_value(&"mask", true)
+	Profile.set_value(&"scarf", true)
+	await physics_frames(2)
+	var on := m.gear.attachments().map(func(n: BoneAttachment3D) -> StringName: return StringName(n.bone_name))
+	assert_eq(on.count(&"Head"), 1, "the headband alone on the head: no mask over their design")
+	assert_false(on.has(&"Neck"), "and no scarf")
+
+
+func test_customize_keeps_who_they_are_and_their_headband() -> void:
 	await _load()
 	var menu: CustomizeMenu = scene.customize_menu
 	menu.open()
 	await physics_frames(2)
-	for tab in [CustomizeMenu.T_LOOK, CustomizeMenu.T_COLOURS, CustomizeMenu.T_GEAR]:
+	for tab in [CustomizeMenu.T_LOOK, CustomizeMenu.T_COLOURS]:
 		assert_false(menu._tab_buttons[tab].visible, "no %s tab" % CustomizeMenu.TABS[tab][1])
-	for tab in [CustomizeMenu.T_IDENTITY, CustomizeMenu.T_CLAN, CustomizeMenu.T_EYES, CustomizeMenu.T_JUTSU]:
+	for tab in [CustomizeMenu.T_GEAR, CustomizeMenu.T_IDENTITY, CustomizeMenu.T_CLAN, CustomizeMenu.T_EYES, CustomizeMenu.T_JUTSU]:
 		assert_true(menu._tab_buttons[tab].visible, "%s stays" % CustomizeMenu.TABS[tab][1])
-	assert_eq(menu._tabs.current_tab, CustomizeMenu.T_IDENTITY, "it opens on who they are")
+	assert_eq(menu._tabs.current_tab, CustomizeMenu.T_GEAR, "it opens on their headband")
 	menu.close()
 
 

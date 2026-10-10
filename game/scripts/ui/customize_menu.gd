@@ -112,11 +112,11 @@ func _open(for_creation: bool) -> void:
 
 
 ## The tabs on offer, in order: everything, or creation's order. With the
-## game's main character there's no look to edit, only who they are.
+## game's main character there's no look to edit beyond their headband.
 func _order() -> Array:
 	var order: Array = (CREATION_ORDER if creating else range(TABS.size())).duplicate()
 	if CharacterModel.has_main():
-		for tab in [T_LOOK, T_COLOURS, T_GEAR]:
+		for tab in [T_LOOK, T_COLOURS]:
 			order.erase(tab)
 	return order
 
@@ -437,6 +437,12 @@ func _build_gear() -> Control:
 	list.add_child(_section("Headband"))
 	list.add_child(_choices([["None", "none"], ["Cloth", "cloth"], ["Hachigane", "hachigane"]], &"headband"))
 	list.add_child(_swatches(Profile.get_value(&"headband_color"), func(c: Color) -> void: Profile.set_value(&"headband_color", c), false))
+	if CharacterModel.has_main():
+		# The main character wears their own clothes and the katana; the
+		# headband is theirs to choose.
+		list.add_child(_labelled("Headband height", _slider(&"gear_lift", -0.15, 0.15, 0.01, "%+.0f", 100.0, 300.0)))
+		list.add_child(_hint("Fitted to the head and hair; nudge it here if the hair gets in the way."))
+		return list
 
 	list.add_child(_section("Face mask"))
 	list.add_child(_choices([["Off", false], ["On", true]], &"mask"))

@@ -20,10 +20,11 @@ const PLACEHOLDER_MODEL := "res://assets/characters/default/godette.vrm"
 ## The game's own main character (a Tripo model): everyone plays as them,
 ## so whoever follows the Profile wears this, whatever model it names.
 const MAIN_MODEL := "res://assets/characters/main/mc.glb"
-## How the main character is worn: their own colours and clothes, with
-## only the katana at the hip that every sword strike draws.
-const MAIN_LOOK := {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "ninjato",
-	"pouch": false, "gear_scale": 1.0, "gear_lift": 0.0, "height": 1.0, "hair_from": "", "outfit_from": ""}
+## How the main character is worn: their own colours and clothes, the
+## katana at the hip that every sword strike draws, and whatever headband
+## (and colour and height) the player picks for them.
+const MAIN_LOOK := {"tints": {}, "mask": false, "scarf": false, "back": "ninjato",
+	"pouch": false, "gear_scale": 1.0, "height": 1.0, "hair_from": "", "outfit_from": ""}
 ## Off only for tests of the roster and appearance editing underneath.
 static var use_main := true
 ## Ink outline width (metres) on models that aren't VRoid's.
