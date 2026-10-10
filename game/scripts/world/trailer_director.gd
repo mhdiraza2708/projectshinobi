@@ -279,7 +279,9 @@ func _blade() -> void:
 		var a := who.global_position if is_instance_valid(who) else p + Vector3(0, 0, -3)
 		var dir := Vector3(a.x - p.x, 0.0, a.z - p.z).normalized()
 		var side := dir.cross(Vector3.UP).normalized()
-		_look(p - dir * 1.4 + side * 2.4 + Vector3.UP * 1.25, (p + a) * 0.5 + Vector3.UP * 1.0)
+		# Behind and beside the shoulder: the whole shinobi left of frame,
+		# the raider ahead of them.
+		_look(p - dir * 3.0 + side * 2.2 + Vector3.UP * 1.5, p + dir * 1.6 + Vector3.UP * 1.0)
 		if done < acts.size() and k >= float(acts[done][0]):
 			var target: EnemyShinobi = raiders[int(acts[done][1])]
 			if is_instance_valid(target):
