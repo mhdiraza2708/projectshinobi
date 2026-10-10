@@ -101,11 +101,15 @@ controls can be remapped.
   gestures while a story character speaks. The procedural rig layers hand
   seals, guard, charge, the sword's draw, cuts and sheathing, and the
   arms-back shinobi sprint on top.
-- **Lock on** to targets. The camera frames the fight, and jutsu home in on
-  the target.
-- **Weave seals** (12 seals, 3 banks × 4 directions) and cast any of **18
-  original jutsu** in 6 forms: projectile, area, wall, buff, heal and
-  summon. Walls really block projectiles, and a big hit interrupts your weave.
+- **Lock on** to targets. The camera sits close over your shoulder so
+  whoever you face stays in view (or further back and centred, in the
+  settings), and jutsu home in on the target.
+- **Weave seals** (12 seals, 3 banks × 4 directions) and cast any of **20
+  original jutsu** in 7 forms: projectile, area, wall, buff, heal, summon
+  and rush. Rushes gather in your hand and then drive you into the foe:
+  Cyclone Core bursts and throws everyone near back, Stormpiercer lunges
+  through a whole line. Walls really block projectiles, and a big hit
+  interrupts your weave.
 - **Ultimates:** fighting fills a gold meter (landing blows, taking them,
   interrupting weaves, perfect guards). Full, press **V / B** and time
   stops: a close-up of your seals under a brush title card, then a wide shot

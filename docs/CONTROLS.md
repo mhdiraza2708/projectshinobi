@@ -154,6 +154,8 @@ down the left edge).
 | Seal hints | While weaving, shows which jutsu your sequence can still become and the next input for each. |
 | Quick-cast slots | Cast any slotted jutsu with one button. The character weaves the seals automatically, a bit slower than a fast manual weave. |
 | Quick-cast weave speed | How fast the automatic weave runs. |
+| Camera | Over the shoulder (default: close behind, the shinobi off to one side so whoever they face is in view) or Classic (further back, centred). |
+| Shoulder | Which side the over-the-shoulder camera sits: right (default) or left. |
 | Mouse / stick sensitivity, invert Y, stick deadzone | Camera and stick tuning. |
 | Vibration | Controller rumble on/off. |
 | Screen shake | 0–100%. |

@@ -3,9 +3,22 @@ extends Node3D
 ## Third-person orbit camera. Mouse, right stick or arrow keys orbit it; with a
 ## lock-on target it swings to keep both fighters in view. Top-level so the
 ## player body can rotate freely underneath it.
+##
+## Two styles (Settings "camera_style"): over the shoulder, close behind with
+## the character off to one side so whoever they face is in plain view, or
+## classic, further back and centred.
 
 ## The height of shinobi the customize and title framing was made for.
 const SHOWCASE_FOR := 1.65
+
+## Per style: how far behind, how high it aims, and how far to the side (of
+## the shoulder named by Settings "camera_side").
+const STYLES := {
+	"shoulder": {"distance": 2.6, "height": 1.62, "side": 0.62},
+	"classic": {"distance": 4.3, "height": 1.55, "side": 0.0},
+}
+## Kept this far from a wall beside the shoulder.
+const SIDE_MARGIN := 0.3
 
 @export var follow_height := 1.55
 @export var distance := 4.3
@@ -21,6 +34,10 @@ var lock_target: Node3D
 var target: Node3D
 ## Horizontal framing offset (the customize screen shifts the character right).
 var frame_offset := 0.0
+## How far right of the character the camera sits (negative: left), from the
+## style; `_side_now` eases toward it and stops short of walls.
+var side := 0.0
+var _side_now := 0.0
 
 var _shake := 0.0
 var _saved: Dictionary = {}
@@ -36,7 +53,7 @@ var _conversation_saved: Dictionary = {}
 func _ready() -> void:
 	top_level = true
 	target = get_parent() as Node3D
-	spring.spring_length = distance
+	apply_style()
 	spring.collision_mask = Combat.LAYER_WORLD | Combat.LAYER_WALLS
 	spring.margin = 0.25
 	var probe := SphereShape3D.new()
@@ -46,10 +63,30 @@ func _ready() -> void:
 	camera.fov = float(Settings.get_value(&"fov"))
 	Settings.value_changed.connect(func(key: StringName, v: Variant) -> void:
 		if key == &"fov":
-			camera.fov = float(v))
+			camera.fov = float(v)
+		elif key == &"camera_style" or key == &"camera_side":
+			apply_style())
 	if target:
 		yaw = target.global_rotation.y
 		snap()
+
+
+## Distance, aim height and shoulder from Settings "camera_style" and
+## "camera_side". A showcase or conversation keeps its own framing and gets
+## the new one when it ends.
+func apply_style() -> void:
+	var style: Dictionary = STYLES.get(str(Settings.get_value(&"camera_style")), STYLES["shoulder"])
+	distance = style["distance"]
+	side = style["side"] * (-1.0 if str(Settings.get_value(&"camera_side")) == "left" else 1.0)
+	if in_showcase():
+		_saved["length"] = distance
+		_saved["height"] = style["height"]
+	elif in_conversation():
+		_conversation_saved["length"] = distance
+		follow_height = style["height"]
+	else:
+		spring.spring_length = distance
+		follow_height = style["height"]
 
 
 func snap() -> void:
@@ -57,6 +94,8 @@ func snap() -> void:
 		global_position = target.global_position + Vector3.UP * follow_height
 	rotation = Vector3(0.0, yaw, 0.0)
 	pivot.rotation.x = pitch
+	_side_now = _side_goal()
+	pivot.position.x = _clear_side(_side_now)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -95,6 +134,8 @@ func _process(delta: float) -> void:
 		global_position = global_position.lerp(goal, 1.0 - exp(-18.0 * delta))
 	rotation = Vector3(0.0, yaw, 0.0)
 	pivot.rotation.x = pitch
+	_side_now = lerpf(_side_now, _side_goal(), 1.0 - exp(-8.0 * delta))
+	pivot.position.x = _clear_side(_side_now)
 
 	if _shake > 0.0:
 		camera.h_offset = frame_offset + randf_range(-1.0, 1.0) * _shake * 0.12
@@ -103,6 +144,29 @@ func _process(delta: float) -> void:
 	else:
 		camera.h_offset = frame_offset
 		camera.v_offset = 0.0
+
+
+## The shoulder offset wanted now: none while a showcase or conversation
+## frames the shot itself.
+func _side_goal() -> float:
+	return 0.0 if in_showcase() or in_conversation() else side
+
+
+## `offset` to the side, cut short where a wall beside the character is in
+## the way (so the camera never starts its arm inside one).
+func _clear_side(offset: float) -> float:
+	if absf(offset) < 0.01 or not is_inside_tree():
+		return offset
+	var right := Basis(Vector3.UP, yaw).x * signf(offset)
+	var from := global_position
+	var query := PhysicsRayQueryParameters3D.create(from, from + right * (absf(offset) + SIDE_MARGIN),
+		spring.collision_mask)
+	if target is CollisionObject3D:
+		query.exclude = [(target as CollisionObject3D).get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return offset
+	return signf(offset) * maxf(0.0, from.distance_to(hit["position"]) - SIDE_MARGIN)
 
 
 ## Yaw-only basis: movement input is relative to where the camera faces.

@@ -175,6 +175,10 @@ func seal_flick() -> void:
 const CAST_TIME := 0.32
 const FLINCH_TIME := 0.26
 
+## A rush jutsu's right arm (see CharacterAnimator.rush_arm): 0 free, 1
+## holding the technique out low at the side, palm up, 2 driving it forward.
+var rush_arm := 0
+
 
 ## Both palms thrust forward as a jutsu leaves the hands (on the move, or on
 ## rigs without a cast clip).
@@ -339,6 +343,22 @@ func _target_params() -> Dictionary:
 			p["thumb_" + side] = Vector3(-sx, 0, 0)
 		p["curl"] = lerpf(p["curl"], 0.0, push)
 		p["lean"] += 0.12 * push
+		p["use_arms"] = true
+		p["use_spine"] = true
+
+	if rush_arm > 0:
+		if rush_arm == 1:
+			p["arm_R"] = Vector3(0.3, -0.5, -0.55)
+			p["hand_R"] = Vector3(0.1, 0.15, -1)
+			p["thumb_R"] = Vector3(1, 0, 0)
+			p["twist"] += 0.25
+		else:
+			p["arm_R"] = Vector3(0.04, -0.1, -0.98)
+			p["hand_R"] = Vector3(0, 1, -0.25)
+			p["thumb_R"] = Vector3(-1, 0, 0)
+			p["twist"] -= 0.3
+		p["pole_R"] = Vector3(1, -1, 0.3)
+		p["curl"] = 0.0
 		p["use_arms"] = true
 		p["use_spine"] = true
 

@@ -6,9 +6,9 @@ extends Resource
 ## kind of behaviour (sealing, genjutsu...) means adding a Form here and a
 ## matching effect in JutsuCaster.
 
-enum Form { PROJECTILE, AREA, WALL, BUFF, HEAL, SUMMON }
+enum Form { PROJECTILE, AREA, WALL, BUFF, HEAL, SUMMON, RUSH }
 
-const FORM_NAMES: PackedStringArray = ["projectile", "area", "wall", "buff", "heal", "summon"]
+const FORM_NAMES: PackedStringArray = ["projectile", "area", "wall", "buff", "heal", "summon", "rush"]
 const RANKS: PackedStringArray = ["E", "D", "C", "B", "A", "S"]
 const BUFF_STATS: PackedStringArray = ["move_speed", "damage_reduction", "attack_power"]
 
@@ -26,15 +26,17 @@ const OPTIONAL_KEYS: PackedStringArray = [
 @export var seals: Array[int] = []
 @export var chakra_cost := 10.0
 @export var cooldown := 1.0
-## Damage (projectile/area), heal amount (heal) or buff magnitude (buff).
+## Damage (projectile/area/rush), heal amount (heal) or buff magnitude (buff).
 @export var power := 10.0
-## Projectile travel speed in m/s.
+## Projectile travel speed in m/s, or how fast a rush carries the caster.
 @export var speed := 20.0
-## Projectile travel distance, or how far ahead an area/wall is placed.
+## Projectile travel distance, how far ahead an area/wall is placed, or how
+## far a rush carries the caster.
 @export var max_range := 20.0
-## Projectile size, blast radius, or wall half-width.
+## Projectile size, blast radius, wall half-width, or how close to a rush's
+## hand counts as contact.
 @export var radius := 0.5
-## Buff/wall lifetime in seconds.
+## Buff/wall lifetime in seconds, or how long a rush gathers in the hand.
 @export var duration := 0.0
 @export var buff_stat := ""
 ## Number of projectiles fired in a fan (or clones summoned).
@@ -131,6 +133,11 @@ static func from_dict(data: Dictionary, errors: Array[String]) -> JutsuDefinitio
 		Form.HEAL:
 			if j.power <= 0.0:
 				err.call("heal needs power > 0")
+		Form.RUSH:
+			if j.power <= 0.0 or j.speed <= 0.0 or j.max_range <= 0.0 or j.radius <= 0.0:
+				err.call("rush needs power, speed, range and radius > 0")
+			if j.duration <= 0.0 or j.duration > 2.0:
+				err.call("rush duration (the gather) must be 0-2 s")
 		Form.SUMMON:
 			# power = how much of its caster's damage a clone deals (0-1.5).
 			if j.power <= 0.0 or j.power > 1.5 or j.duration <= 0.0 or j.health <= 0.0:

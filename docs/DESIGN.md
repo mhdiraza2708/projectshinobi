@@ -101,6 +101,7 @@ wrong trade.
   | buff | Temporary modifier to move speed, damage reduction or attack power | Storm Mantle |
   | heal | Restores health | Mending Palm |
   | summon | Chakra doubles of the caster fight on its side for `duration` seconds (`count`, `health`, `power` = how hard they hit relative to a chunin) | Shade Clones |
+  | rush | Gathers in the right hand for `duration` seconds, then drives the caster `range` metres at `speed` into whoever is ahead (`radius` = how close counts as contact). Wind bursts at the first foe and throws everyone near back; lightning pierces through a line of them. The player only (enemies never pick one) | Cyclone Core, Stormpiercer |
 
   Future forms: substitution, trap/seal, genjutsu (status effects),
   transformation, beam/channelled, and clash (two projectiles colliding and

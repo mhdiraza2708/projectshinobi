@@ -488,6 +488,9 @@ func _build_accessibility() -> Control:
 	list.add_child(_option_row("Quick-cast weave speed (s/seal)", _slider(&"auto_weave_seal_time", 0.08, 0.4, 0.02, "%.2fs")))
 
 	list.add_child(_section("Camera and controller"))
+	list.add_child(_option_row("Camera", _choice(&"camera_style", ["shoulder", "classic"],
+		["Over the shoulder", "Classic (further back)"])))
+	list.add_child(_option_row("Shoulder", _choice(&"camera_side", ["right", "left"], ["Right", "Left"])))
 	list.add_child(_option_row("Mouse sensitivity", _slider(&"mouse_sensitivity", 0.2, 3.0, 0.1, "%.1f")))
 	list.add_child(_option_row("Stick sensitivity", _slider(&"stick_sensitivity", 0.2, 3.0, 0.1, "%.1f")))
 	list.add_child(_option_row("Invert camera Y", _toggle(&"invert_y")))

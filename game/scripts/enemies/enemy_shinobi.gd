@@ -979,14 +979,17 @@ func _lean_back(dealt: float) -> void:
 	_lean.tween_property(model, "rotation:x", 0.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
-## Knocked off balance by something other than a hit (Opening Flash).
-func stagger() -> void:
+## Knocked off balance by something other than a hit (Opening Flash), or
+## thrown back from `source` (a rush jutsu landing), `push` times as far.
+func stagger(source: Node = null, push := 1.0) -> void:
 	if state in [State.SPAWNING, State.DEFEATED]:
 		return
 	if state == State.WEAVING:
 		_interrupted()
 	else:
-		_stagger()
+		_stagger(source)
+		velocity.x *= push
+		velocity.z *= push
 
 
 func _stagger(source: Node = null) -> void:

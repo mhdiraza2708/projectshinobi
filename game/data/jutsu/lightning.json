@@ -27,5 +27,21 @@
     "power": 0.4,
     "duration": 8,
     "buff_stat": "move_speed"
+  },
+  {
+    "id": "stormpiercer",
+    "name": "Stormpiercer",
+    "description": "Gathers crackling lightning in the hand, then lunges faster than the eye can follow, piercing through everyone in its path.",
+    "rank": "A",
+    "element": "lightning",
+    "form": "rush",
+    "seals": ["ox", "hare", "boar", "monkey"],
+    "chakra_cost": 32,
+    "cooldown": 9,
+    "power": 34,
+    "speed": 30,
+    "range": 14,
+    "radius": 0.8,
+    "duration": 0.45
   }
 ]

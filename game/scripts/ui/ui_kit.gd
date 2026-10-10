@@ -174,7 +174,7 @@ static func seal_glyphs(seal: int, height := 30.0) -> HBoxContainer:
 
 
 static func jutsu_tag(j: JutsuDefinition) -> String:
-	var form := "Summon · " if j.form == JutsuDefinition.Form.SUMMON else ""
+	var form: String = {JutsuDefinition.Form.SUMMON: "Summon · ", JutsuDefinition.Form.RUSH: "Rush · "}.get(j.form, "")
 	return "%s%s · %s-rank · %d chakra" % [form, Element.display_name(j.element), j.rank, roundi(j.chakra_cost)]
 
 

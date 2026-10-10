@@ -22,7 +22,7 @@ signal defeated
 ## or &"jutsu".
 signal hit_landed(victim: Node, kind: StringName)
 
-enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING, DOWN }
+enum State { FREE, WEAVING, AUTO_WEAVING, CHARGING, GUARDING, DASHING, DOWN, RUSHING }
 
 @export_group("Movement")
 @export var run_speed := 7.0
@@ -112,6 +112,8 @@ var _auto_jutsu: JutsuDefinition
 var _auto_queue: Array[int] = []
 var _auto_timer := 0.0
 var _kunai: JutsuDefinition
+## The rush jutsu that has the body (State.RUSHING).
+var _rush: JutsuRush
 # What the exported numbers were before clan and eye art perks.
 var _base: Dictionary = {}
 var _focus_active := false
@@ -208,7 +210,7 @@ func _physics_process(delta: float) -> void:
 	elif input_enabled and Input.is_action_just_pressed(&"ultimate") and try_ultimate():
 		pass
 	elif not input_enabled:
-		if state == State.CHARGING or state == State.GUARDING:
+		if state == State.CHARGING or state == State.GUARDING or state == State.RUSHING:
 			_enter(State.FREE)
 		if scripted_velocity != Vector3.ZERO:
 			velocity.x = scripted_velocity.x
@@ -224,6 +226,7 @@ func _physics_process(delta: float) -> void:
 			State.CHARGING: _state_charging(delta)
 			State.GUARDING: _state_guarding(delta)
 			State.DASHING: _state_dashing(delta)
+			State.RUSHING: _state_rushing(delta)
 
 	if state != State.DASHING and not is_on_floor():
 		velocity.y -= gravity * delta
@@ -357,11 +360,43 @@ func _state_dashing(_delta: float) -> void:
 		_enter(State.FREE)
 
 
+## A rush jutsu: planted while it gathers in the hand, turning to the aim,
+## then driven forward until it lands or runs out.
+func _state_rushing(delta: float) -> void:
+	if not is_instance_valid(_rush) or _rush.phase == JutsuRush.Phase.DONE:
+		_enter(State.FREE)
+		return
+	var v := _rush.body_velocity()
+	velocity.x = v.x
+	velocity.z = v.z
+	if _rush.phase == JutsuRush.Phase.GATHER:
+		_face_towards(_rush.aim(), delta)
+		if animator:
+			animator.rush_arm(1)
+	else:
+		_face_now(v)
+		if animator:
+			animator.rush_arm(2)
+
+
+## JutsuCaster hands the body to a rush jutsu.
+func begin_rush(rush: JutsuRush) -> void:
+	weaver.cancel()
+	_enter(State.RUSHING)
+	_rush = rush
+
+
 func _enter(new_state: State) -> void:
 	if state == new_state:
 		return
 	# Clean up whatever the old state switched on.
 	match state:
+		State.RUSHING:
+			if is_instance_valid(_rush):
+				_rush.cancel()
+			_rush = null
+			if animator:
+				animator.rush_arm(0)
 		State.CHARGING:
 			stats.is_charging = false
 			Sfx.stop_loop(&"charge")
@@ -772,6 +807,9 @@ func _update_animator() -> void:
 		State.CHARGING: animator.pose = HumanoidPoser.Pose.CHARGE
 		State.GUARDING: animator.pose = HumanoidPoser.Pose.GUARD
 		State.DASHING: animator.pose = HumanoidPoser.Pose.DASH
+		State.RUSHING:
+			var going := is_instance_valid(_rush) and _rush.phase == JutsuRush.Phase.RUSH
+			animator.pose = HumanoidPoser.Pose.DASH if going else HumanoidPoser.Pose.LOCOMOTION
 		_: animator.pose = HumanoidPoser.Pose.LOCOMOTION
 	if scripted_pose >= 0 and not input_enabled:
 		animator.pose = scripted_pose
@@ -863,7 +901,7 @@ func _on_seal_added(seal: int, _sequence: Array[int]) -> void:
 func _on_cast_succeeded(jutsu: JutsuDefinition) -> void:
 	if jutsu == _kunai:
 		return
-	if animator:
+	if animator and jutsu.form != JutsuDefinition.Form.RUSH:
 		animator.cast()
 	feedback.emit(jutsu.display_name, &"cast")
 	camera_rig.add_shake(0.15 if jutsu.form != JutsuDefinition.Form.AREA else 0.45)
@@ -902,6 +940,10 @@ func _on_damaged(amount: float, _element: int, _multiplier: float) -> void:
 		weaver.cancel()
 		_enter(State.FREE)
 		feedback.emit("Weave interrupted!", &"fail")
+	elif amount >= interrupt_damage and state == State.RUSHING and is_instance_valid(_rush) \
+			and _rush.phase == JutsuRush.Phase.GATHER:
+		_enter(State.FREE)
+		feedback.emit("Knocked out of it!", &"fail")
 
 
 func take_hit(amount: float, element: int, _source: Node) -> float:

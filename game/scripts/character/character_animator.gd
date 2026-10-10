@@ -177,6 +177,13 @@ func throw() -> void:
 		poser.throw()
 
 
+## A rush jutsu's right arm: 0 free, 1 holding the technique out at the
+## side, 2 driving it forward.
+func rush_arm(stage: int) -> void:
+	if poser:
+		poser.rush_arm = stage
+
+
 ## A jutsu leaves the hands.
 func cast() -> void:
 	# A jutsu is released straight out of the weave, before the pose changes.

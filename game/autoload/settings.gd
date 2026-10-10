@@ -22,6 +22,10 @@ const DEFAULTS := {
 	&"mouse_sensitivity": 1.0,
 	&"stick_sensitivity": 1.0,
 	&"invert_y": false,
+	# "shoulder": close behind, off to one side; "classic": further back, centred.
+	&"camera_style": "shoulder",
+	# Which shoulder the over-the-shoulder camera looks past: "right" or "left".
+	&"camera_side": "right",
 	&"stick_deadzone": 0.2,
 	&"vibration": true,
 	&"screen_shake": 1.0,

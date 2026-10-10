@@ -101,6 +101,8 @@ func cast(jutsu: JutsuDefinition, target: Node3D = null, instant := false) -> bo
 			Vfx.heal(_world_parent(), _body().global_position)
 		JutsuDefinition.Form.SUMMON:
 			_summon(jutsu)
+		JutsuDefinition.Form.RUSH:
+			_rush(jutsu, power, target)
 	var sound := cast_sound(jutsu)
 	if sound != &"":
 		Sfx.play_at(sound, global_position)
@@ -122,6 +124,7 @@ static func cast_sound(jutsu: JutsuDefinition) -> StringName:
 		JutsuDefinition.Form.HEAL: return &"heal"
 		JutsuDefinition.Form.WALL: return &""
 		JutsuDefinition.Form.SUMMON: return &"smoke"
+		JutsuDefinition.Form.RUSH: return &""
 	return StringName("cast_" + Element.NAMES[jutsu.element])
 
 
@@ -186,6 +189,23 @@ func _blast(jutsu: JutsuDefinition, power: float) -> void:
 			_body().notify_hit(victim, &"jutsu")
 	Vfx.area_blast(_world_parent(), center, jutsu.element, jutsu.radius)
 	Sfx.play_at(&"explosion", center, -4.0)
+
+
+## Gathers the technique in the caster's hand; the body (if it can rush)
+## then drives it forward. See JutsuRush.
+func _rush(jutsu: JutsuDefinition, power: float, target: Node3D) -> void:
+	var rush := JutsuRush.new()
+	rush.caster = _body()
+	rush.target = target
+	rush.element = jutsu.element
+	rush.power = power
+	rush.speed = jutsu.speed
+	rush.distance = jutsu.max_range
+	rush.radius = jutsu.radius
+	rush.gather_time = jutsu.duration
+	_body().add_child(rush)
+	if _body().has_method(&"begin_rush"):
+		_body().begin_rush(rush)
 
 
 func _raise_wall(jutsu: JutsuDefinition) -> void:

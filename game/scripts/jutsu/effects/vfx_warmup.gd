@@ -100,6 +100,10 @@ func _element(holder: Node3D, element: int) -> void:
 	wall.duration = HOLD_TIME
 	wall.position = Vector3(0, 0, -3)
 	holder.add_child(wall)
+	# A rush jutsu held in the hand.
+	var held := JutsuRush.hand_visual(element)
+	held.position = Vector3(1.5, 1.2, 1.0)
+	holder.add_child(held)
 
 
 ## What every fight shows: kunai, strikes, sparks, smoke, healing, the

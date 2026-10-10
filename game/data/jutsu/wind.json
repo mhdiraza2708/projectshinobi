@@ -27,5 +27,21 @@
     "speed": 40,
     "range": 30,
     "radius": 0.35
+  },
+  {
+    "id": "cyclone_core",
+    "name": "Cyclone Core",
+    "description": "Spins a sphere of wind tight in the palm, then drives it into the foe ahead: it bursts on contact and hurls everyone near it back.",
+    "rank": "A",
+    "element": "wind",
+    "form": "rush",
+    "seals": ["hare", "boar", "bird", "ox"],
+    "chakra_cost": 30,
+    "cooldown": 8,
+    "power": 38,
+    "speed": 18,
+    "range": 9,
+    "radius": 0.9,
+    "duration": 0.55
   }
 ]

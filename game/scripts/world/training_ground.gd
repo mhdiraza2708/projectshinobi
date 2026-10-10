@@ -1172,6 +1172,22 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.look_at(Vector3(0.0, 1.0, -3.0))
 			cam.current = true
 			await _frames(40)
+		_ when demo.begins_with("rush:"):
+			# A rush jutsu from the gameplay camera, locked on to a dummy:
+			# --demo=rush:cyclone_core (--frames=<physics frames after the cast>).
+			hud.visible = false
+			var forward := -player.global_basis.z
+			forward.y = 0.0
+			var dummy: TrainingDummy = preload("res://scenes/training_dummy.tscn").instantiate()
+			add_child(dummy)
+			dummy.global_position = player.global_position + forward.normalized() * 7.0
+			await _frames(10)
+			player._set_lock(dummy)
+			await _frames(30)
+			player.stats.chakra = player.stats.max_chakra
+			player.caster.cast(JutsuRegistry.get_jutsu(StringName(demo.trim_prefix("rush:"))), dummy)
+			for i in int(_user_args().get("frames", "25")):
+				await get_tree().physics_frame
 		_ when demo.begins_with("ult:"):
 			# An ultimate partway through: --demo=ult:hearthfall:0.6,2.2 (seconds
 			# after it starts; earlier times also saved as <path>_<t>.png).
