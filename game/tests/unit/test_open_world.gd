@@ -66,6 +66,15 @@ func _stand_at(at: Vector3) -> void:
 	await physics_frames(3)
 
 
+func test_every_gather_quest_finds_room_for_all_its_items() -> void:
+	await _load()
+	for q in Quests.all():
+		if q["type"] != "gather":
+			continue
+		var spots := world.gather_spots(q)
+		assert_eq(spots.size(), int(q["count"]), "%s: room for %d %s" % [q["id"], int(q["count"]), q["item"]])
+
+
 func test_a_new_game_starts_on_the_ground_at_emberwood() -> void:
 	await _load()
 	var pad := world.archipelago.to_global(world.archipelago.offset("emberwood"))

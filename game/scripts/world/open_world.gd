@@ -751,6 +751,11 @@ func start_bounty(b: Dictionary, spot: Vector3, quest_id: String) -> void:
 	archipelago.add_child(e)
 	e.global_position = spot + Vector3.UP * 0.2
 	_duelist = e
+	if not (b.get("specials", []) as Array).is_empty():
+		var specials := BossSpecials.new()
+		specials.boss = e
+		specials.specs = (b["specials"] as Array).duplicate(true)
+		e.add_child(specials)
 	hud.show_boss(e, "%s  %s" % [e.kanji_override, e.title_override])
 	hud.show_banner("Wanted:  %s" % e.title_override, &"cast")
 	Music.play(battle)

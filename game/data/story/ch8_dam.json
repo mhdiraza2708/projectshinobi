@@ -47,6 +47,7 @@
 		{"do": "exit", "who": "hisame"},
 		{"do": "boss", "who": "iwao", "rank": "jonin", "health": 300,
 			"taunt": "Stone first, then the flood.",
+			"specials": [{"kind": "quake", "every": 10, "count": 4, "damage": 16}, {"kind": "ring", "every": 14, "below": 0.5, "damage": 18}],
 			"phases": [
 				{"at": 0.6, "element": "water", "say": "Water now. Let's see your circle.", "summon": [["genin", "water"], ["genin", "water"]]},
 				{"at": 0.25, "element": "earth", "say": "Enough! I'll bury you under the dam!"}

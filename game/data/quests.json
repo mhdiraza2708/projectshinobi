@@ -6,7 +6,17 @@
 		"suzu": {"name": "Suzu", "title": "Healer", "kanji": "薬", "model": "vivi", "element": "earth",
 			"style": {"tints": {"outfit": "#5a6b3a", "lower": "#3a3528", "hair": "#3a2a22"}, "headband": "none", "scarf": false, "back": "none", "pouch": true}},
 		"kurogane": {"name": "Kurogane", "title": "The Ash Blade", "kanji": "鋼", "model": "sendagaya_shibu", "element": "fire",
-			"style": {"tints": {"outfit": "#1e1c20", "lower": "#151418", "hair": "#c9c4bd"}, "headband": "hachigane", "headband_color": "#8a8580", "scarf": true, "scarf_color": "#7a1e12", "back": "ninjato", "mask": true, "pouch": false}}
+			"style": {"tints": {"outfit": "#1e1c20", "lower": "#151418", "hair": "#c9c4bd"}, "headband": "hachigane", "headband_color": "#8a8580", "scarf": true, "scarf_color": "#7a1e12", "back": "ninjato", "mask": true, "pouch": false}},
+		"oyuki": {"name": "Oyuki", "title": "Innkeeper", "kanji": "宿", "model": "hairsample_female", "element": "water",
+			"style": {"tints": {"outfit": "#8a5a4a", "lower": "#3a2a28", "hair": "#2a2022"}, "headband": "none", "back": "none", "pouch": false, "scarf": false}},
+		"bunzo": {"name": "Bunzo", "title": "Woodcutter", "kanji": "樵", "model": "hairsample_male", "element": "earth",
+			"style": {"tints": {"outfit": "#6b5a3a", "lower": "#3a3326", "hair": "#5a4a3a"}, "headband": "none", "back": "none", "pouch": false, "scarf": false}},
+		"hanae": {"name": "Hanae", "title": "Shrine Keeper", "kanji": "巫", "model": "sendagaya_shino", "element": "fire",
+			"style": {"tints": {"outfit": "#a33a2a", "lower": "#5a2a24", "hair": "#1e1a1a"}, "headband": "none", "back": "none", "pouch": false, "scarf": false}},
+		"takuma": {"name": "Takuma", "title": "Dam Engineer", "kanji": "技", "model": "sakurada_fumiriya", "element": "water",
+			"style": {"tints": {"outfit": "#4a6a7a", "lower": "#2a3238", "hair": "#3a3a3a"}, "headband": "none", "back": "none", "pouch": false, "scarf": false}},
+		"saburo": {"name": "Saburo", "title": "Hermit", "kanji": "隠", "model": "hairsample_male", "element": "wind",
+			"style": {"tints": {"outfit": "#7a8a7a", "lower": "#3a4038", "hair": "#cfcfcf"}, "headband": "none", "back": "none", "pouch": false, "scarf": true, "scarf_color": "#9aa89a"}}
 	},
 	"quests": [
 		{
@@ -124,6 +134,254 @@
 			],
 			"outro": [
 				{"who": "hisame", "text": "Five natures, one shinobi. I have nothing left to teach you."}
+			],
+			"xp": 600
+		},
+		{
+			"id": "inn_pages", "name": "Pages on the Wind", "kanji": "頁",
+			"island": "emberwood", "giver": "oyuki", "giver_at": [30, -8], "requires": "ch4_pass",
+			"type": "gather", "item": "page", "count": 6,
+			"objective": "Gather the inn's recipe pages the wind scattered over Emberwood",
+			"intro": [
+				{"who": "oyuki", "text": "A gust took my recipe book clean out of the window. Page by page, over the whole island."},
+				{"who": "oyuki", "text": "Six pages. My grandmother's broth is on one of them, and I swear I will not remember it without."},
+				{"who": "player", "text": "Six pages. I'll find them."}
+			],
+			"outro": [
+				{"who": "oyuki", "text": "Every page, and only one with a footprint on it. Broth's on the house, whenever you like."}
+			],
+			"xp": 180
+		},
+		{
+			"id": "inn_guests", "name": "Rowdy Guests", "kanji": "騒",
+			"island": "emberwood", "giver": "oyuki", "giver_at": [30, -8], "requires": "inn_pages",
+			"type": "defeat", "at": [32, 12],
+			"waves": [[["genin", "fire"], ["genin", "water"]], [["chunin", "wind"], ["genin", "earth"]]],
+			"objective": "Throw out the rowdy guests at the east path",
+			"intro": [
+				{"who": "oyuki", "text": "Some drifters took the east path and think the inn owes them dinner. And a wall."},
+				{"who": "oyuki", "text": "I'd throw them out myself, but I'm holding the ladle. Would you?"},
+				{"who": "player", "text": "Ladle down. I've got this."}
+			],
+			"outro": [
+				{"who": "oyuki", "text": "Not a plate broken. You've a gentler hand than you let on."}
+			],
+			"xp": 260
+		},
+		{
+			"id": "tobi_dare", "name": "The Rooftop Dare", "kanji": "挑",
+			"island": "emberwood", "giver": "tobi", "giver_at": [24, 24], "requires": "ch6_rain",
+			"type": "duel", "at": [24, 24],
+			"foe": {"rank": "chunin", "element": "lightning", "health": 230},
+			"objective": "Answer Tobi's dare with a proper duel",
+			"intro": [
+				{"who": "tobi", "text": "Every year the top graduate gets dared by the next. Asahi dared me once. I lost."},
+				{"who": "tobi", "text": "I've been training since. Don't go easy: I'd know."},
+				{"who": "player", "text": "Wouldn't dream of it."}
+			],
+			"outro": [
+				{"who": "tobi", "text": "Ow. Good. Next year, I'll be the one doing the daring."}
+			],
+			"xp": 300
+		},
+		{
+			"id": "wood_amber", "name": "Heartwood Amber", "kanji": "琥",
+			"island": "autumn_wood", "giver": "bunzo", "giver_at": [-24, 26], "requires": "ch5_kagerou",
+			"type": "gather", "item": "amber", "count": 5,
+			"objective": "Collect amber from the old maples of Autumn Wood",
+			"intro": [
+				{"who": "bunzo", "text": "Old maples weep amber when the leaves turn. Tree-doctors pay well for it."},
+				{"who": "bunzo", "text": "Five lumps, from the big ones. My knees say no. Yours say yes."},
+				{"who": "player", "text": "Five lumps. Going."}
+			],
+			"outro": [
+				{"who": "bunzo", "text": "Clear as honey. The trees owe you, and so do I."}
+			],
+			"xp": 200
+		},
+		{
+			"id": "wood_bridge", "name": "The Fallen Bridge", "kanji": "橋",
+			"island": "autumn_wood", "giver": "bunzo", "giver_at": [-24, 26], "requires": "wood_amber",
+			"type": "defeat", "at": [0, 30],
+			"waves": [[["genin", "wind"], ["genin", "earth"]], [["chunin", "wind"], ["chunin", "earth"]], [["chunin", "wind"], ["genin", "wind"], ["genin", "earth"]]],
+			"objective": "Clear the raiders who have taken the south path",
+			"intro": [
+				{"who": "bunzo", "text": "Raiders pulled down the footbridge and sit on the south path charging a toll."},
+				{"who": "bunzo", "text": "Three bands of them by my count. I count badly, though."},
+				{"who": "player", "text": "I'll bring the toll back, with interest."}
+			],
+			"outro": [
+				{"who": "bunzo", "text": "The path is open again. I'll have the bridge up by autumn's end. Maybe the next one."}
+			],
+			"xp": 300
+		},
+		{
+			"id": "cure_run", "name": "Medicine for the Snow", "kanji": "薬",
+			"island": "autumn_wood", "giver": "suzu", "giver_at": [19, -19], "requires": "ch8_dam",
+			"type": "deliver", "to": "renji", "to_island": "frozen_road", "to_at": [0, 12],
+			"objective": "Carry Suzu's winter medicine to Renji on the Frozen Road",
+			"intro": [
+				{"who": "suzu", "text": "Winter fever on the Frozen Road. Renji's scouts are coughing blood into the snow."},
+				{"who": "suzu", "text": "This is the tincture. It must not freeze, and it must not wait."},
+				{"who": "player", "text": "Not a minute wasted."}
+			],
+			"handover": [
+				{"who": "renji", "text": "Suzu's tincture! The scouts will bless you. Quickly, before it chills."}
+			],
+			"xp": 340
+		},
+		{
+			"id": "pass_charms", "name": "Embers at the Shrine", "kanji": "護",
+			"island": "ashen_pass", "giver": "hanae", "giver_at": [-22, 24], "requires": "ch6_rain",
+			"type": "gather", "item": "charm", "count": 5,
+			"objective": "Find the scorched charms scattered over the Ashen Pass",
+			"intro": [
+				{"who": "hanae", "text": "When the pass burned, the charms we hung at the shrine flew everywhere, hot as coals."},
+				{"who": "hanae", "text": "Five of them. Each one carries somebody's prayer, and I would not have them lost in ash."},
+				{"who": "player", "text": "I'll bring every prayer home."}
+			],
+			"outro": [
+				{"who": "hanae", "text": "Singed, but whole. Thank you. The shrine will hold the prayers again."}
+			],
+			"xp": 220
+		},
+		{
+			"id": "pass_bell", "name": "The Last Bell", "kanji": "鐘",
+			"island": "ashen_pass", "giver": "hanae", "giver_at": [-22, 24], "requires": "pass_charms",
+			"type": "defeat", "at": [0, 32],
+			"waves": [[["chunin", "fire"], ["genin", "fire"]], [["chunin", "earth"], ["chunin", "lightning"]]],
+			"objective": "Drive the scavengers from the shrine bell",
+			"intro": [
+				{"who": "hanae", "text": "Scavengers have come for the shrine bell. It is bronze, and it is all that rang the night of the fire."},
+				{"who": "hanae", "text": "Let it ring again, not melt."},
+				{"who": "player", "text": "They won't touch it."}
+			],
+			"outro": [
+				{"who": "hanae", "text": "I heard it ring just now: once, in thanks. You did that."}
+			],
+			"xp": 320
+		},
+		{
+			"id": "kurogane_edge", "name": "A Second Edge", "kanji": "刃",
+			"island": "ashen_pass", "giver": "kurogane", "giver_at": [0, 34], "requires": "ash_duelist",
+			"type": "duel", "at": [0, 34],
+			"foe": {"rank": "jonin", "element": "fire", "health": 320},
+			"objective": "Face Kurogane again, with nothing held back",
+			"intro": [
+				{"who": "kurogane", "text": "You beat the man I was. I would meet the one I am now."},
+				{"who": "kurogane", "text": "No tricks. No sparing. A second edge."},
+				{"who": "player", "text": "Then no sparing."}
+			],
+			"outro": [
+				{"who": "kurogane", "text": "Hm. Yes. That is what the edge is for. Walk well, shinobi."}
+			],
+			"xp": 450
+		},
+		{
+			"id": "dam_gears", "name": "Sluice Gears", "kanji": "歯",
+			"island": "old_dam", "giver": "takuma", "giver_at": [-24, 22], "requires": "ch8_dam",
+			"type": "gather", "item": "gear", "count": 4,
+			"objective": "Recover the sluice gears swept down the spillway",
+			"intro": [
+				{"who": "takuma", "text": "Four bronze gears from the sluice, swept down the spillway when the water jumped."},
+				{"who": "takuma", "text": "Without them the gates only open by hand. By two dozen hands."},
+				{"who": "player", "text": "Four gears. Spillway first."}
+			],
+			"outro": [
+				{"who": "takuma", "text": "Cold, wet, and perfect. The gates will turn with a finger. I could kiss you. I won't. Thank you."}
+			],
+			"xp": 280
+		},
+		{
+			"id": "dam_gang", "name": "The Flood Gang", "kanji": "洪",
+			"island": "old_dam", "giver": "takuma", "giver_at": [-24, 22], "requires": "dam_gears",
+			"type": "defeat", "at": [0, 30],
+			"waves": [[["genin", "water"], ["genin", "water"]], [["chunin", "water"], ["genin", "earth"]], [["chunin", "water"], ["chunin", "earth"]]],
+			"objective": "Break the gang that sells 'flood insurance' below the dam",
+			"intro": [
+				{"who": "takuma", "text": "A gang below the dam claims they'll keep the gates shut for a fee. Odd, since they are the ones who open them."},
+				{"who": "player", "text": "Three bands, then."}
+			],
+			"outro": [
+				{"who": "takuma", "text": "The valley will sleep soundly, and the gates will stay honest."}
+			],
+			"xp": 380
+		},
+		{
+			"id": "chiyo_test", "name": "A Keeper's Test", "kanji": "試",
+			"island": "old_dam", "giver": "chiyo", "giver_at": [19, 19], "requires": "dam_seals",
+			"type": "duel", "at": [19, 19],
+			"foe": {"rank": "chunin", "element": "earth", "health": 280},
+			"objective": "Spar with Chiyo to prove the dam is safe in your hands",
+			"intro": [
+				{"who": "chiyo", "text": "My grandfather tested every apprentice at the dam. Hands first, words later."},
+				{"who": "chiyo", "text": "You've held the dam once. Show me you could hold it twice."},
+				{"who": "player", "text": "Let's find out."}
+			],
+			"outro": [
+				{"who": "chiyo", "text": "Steady feet. The dam is lucky to know you."}
+			],
+			"xp": 360
+		},
+		{
+			"id": "road_snares", "name": "Frostbitten Snares", "kanji": "罠",
+			"island": "frozen_road", "giver": "renji", "giver_at": [-24, 24], "requires": "ch9_snow",
+			"type": "gather", "item": "snare", "count": 5,
+			"objective": "Collect the scouts' old snares before something steps in them",
+			"intro": [
+				{"who": "renji", "text": "The scouts left snares all over the road last winter, and the snow has since buried them."},
+				{"who": "renji", "text": "Five I know about. A wolf in one would be bad. A traveller, worse."},
+				{"who": "player", "text": "I'll dig them out."}
+			],
+			"outro": [
+				{"who": "renji", "text": "Every one. You've saved a leg or two. Probably wolves'."}
+			],
+			"xp": 300
+		},
+		{
+			"id": "road_wolves", "name": "Wolves of White", "kanji": "狼",
+			"island": "frozen_road", "giver": "renji", "giver_at": [-24, 24], "requires": "road_snares",
+			"type": "defeat", "at": [-8, 30],
+			"waves": [[["chunin", "water"], ["chunin", "wind"]], [["chunin", "water"], ["jonin", "wind"]], [["jonin", "water"]]],
+			"objective": "Beat back the white-cloaked hunters stalking the road",
+			"intro": [
+				{"who": "renji", "text": "White-cloaked hunters took the road after the thaw. They call themselves wolves."},
+				{"who": "renji", "text": "They're not as wolfish as they think. But they are good."},
+				{"who": "player", "text": "Good enough to be worth my time."}
+			],
+			"outro": [
+				{"who": "renji", "text": "The road is ours again. I'll buy the first round, once I find a tavern."}
+			],
+			"xp": 420
+		},
+		{
+			"id": "winds_feathers", "name": "Feathers of the Five", "kanji": "羽",
+			"island": "five_winds", "giver": "saburo", "giver_at": [28, 22], "requires": "ch10_nue",
+			"type": "gather", "item": "feather", "count": 5,
+			"objective": "Find the wind-borne feathers the summit sheds",
+			"intro": [
+				{"who": "saburo", "text": "The summit sheds a feather for each wind that crosses it. Five winds, five feathers."},
+				{"who": "saburo", "text": "They don't fall. They blow about. You'll have to chase."},
+				{"who": "player", "text": "I like a chase."}
+			],
+			"outro": [
+				{"who": "saburo", "text": "All five. Now I can finish the cloak. Don't ask how long I've been at it."}
+			],
+			"xp": 400
+		},
+		{
+			"id": "winds_spar", "name": "The Hermit's Spar", "kanji": "試",
+			"island": "five_winds", "giver": "saburo", "giver_at": [28, 22], "requires": "winds_feathers",
+			"type": "duel", "at": [28, 22],
+			"foe": {"rank": "jonin", "element": "wind", "health": 420},
+			"objective": "Meet the hermit in the open, on the summit's terms",
+			"intro": [
+				{"who": "saburo", "text": "A hermit does not retire from the blade, only from the world."},
+				{"who": "saburo", "text": "Humour an old man. Four winds against you. The fifth is mine."},
+				{"who": "player", "text": "Then I'll bring all five."}
+			],
+			"outro": [
+				{"who": "saburo", "text": "Ha! Still got a bit of gale in the bones. Take the summit's blessing."}
 			],
 			"xp": 600
 		}

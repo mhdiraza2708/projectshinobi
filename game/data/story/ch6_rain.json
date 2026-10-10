@@ -36,6 +36,7 @@
 		]},
 		{"do": "boss", "who": "tsumugi", "rank": "chunin", "health": 210,
 			"taunt": "Keep up, or go home.",
+			"specials": [{"kind": "chain", "every": 13, "below": 0.85, "count": 3, "damage": 14}],
 			"phases": [
 				{"at": 0.5, "say": "Wind clone! Let's see you handle two of me.", "summon": [["genin", "wind"]]}
 			]},

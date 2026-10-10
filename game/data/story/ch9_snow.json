@@ -31,6 +31,7 @@
 		]},
 		{"do": "boss", "who": "kagerou", "rank": "jonin", "health": 260,
 			"taunt": "Fire only. Like the old days.",
+			"specials": [{"kind": "ring", "every": 11, "damage": 18}, {"kind": "chain", "every": 15, "below": 0.5, "count": 3, "damage": 18}],
 			"phases": [
 				{"at": 0.5, "element": "wind", "say": "Still standing? Then wind, just this once."}
 			]},

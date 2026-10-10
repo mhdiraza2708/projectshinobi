@@ -44,6 +44,7 @@
 		{"do": "exit", "who": "asahi"},
 		{"do": "boss", "who": "kagerou", "rank": "jonin", "health": 340,
 			"taunt": "Burn first.",
+			"specials": [{"kind": "ring", "every": 13, "below": 0.85, "damage": 16}, {"kind": "chain", "every": 16, "below": 0.45, "count": 3, "damage": 16}],
 			"phases": [
 				{"at": 0.8, "element": "wind", "say": "Too slow. Wind, then."},
 				{"at": 0.6, "element": "lightning", "say": "Lightning! Faster than your seals!", "summon": [["genin", "lightning"]]},

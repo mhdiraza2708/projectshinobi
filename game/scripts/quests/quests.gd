@@ -13,6 +13,12 @@ const ITEMS := {
 	"kunai": {"name": "practice kunai", "color": "#c9d2dc"},
 	"herb": {"name": "red-leaf herbs", "color": "#d9452e"},
 	"seal": {"name": "warding seals", "color": "#f2e6c8"},
+	"page": {"name": "recipe pages", "color": "#efe3c0"},
+	"amber": {"name": "lumps of amber", "color": "#e0a83a"},
+	"charm": {"name": "scorched charms", "color": "#d9663a"},
+	"gear": {"name": "bronze gears", "color": "#c79a52"},
+	"snare": {"name": "old snares", "color": "#b7c4cc"},
+	"feather": {"name": "wind feathers", "color": "#dcecf5"},
 }
 ## The id the main (story) quest is tracked under.
 const MAIN := "main"

@@ -26,6 +26,7 @@
 		{"do": "exit", "who": "asahi"},
 		{"do": "boss", "who": "iwao", "rank": "jonin", "health": 260,
 			"taunt": "Stone doesn't bleed.",
+			"specials": [{"kind": "quake", "every": 11, "count": 3, "damage": 14}],
 			"phases": [
 				{"at": 0.6, "say": "Rise, stone clones!", "summon": [["genin", "earth"], ["genin", "earth"]]},
 				{"at": 0.25, "say": "Enough! I'll bury you here!"}

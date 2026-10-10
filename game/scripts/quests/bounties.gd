@@ -50,4 +50,7 @@ static func _load() -> void:
 		seen[b.get("id")] = true
 		if Element.from_name(str(b.get("element", ""))) < 0:
 			errors.append("bounty %s: unknown element '%s'" % [b.get("id"), b.get("element")])
+		for spec: Variant in b.get("specials", []):
+			for problem in BossSpecials.errors_in(spec):
+				errors.append("bounty %s: %s" % [b.get("id"), problem])
 		_all.append(b)

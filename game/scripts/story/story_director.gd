@@ -493,6 +493,11 @@ func _start_boss(b: Dictionary) -> void:
 	boss.defeated.connect(_on_boss_defeated)
 	boss.phase_reached.connect(_on_boss_phase.bind(b["who"]))
 	stage.add_child(boss)
+	if not (b["specials"] as Array).is_empty():
+		var specials := BossSpecials.new()
+		specials.boss = boss
+		specials.specs = (b["specials"] as Array).duplicate(true)
+		boss.add_child(specials)
 	hud.show_boss(boss, "%s %s" % [info["kanji"], info["name"]])
 	hud.set_objective("Defeat %s" % info["name"])
 	Sfx.play(&"wave_start")

@@ -50,6 +50,7 @@
 		{"do": "ally", "who": "tsumugi", "rank": "chunin", "health": 240},
 		{"do": "boss", "who": "nue", "rank": "jonin", "health": 460, "size": 1.35, "aura": "#8a4fd0aa", "at": [0, -6],
 			"taunt": "...Hungry...",
+			"specials": [{"kind": "quake", "every": 9, "count": 5, "radius": 4.2, "damage": 18}, {"kind": "ring", "every": 13, "below": 0.7, "damage": 20}, {"kind": "chain", "every": 15, "below": 0.35, "count": 4, "damage": 18}],
 			"phases": [
 				{"at": 0.85, "element": "wind", "say": "The thrush's cry...", "summon": [["genin", "wind"], ["genin", "wind"]]},
 				{"at": 0.7, "element": "lightning", "say": "Tiger's claws!"},

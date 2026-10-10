@@ -18,7 +18,7 @@ const BEATS := {
 	"fight": [["waves"], ["text"]],
 	"survive": [["seconds", "enemies"], ["text", "max_alive"]],
 	"ally": [["who", "rank"], ["health", "at"]],
-	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "size", "aura"]],
+	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "specials", "size", "aura"]],
 	"wait": [["seconds"], []],
 	"banner": [["text"], []],
 	"scene": [["steps"], []],
@@ -485,6 +485,13 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 			b["taunt"] = str(raw.get("taunt", ""))
 			var fallback: int = characters[b["who"]]["element"] if characters.has(b["who"]) else Element.NONE
 			b["element"] = _element(label, raw["element"]) if raw.has("element") else fallback
+			b["specials"] = []
+			for sp: Variant in raw.get("specials", []):
+				var problems := BossSpecials.errors_in(sp)
+				for problem in problems:
+					errors.append("%s: %s" % [label, problem])
+				if problems.is_empty():
+					b["specials"].append((sp as Dictionary).duplicate())
 			b["phases"] = []
 			for p: Variant in raw.get("phases", []):
 				if not p is Dictionary or not p.has("at"):

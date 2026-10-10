@@ -31,6 +31,7 @@
 		]},
 		{"do": "boss", "who": "asahi", "rank": "chunin", "health": 200,
 			"taunt": "Try to keep up!",
+			"specials": [{"kind": "chain", "every": 15, "below": 0.75, "count": 2, "damage": 12}],
 			"phases": [
 				{"at": 0.5, "say": "Okay. Warm-up's over. Lightning clone!", "summon": [["genin", "lightning"]]}
 			]},
