@@ -1,0 +1,61 @@
+{
+	"id": "m20_ink_in_the_maples",
+	"number": 20,
+	"part": 7,
+	"objective": "Cross the sea east to Autumn Wood: Tsumugi has found the Court's couriers",
+	"title": "Ink in the Maples",
+	"location": "The maple road, Autumn Wood",
+	"time": "day",
+	"island": "autumn_wood",
+	"weather": "rain",
+	"summary": "The Watch's records burned in the night. The couriers who burned them are still on the road, and one of them keeps a ledger of names.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "Ink in the Maples", "sub": "Rain on red leaves", "seconds": 3},
+			{"enter": "tsumugi", "at": [2.5, 0], "puff": false},
+			{"cam": "mid", "on": "tsumugi", "seconds": 4},
+			{"say": [["tsumugi", "Don't ask. I know what you're going to ask. The Watch's archive burned last night, every shelf, and I was asleep forty paces away.", "angry"]]}
+		]},
+		{"do": "say", "lines": [
+			["player", "Everything?"],
+			["tsumugi", "Everything but one page, which was in my boot. It's the only thing I keep in my boot, so naturally they missed it."],
+			["tsumugi", "The Court has no army. It has couriers, and a ledger. Whoever is written in the Ledger is forgotten: not dead, just not remembered."],
+			["player", "Forgotten by who?"],
+			["tsumugi", "By everyone. By their mothers. That's what 'hollow' means, {name}. The Court is made of people who were written out, and who stayed."],
+			["tsumugi", "The couriers carry the pages to the Ink-Hand, who writes. They're on the maple road now. Stop them before the rain does what the fire didn't."]
+		]},
+		{"do": "ally", "who": "tsumugi", "rank": "chunin", "health": 220},
+		{"do": "fight", "text": "Stop the couriers on the maple road",
+			"waves": [
+				{"element": "earth", "enemies": ["genin", "genin", "genin"]},
+				{"element": "wind", "enemies": ["chunin", "genin"]},
+				{"element": "earth", "enemies": ["chunin", "chunin"]}
+			]},
+		{"do": "enter", "who": "sumi", "at": [0, -7]},
+		{"do": "scene", "steps": [
+			{"cam": "low", "on": "sumi", "seconds": 4},
+			{"say": [["sumi", "Oh dear. You've scattered my couriers. They were very good couriers.", "sad"], ["sumi", "I am Sumi. I keep the Ledger. I'm sorry about this, truly. It is such a quiet job, and it does so poorly with company."], ["tsumugi", "She's the one who wrote my sister out of my own house."], ["sumi", "Was she? There are so many. I am sorry, I cannot recall her name."]]}
+		]},
+		{"do": "boss", "who": "sumi", "rank": "jonin", "health": 330, "element": "earth", "taunt": "Hold still. It stings less if you hold still.",
+			"specials": [{"kind": "quake", "every": 10, "count": 4, "damage": 16}, {"kind": "chain", "every": 15, "below": 0.5, "count": 3, "damage": 16}],
+			"phases": [
+				{"at": 0.5, "element": "water", "say": "Wet ink spreads. That is rather the point.", "summon": [["genin", "water"], ["genin", "earth"]]}
+			]},
+		{"do": "enter", "who": "sumi", "at": [0, -3]},
+		{"do": "say", "lines": [
+			["sumi", "...You are stubborn. The Ledger said you would be, and I did not believe the Ledger.", "sad"],
+			["tsumugi", "Where is the Court's Ledger kept?"],
+			["sumi", "Under the dam. Where the water keeps it, and the Ash Blade keeps the road to it. Ask him, if he lets you ask."],
+			["player", "Kurogane."],
+			["sumi", "He took the Court's coin to rebuild a shrine. You must not think ill of him. Everyone has a price. His was kind."]
+		]},
+		{"do": "exit", "who": "sumi"},
+		{"do": "say", "lines": [
+			["tsumugi", "She hid behind that quiet voice, and she still wrote my sister out. I do not forgive her.", "angry"],
+			["tsumugi", "But I heard what she said about the dam. Go. I will hold the road."]
+		]},
+		{"do": "exit", "who": "tsumugi"}
+	]
+}

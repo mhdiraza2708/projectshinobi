@@ -85,6 +85,9 @@ NAMES = {
 	"Chiyo": "ʧˈijO",
 	"Renji": "ɹˈɛnʤi",
 	"Kurogane": "kuɹOɡˈɑnɛ",
+	"Mikage": "mikˈɑɡɛ",
+	"Sumi": "sˈumi",
+	"Shirou": "ʃˈiɹO",
 	"Sensei": "sˈɛnsA",
 	"sensei": "sˈɛnsA",
 }

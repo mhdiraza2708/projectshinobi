@@ -1,0 +1,60 @@
+{
+	"id": "m22_drowned_ledger",
+	"number": 22,
+	"part": 7,
+	"objective": "Cross the sea north-west to the Old Dam: Iwao and Chiyo are opening the drowned vault",
+	"title": "The Drowned Ledger",
+	"location": "The spillway, Old Dam",
+	"time": "dusk",
+	"island": "old_dam",
+	"weather": "storm",
+	"summary": "Under four hundred years of stone lies a door. The Court wants what is behind it, and so, now, does everyone with a spade.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "The Drowned Ledger", "sub": "A promise to the people downstream", "seconds": 3},
+			{"enter": "iwao", "at": [-2.5, 1], "puff": false},
+			{"enter": "chiyo", "at": [2.5, 1], "puff": false},
+			{"cam": "two", "on": ["iwao", "chiyo"], "seconds": 4},
+			{"say": [["iwao", "Stone doesn't lie, little one. Every seal I carved last month is sitting on top of a door. I carved a lid onto it.", "sad"]]}
+		]},
+		{"do": "say", "lines": [
+			["chiyo", "We found the door at dawn. It is under the spillway, and the water has been keeping it shut the way a hand keeps a mouth shut."],
+			["iwao", "I have heard it every night. A voice that says the same name, over and over, and nobody I know has ever been called it."],
+			["player", "Sumi said the Ledger's down there."],
+			["chiyo", "Then the Court will be here before the storm breaks. Iwao can lift the slab. It will take a minute, and he will be no use to anyone while he does."],
+			["iwao", "A minute is a long time in a storm. Keep them off my back, {name}. I have done enough harm with these hands."]
+		]},
+		{"do": "ally", "who": "chiyo", "rank": "chunin", "health": 240},
+		{"do": "survive", "seconds": 50, "max_alive": 3, "text": "Hold the spillway while Iwao lifts the slab", "enemies": [["genin", "water"], ["genin", "earth"], ["chunin", "water"], ["chunin", "earth"]]},
+		{"do": "enter", "who": "sumi", "at": [0, -7]},
+		{"do": "say", "lines": [
+			["iwao", "It's open. There is a book down there as long as my arm."],
+			["sumi", "Please do not touch it. I would rather not have to hurt you for holding something that is already mine to keep.", "sad"],
+			["chiyo", "You wrote my grandfather out of his own dam."],
+			["sumi", "I did not write him out. I only stopped writing him in. There is a difference, and it has not made me sleep any better."]
+		]},
+		{"do": "boss", "who": "sumi", "rank": "jonin", "health": 400, "element": "water", "taunt": "The water will take the ink anyway. I would only prefer it be mine.",
+			"specials": [{"kind": "quake", "every": 9, "count": 5, "damage": 17}, {"kind": "ring", "every": 13, "below": 0.7, "damage": 18}, {"kind": "chain", "every": 15, "below": 0.4, "count": 3, "damage": 17}],
+			"phases": [
+				{"at": 0.65, "element": "earth", "say": "Stone, then. Iwao taught the Court that much.", "summon": [["genin", "earth"], ["genin", "earth"]]},
+				{"at": 0.3, "element": "lightning", "say": "The Ledger names me, too. I am only the last line on the page.", "summon": [["chunin", "lightning"]]}
+			]},
+		{"do": "enter", "who": "sumi", "at": [0, -3]},
+		{"do": "say", "lines": [
+			["sumi", "...Take it. It is heavy, and it is not mine, and I have wanted to put it down for forty years.", "sad"],
+			["iwao", "Forty years. You were a girl."],
+			["sumi", "I was. I wrote my own name in the first line and then I had no one to forgive me. Read the last page. It is about you, {name}."],
+			["player", "What does it say?"],
+			["sumi", "That a keeper of the Seal has a name worth taking. And that Mikage will take it at the Five Winds, with the new moon behind her."]
+		]},
+		{"do": "exit", "who": "sumi"},
+		{"do": "say", "lines": [
+			["chiyo", "The Court's Ledger is in my dam. I never thought I would say that sentence.", "relaxed"],
+			["iwao", "Go north. Renji's scouts have gone quiet on the Frozen Road, and the Court's last hunter went through there last night. Go carefully."]
+		]},
+		{"do": "exit", "who": "iwao"},
+		{"do": "exit", "who": "chiyo"}
+	]
+}

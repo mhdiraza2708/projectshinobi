@@ -1,6 +1,6 @@
 # Story mode: writing chapters
 
-The story is six **chapters** of **missions**. Each mission is a JSON file
+The story is seven **chapters** of **missions**. Each mission is a JSON file
 in `game/data/story/` that lists **beats** (dialogue, tutorial tasks, fights,
 boss fights, characters entering and leaving) played in order; its `part`
 says which chapter it belongs to (`parts.json` names the chapters). In the
@@ -30,6 +30,12 @@ Godot editor needed.
 | 六 Nue | 16 | The Climb | Five Winds | Up the leap stones; five pillar guardians, one per nature, with Asahi and Tsumugi. |
 | | 17 | Nue | Five Winds | The possessed giant; seal it with the Five-Nature Seal. |
 | | 18 | Noon, Again | Emberwood | What became of everyone, and Asahi's rematch (lightning, then wind). |
+| 七 The Hollow Court | 19 | The Seventh Lantern | Emberwood | A black paper crane; Mikage of the Hollow Court asks for the Seal back. Hollow clones in the yard. |
+| | 20 | Ink in the Maples | Autumn Wood | The Watch's archive burned. Tsumugi and you stop the couriers; boss: Sumi, keeper of the Ledger of forgotten names. |
+| | 21 | The Ash Blade's Debt | Ashen Pass | Kurogane took the Court's coin to rebuild the shrine; he fights you for the road to the Ledger. |
+| | 22 | The Drowned Ledger | Old Dam | Iwao lifts the slab over the Court's vault while you hold the spillway; Sumi again, and the page about you. |
+| | 23 | Whiteout | Frozen Road | Renji's scouts forgotten in the snow; the Court's last hunter, Shirou, who was written out of his own home. |
+| | 24 | The Hollow Court | Five Winds | The new moon. Mikage wants to take the keeper's name; three natures, and everyone who remembers you. |
 
 The Nue is a spirit from Japanese folklore (public domain). All story content is original. Keep it that way: see the IP section in
 [DESIGN.md](DESIGN.md).

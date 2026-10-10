@@ -36,7 +36,7 @@ func test_part_one_is_the_plain_rank_table() -> void:
 		for key: String in plain:
 			assert_eq(tiered[key], plain[key], "%s %s unchanged in part 1" % [rank, key])
 	assert_eq(EnemyTier.of_part(0), 0, "no part is part 1's")
-	assert_eq(EnemyTier.of_part(6), EnemyTier.STORY_MAX)
+	assert_eq(EnemyTier.of_part(EnemyTier.STORY_MAX + 1), EnemyTier.STORY_MAX)
 	assert_eq(EnemyTier.of_part(99), EnemyTier.STORY_MAX, "and it stops at the last part")
 
 
@@ -124,8 +124,8 @@ func test_every_story_chapter_has_a_part_to_scale_by() -> void:
 	var seen := {}
 	for c: Dictionary in story.chapters:
 		seen[int(c["part"])] = true
-	assert_eq(seen.size(), 6, "six parts, six steps up")
-	assert_true(seen.has(1) and seen.has(6))
+	assert_eq(seen.size(), 7, "seven parts, seven steps up")
+	assert_true(seen.has(1) and seen.has(EnemyTier.STORY_MAX + 1))
 
 
 func test_difficulty_and_new_game_plus_add_tiers_on_top_of_the_story() -> void:
@@ -138,11 +138,11 @@ func test_difficulty_and_new_game_plus_add_tiers_on_top_of_the_story() -> void:
 	assert_eq(EnemyTier.of_part(4), 5)
 	Settings.set_value(&"difficulty", "nightmare")
 	assert_eq(EnemyTier.of_part(1), 4)
-	assert_eq(EnemyTier.of_part(6), EnemyTier.MAX, "the last part on nightmare is the ceiling")
+	assert_eq(EnemyTier.of_part(7), EnemyTier.MAX, "the last part on nightmare is the ceiling")
 	Settings.set_value(&"difficulty", "normal")
 	Game.set_record("meta", "ng_plus", 1)
 	assert_eq(EnemyTier.of_part(1), EnemyTier.PER_ROUND, "a second round starts higher")
 	Game.set_record("meta", "ng_plus", 9)
-	assert_eq(EnemyTier.of_part(6), EnemyTier.MAX, "and nothing passes the ceiling")
+	assert_eq(EnemyTier.of_part(7), EnemyTier.MAX, "and nothing passes the ceiling")
 	Game.reset_records()
 	Settings.set_value(&"difficulty", before)

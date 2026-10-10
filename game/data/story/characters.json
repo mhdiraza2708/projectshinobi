@@ -130,7 +130,155 @@
 			"height": 1.12
 		}
 	},
-	"tobi": {"name": "Tobi", "title": "Academy Instructor", "kanji": "教", "element": "fire", "model": "res://assets/characters/cast/tobi.glb", "voice": {"speaker": "am_eric", "speed": 1.0}, "style": {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "none", "pouch": false, "height": 1.08}},
-	"chiyo": {"name": "Chiyo", "title": "Dam Keeper", "kanji": "守", "element": "water", "model": "res://assets/characters/cast/chiyo.glb", "voice": {"speaker": "bf_isabella", "speed": 0.95}, "style": {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "none", "pouch": false, "height": 0.98}},
-	"renji": {"name": "Renji", "title": "Traveller", "kanji": "旅", "element": "wind", "model": "res://assets/characters/cast/renji.glb", "voice": {"speaker": "bm_lewis", "speed": 0.95}, "style": {"tints": {}, "headband": "none", "mask": false, "scarf": false, "back": "none", "pouch": false, "height": 1.05}}
+	"tobi": {
+		"name": "Tobi",
+		"title": "Academy Instructor",
+		"kanji": "教",
+		"element": "fire",
+		"model": "res://assets/characters/cast/tobi.glb",
+		"voice": {
+			"speaker": "am_eric",
+			"speed": 1.0
+		},
+		"style": {
+			"tints": {},
+			"headband": "none",
+			"mask": false,
+			"scarf": false,
+			"back": "none",
+			"pouch": false,
+			"height": 1.08
+		}
+	},
+	"chiyo": {
+		"name": "Chiyo",
+		"title": "Dam Keeper",
+		"kanji": "守",
+		"element": "water",
+		"model": "res://assets/characters/cast/chiyo.glb",
+		"voice": {
+			"speaker": "bf_isabella",
+			"speed": 0.95
+		},
+		"style": {
+			"tints": {},
+			"headband": "none",
+			"mask": false,
+			"scarf": false,
+			"back": "none",
+			"pouch": false,
+			"height": 0.98
+		}
+	},
+	"renji": {
+		"name": "Renji",
+		"title": "Traveller",
+		"kanji": "旅",
+		"element": "wind",
+		"model": "res://assets/characters/cast/renji.glb",
+		"voice": {
+			"speaker": "bm_lewis",
+			"speed": 0.95
+		},
+		"style": {
+			"tints": {},
+			"headband": "none",
+			"mask": false,
+			"scarf": false,
+			"back": "none",
+			"pouch": false,
+			"height": 1.05
+		}
+	},
+	"mikage": {
+		"name": "Mikage",
+		"title": "Envoy of the Hollow Court",
+		"kanji": "影",
+		"element": "water",
+		"model": "darkness_shibu",
+		"voice": {
+			"speaker": "af_nicole",
+			"speed": 0.92
+		},
+		"style": {
+			"tints": {
+				"outfit": "#2a2438",
+				"lower": "#1c1a24",
+				"hair": "#d8d4e0"
+			},
+			"headband": "none",
+			"scarf": true,
+			"scarf_color": "#4a3a6a",
+			"back": "none",
+			"mask": true,
+			"pouch": false
+		}
+	},
+	"sumi": {
+		"name": "Sumi",
+		"title": "Keeper of the Ledger",
+		"kanji": "墨",
+		"element": "earth",
+		"model": "vita",
+		"voice": {
+			"speaker": "af_river",
+			"speed": 0.88
+		},
+		"style": {
+			"tints": {
+				"outfit": "#3a3a40",
+				"lower": "#26262c",
+				"hair": "#2a2630"
+			},
+			"headband": "none",
+			"scarf": false,
+			"back": "none",
+			"mask": false,
+			"pouch": true
+		}
+	},
+	"shirou": {
+		"name": "Shirou",
+		"title": "The Pale Hunter",
+		"kanji": "白",
+		"element": "water",
+		"model": "res://assets/characters/rivals/water_tide_runner.glb",
+		"voice": {
+			"speaker": "bm_daniel",
+			"speed": 0.9
+		},
+		"style": {
+			"tints": {},
+			"headband": "none",
+			"mask": false,
+			"scarf": false,
+			"back": "none",
+			"pouch": false
+		}
+	},
+	"kurogane": {
+		"name": "Kurogane",
+		"title": "The Ash Blade",
+		"kanji": "鋼",
+		"model": "sendagaya_shibu",
+		"element": "fire",
+		"voice": {
+			"speaker": "bm_george",
+			"speed": 0.92
+		},
+		"style": {
+			"tints": {
+				"outfit": "#1e1c20",
+				"lower": "#151418",
+				"hair": "#c9c4bd"
+			},
+			"headband": "hachigane",
+			"headband_color": "#8a8580",
+			"scarf": true,
+			"scarf_color": "#7a1e12",
+			"back": "ninjato",
+			"mask": true,
+			"pouch": false
+		}
+	}
 }

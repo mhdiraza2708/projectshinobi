@@ -228,3 +228,21 @@ func test_every_third_contract_is_a_wanted_shinobi() -> void:
 	world.activities.use("board", village["id"])
 	var target := world.sites.plan.site(world.activities.contract())
 	assert_eq(target["kind"], "lair", "the third contract names a lair")
+
+
+func test_every_quarter_of_a_kind_pays_a_growing_bonus() -> void:
+	await _load()
+	var camps := world.sites.plan.of_kind("camp")
+	var total := camps.size()
+	var paid: Array[int] = []
+	for i in total:
+		world.sites.set_state(camps[i]["id"], WorldSites.DONE)
+		var m := world.activities.milestone("camp")
+		if not m.is_empty():
+			paid.append(int(m["xp"]))
+	assert_eq(paid.size(), 4, "four marks over %d camps" % total)
+	assert_eq(paid, [150, 300, 450, 600] as Array[int], "each worth more than the last")
+	assert_true(world.activities.milestone("village").is_empty(), "villages have none")
+	var xp := Game.xp()
+	world.activities.take_relic(_first("ruin"))
+	assert_true(Game.xp() > xp)

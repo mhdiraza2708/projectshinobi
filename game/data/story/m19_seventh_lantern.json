@@ -1,0 +1,63 @@
+{
+	"id": "m19_seventh_lantern",
+	"number": 19,
+	"part": 7,
+	"objective": "Go home to Emberwood: Hisame has sent word after dark",
+	"title": "The Seventh Lantern",
+	"location": "Emberwood Academy yard",
+	"time": "night",
+	"island": "emberwood",
+	"summary": "A black paper crane lands in the yard, and the people who forged the Five-Nature Seal ask for it back.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "The Seventh Lantern", "sub": "Seven nights after the Five Winds", "seconds": 3},
+			{"enter": "hisame", "at": [-2.5, -1], "puff": false},
+			{"enter": "tobi", "at": [2.5, -1.5], "puff": false},
+			{"cam": "two", "on": ["hisame", "tobi"], "seconds": 4},
+			{"say": [["tobi", "Seven lanterns, one for each night since the mountain. Hisame says it's a custom. I think she just likes lanterns.", "happy"]]}
+		]},
+		{"do": "say", "lines": [
+			["hisame", "It is a custom. One light for every night the Seal holds. The academy has kept it since before there was an academy.", "relaxed"],
+			["player", "Seven nights. Is that a lot?"],
+			["hisame", "It is more than anyone has kept it in a long while.", "sad"],
+			["tobi", "Sensei. The crane."],
+			["hisame", "Black paper. Nobody at this academy folds black paper."],
+			["tobi", "It was already folded when it landed on the lantern. And it landed in the one you hadn't lit."]
+		]},
+		{"do": "enter", "who": "mikage", "at": [0, -7]},
+		{"do": "scene", "steps": [
+			{"cam": "low", "on": "mikage", "seconds": 4},
+			{"say": [["mikage", "Good evening. I am Mikage, envoy of the Hollow Court. You will not have heard of us. That was rather the point of us.", "relaxed"], ["mikage", "Four hundred years ago the Court forged the Five-Nature Seal. A child from a small island has just finished it, and it wears her like a borrowed coat."], ["hisame", "You are four hundred years late to be this polite."], ["mikage", "Courtesy is the one thing we have in abundance. Bring the Seal to the Five Winds by the new moon, and we will take the burden from you."]]}
+		]},
+		{"do": "say", "lines": [
+			["player", "It isn't a burden. It's the reason the mountain stopped screaming."],
+			["mikage", "It is a door. You have been standing in front of it for a week, and you have not yet asked what is on the other side.", "sad"],
+			["tobi", "Is she going to say she'll ask again, less politely? Because Chiyo told me about that line."],
+			["mikage", "Then you have been warned by better storytellers than I. Hollow, to me."]
+		]},
+		{"do": "fight", "text": "Hold the yard against the Court's clones",
+			"waves": [
+				{"element": "water", "enemies": ["genin", "genin", "genin"]},
+				{"element": "wind", "enemies": ["chunin", "genin", "genin"]},
+				{"element": "water", "enemies": ["chunin", "chunin"]}
+			]},
+		{"do": "enter", "who": "mikage", "at": [0, -6]},
+		{"do": "say", "lines": [
+			["mikage", "Good. You did not flinch. The Court dislikes being wrong about people.", "relaxed"],
+			["mikage", "The new moon, at the Five Winds. Come, or we will come for the one thing that makes you who you are."],
+			["player", "And what's that?"],
+			["mikage", "Your name."]
+		]},
+		{"do": "exit", "who": "mikage"},
+		{"do": "say", "lines": [
+			["hisame", "The Hollow Court was a story for apprentices. Be good, or the Court takes your name.", "sad"],
+			["hisame", "I was told it as a child, and I told it to Asahi, and to you. I did not think I was describing anyone."],
+			["tobi", "So what do we do?"],
+			["hisame", "We find out what they really want. Tsumugi's Watch has kept records on them for two hundred years. Start there, {name}."]
+		]},
+		{"do": "exit", "who": "tobi"},
+		{"do": "exit", "who": "hisame"}
+	]
+}

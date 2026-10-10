@@ -1,0 +1,44 @@
+{
+	"id": "m21_ash_blades_debt",
+	"number": 21,
+	"part": 7,
+	"objective": "Cross the sea west to the Ashen Pass: Kurogane keeps the road to the Court's Ledger",
+	"title": "The Ash Blade's Debt",
+	"location": "The burned shrine, Ashen Pass",
+	"time": "dusk",
+	"island": "ashen_pass",
+	"summary": "A swordsman took the Court's coin to rebuild a shrine, and is honest enough to fight you for what it bought.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "The Ash Blade's Debt", "sub": "Where the bell rang once, in thanks", "seconds": 3},
+			{"enter": "kurogane", "at": [0, -6], "puff": false},
+			{"cam": "low", "on": "kurogane", "seconds": 4},
+			{"say": [["kurogane", "You are late. I have been standing here since the light turned, and the shrine has not got any newer.", "relaxed"]]}
+		]},
+		{"do": "say", "lines": [
+			["player", "Sumi said you'd know the road to the Ledger."],
+			["kurogane", "I do. I was paid to keep it. Forty bags of tile and timber for the shrine, and I carried the Court's word that nobody would come looking."],
+			["kurogane", "Hanae has her roof again. The pillars are straight. It is the best-built thing on the pass, and I am sick every time I look at it."],
+			["player", "You took it knowing."],
+			["kurogane", "I took it hoping. It is a different crime, and not a smaller one."],
+			["kurogane", "I will not draw the map for a stranger. I will draw it for someone who can cut me. That is the whole of my honour, and I would like it kept."]
+		]},
+		{"do": "boss", "who": "kurogane", "rank": "jonin", "health": 360, "element": "fire", "taunt": "Edge to edge. No tricks.",
+			"specials": [{"kind": "ring", "every": 12, "below": 0.9, "damage": 17}, {"kind": "chain", "every": 16, "below": 0.5, "count": 3, "damage": 17}],
+			"phases": [
+				{"at": 0.6, "element": "wind", "say": "Wind, for the road I did not walk."},
+				{"at": 0.3, "element": "fire", "say": "And fire again. It was always the fire."}
+			]},
+		{"do": "enter", "who": "kurogane", "at": [0, -3]},
+		{"do": "say", "lines": [
+			["kurogane", "Good. That is the edge I was missing.", "relaxed"],
+			["kurogane", "The Court keeps its Ledger in the old vault under the Old Dam. The dam was built over it, to keep the door shut. Iwao has been scraping his seals off the face of it for a week."],
+			["player", "Iwao's been standing on it the whole time."],
+			["kurogane", "Stone remembers. Ask him what the spillway sounds like at night. Ask what he hears in it."],
+			["kurogane", "I will pay back the Court's coin to Hanae's roof, one tile at a time, by teaching her scouts to cut straight. Tell Hisame I said so."]
+		]},
+		{"do": "exit", "who": "kurogane"}
+	]
+}

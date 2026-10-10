@@ -26,6 +26,9 @@ const WAVES := [
 	[[["chunin", 3]], [["chunin", 2], ["jonin", 1]]],
 ]
 const PREFIX := "site:"
+## Finishing a quarter, half, three quarters and all of a kind of place pays a
+## bonus: base times 1, 2, 3, 4.
+const MILESTONE_BASE := {"camp": 150, "lair": 400, "ruin": 200, "shrine": 150}
 
 var world: OpenWorld
 var sites: WorldSites
@@ -66,6 +69,28 @@ static func relic_xp(site: Dictionary, tier: int) -> int:
 
 static func shrine_xp(site: Dictionary) -> int:
 	return 60 + 20 * int(site["danger"])
+
+
+## The bonus for the places of `kind` done so far (0 unless this finish
+## reached a quarter mark): {xp, text} or {}.
+func milestone(kind: String) -> Dictionary:
+	if not MILESTONE_BASE.has(kind):
+		return {}
+	var total := sites.plan.of_kind(kind).size()
+	var done := sites.done_count(kind)
+	for step in range(1, 5):
+		if done == maxi(1, ceili(total * 0.25 * step)) and (step == 4 or done < total):
+			var names := {"camp": "Raiders' camps cleared", "lair": "Wanted shinobi finished", "ruin": "Relics taken", "shrine": "Shrines attuned"}
+			return {"xp": int(MILESTONE_BASE[kind]) * step, "text": "%s  %d / %d" % [names[kind], done, total]}
+	return {}
+
+
+func _pay_milestone(kind: String) -> void:
+	var m := milestone(kind)
+	if m.is_empty():
+		return
+	Game.add_xp(int(m["xp"]), "milestone")
+	world.hud.show_banner("%s   bonus +%d XP" % [m["text"], int(m["xp"])], &"cast")
 
 
 # --- Finding places ---------------------------------------------------------------
@@ -176,6 +201,7 @@ func finish_fight(quest_id: String) -> void:
 	else:
 		world.hud.show_banner("%s cleared   +%d XP%s" % [site["name"], xp, note], &"cast")
 	Sfx.play(&"quest_done")
+	_pay_milestone(str(site["kind"]))
 	Game.save_records()
 
 
@@ -188,6 +214,7 @@ func take_relic(site: Dictionary) -> void:
 	Game.set_record("world", "relics", int(Game.record("world", "relics", 0)) + 1)
 	world.hud.show_banner("Relic found at %s   +%d XP   (%d taken)" % [site["name"], xp, int(Game.record("world", "relics", 0))], &"cast")
 	Sfx.play(&"quest_done")
+	_pay_milestone("ruin")
 	Game.save_records()
 
 
@@ -204,6 +231,7 @@ func attune(id: String) -> void:
 	var xp := shrine_xp(site)
 	Game.add_xp(xp, "shrine")
 	world.hud.show_banner("Attuned to %s   +%d XP  ·  travel here from the map" % [site["name"], xp], &"cast")
+	_pay_milestone("shrine")
 	Game.save_records()
 
 

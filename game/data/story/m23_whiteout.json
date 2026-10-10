@@ -1,0 +1,56 @@
+{
+	"id": "m23_whiteout",
+	"number": 23,
+	"part": 7,
+	"objective": "Cross the sea north-east to the Frozen Road: Renji's scouts have gone quiet",
+	"title": "Whiteout",
+	"location": "The lantern road, Frozen Road",
+	"time": "day",
+	"island": "frozen_road",
+	"weather": "snow",
+	"summary": "The Court's last hunter walks through the snow, and the snow forgets his footprints as he goes.",
+	"player_at": [0, 6],
+	"beats": [
+		{"do": "scene", "steps": [
+			{"cam": "wide", "on": "player", "seconds": 4, "async": true},
+			{"title": "Whiteout", "sub": "Where the snow keeps no footprints", "seconds": 3},
+			{"enter": "renji", "at": [2, 0], "puff": false},
+			{"cam": "mid", "on": "renji", "seconds": 4},
+			{"say": [["renji", "Don't stand still. Nobody who stood still out here this morning is still out here.", "angry"]]}
+		]},
+		{"do": "say", "lines": [
+			["player", "Where are your scouts?"],
+			["renji", "Eight of them, out on the ridge. I can see the ridge. I can't remember their names, and I wrote them myself last night."],
+			["renji", "A man in white came through at first light. He did not speak. Every lantern he passed went dark."],
+			["player", "The Court's hunter."],
+			["renji", "Is that what he is? I thought he was weather. Here. Take my lantern. It's the only one he hasn't put out.", "sad"]
+		]},
+		{"do": "exit", "who": "renji"},
+		{"do": "survive", "seconds": 40, "max_alive": 3, "text": "Hold the road in the whiteout", "enemies": [["genin", "water"], ["genin", "wind"], ["chunin", "water"]]},
+		{"do": "enter", "who": "shirou", "at": [0, -7]},
+		{"do": "scene", "steps": [
+			{"cam": "low", "on": "shirou", "seconds": 4},
+			{"say": [["shirou", "You are the keeper. I was told you would be taller.", "relaxed"], ["shirou", "I was a scout once, on a ridge like this one. A courier came through with a book, and when I went home my mother asked who I was."], ["shirou", "Mikage found me in the snow. She said she could write me back, if I carried her letters. I have carried them eleven years."]]}
+		]},
+		{"do": "boss", "who": "shirou", "rank": "jonin", "health": 380, "element": "water", "taunt": "I do not enjoy this. That does not make me gentler.",
+			"specials": [{"kind": "ring", "every": 10, "damage": 18}, {"kind": "chain", "every": 13, "below": 0.7, "count": 4, "damage": 17}, {"kind": "quake", "every": 14, "below": 0.4, "count": 4, "damage": 17}],
+			"phases": [
+				{"at": 0.5, "element": "wind", "say": "A blizzard has no name to take.", "summon": [["genin", "wind"], ["genin", "water"]]}
+			]},
+		{"do": "enter", "who": "shirou", "at": [0, -3]},
+		{"do": "say", "lines": [
+			["shirou", "...You hit me and it did not feel like being forgotten. I had not noticed how long that had been.", "sad"],
+			["shirou", "She will not write me back. I think I have known that for some time."],
+			["player", "What will she do at the Five Winds?"],
+			["shirou", "Take the Seal's keeper's name, and write it into the Ledger with her own. The Seal will obey whoever the Ledger says it belongs to. She means to end the Court by becoming its only member."],
+			["shirou", "Go up the mountain at the new moon. Bring the ones who remember you. They are the only thing the Ledger cannot write out."]
+		]},
+		{"do": "exit", "who": "shirou"},
+		{"do": "enter", "who": "renji", "at": [2, 1]},
+		{"do": "say", "lines": [
+			["renji", "Eight names, back in my head. All at once, like a sneeze. I would cry, but my face is frozen.", "happy"],
+			["renji", "Tell them at the academy the road is open. And tell Asahi I owe him a tea."]
+		]},
+		{"do": "exit", "who": "renji"}
+	]
+}

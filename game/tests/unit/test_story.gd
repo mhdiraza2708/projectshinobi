@@ -81,8 +81,8 @@ func _jump_to(kind: String) -> void:
 func test_story_files_load_cleanly() -> void:
 	var story := Story.load_all()
 	assert_eq(story.errors, [] as Array[String], "story data errors")
-	assert_eq(story.chapters.size(), 18, "eighteen missions")
-	assert_eq(story.parts.size(), 6, "in six chapters")
+	assert_eq(story.chapters.size(), 24, "twenty-four missions")
+	assert_eq(story.parts.size(), 7, "in seven chapters")
 	for part in story.parts:
 		var missions := story.missions_in(part["number"])
 		assert_true(missions.size() >= 2, "chapter %d is more than one mission" % part["number"])

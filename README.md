@@ -57,14 +57,15 @@ controls can be remapped.
   back to from there. Your place and the time of day are saved with the
   slot. (Chapters can still be replayed on their own from the title's
   chapter list.)
-- **Story: six chapters, eighteen missions, across the islands.** A new
+- **Story: seven chapters, twenty-four missions, across the islands.** A new
   genin, a loud rival, a stolen scroll and the five-beast spirit sealed in
   it: *The Graduation*, *The Ashen Trail*, *The Windward Watch*, *The Old
-  Dam*, *Kagerou's Reason* and *Nue*. Missions happen where the story does
+  Dam*, *Kagerou's Reason*, *Nue* and, after the ending, *The Hollow Court*
+  (a council that erases names). Missions happen where the story does
   (the academy yard, a burned pass, a forest shrine, a dam, a snowbound road,
   a summit), so you cross the sea between them; arriving starts the mission
   with a banner, and when it ends the next objective is on your tracker. Boss
-  duels, a boss who changes nature as it weakens, fights beside allies, a
+  duels with signature attacks (telegraphed quakes, a running shockwave, blinking strike chains), a boss who changes nature as it weakens, fights beside allies, a
   survival stand in a storm, and a finale sealed with a five-seal technique.
   Every line is voiced (Kokoro TTS). Missions are plain data files. See
   [docs/STORY.md](docs/STORY.md) to write your own.

@@ -8,16 +8,16 @@ extends RefCounted
 ## through the skill trees, so what stands against them has to keep up.
 ## Bosses scale the same way: their written health is multiplied.
 
-## The last tier of the story: part 6.
-const STORY_MAX := 5
+## The last tier of the story: part 7.
+const STORY_MAX := 6
 ## The most a fighter can be: the story's last tier plus a hard difficulty and
 ## New Game+ on top.
-const MAX := 9
+const MAX := 10
 ## Tiers each difficulty adds on top of the story's.
 const DIFFICULTY := {"normal": 0, "hard": 2, "nightmare": 4}
 ## Tiers each New Game+ round adds.
 const PER_ROUND := 3
-# Each is the gain per tier, so part 6 is five times these.
+# Each is the gain per tier, so part 7 is six times these.
 const HEALTH := 0.14
 const POWER := 0.09
 const SPEED := 0.03

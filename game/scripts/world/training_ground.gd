@@ -1392,6 +1392,12 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			else:
 				player.camera_rig.begin_showcase(float(_user_args().get("yaw", "0.6")))
 			await _frames(30)
+			if _user_args().has("stats"):
+				# --stats=1 prints what the GPU is asked to draw here.
+				print("WORLD_STATS here objects=%d primitives=%d draw_calls=%d" % [
+					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
+					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+					RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 		_ when demo.begins_with("menu_skills"):
 			# The Skills tab partway through a save: --demo=menu_skills[:<tree>]
 			Game.add_xp(SkillTrees.xp_for_level(14) + 120)
