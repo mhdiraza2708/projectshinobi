@@ -278,13 +278,15 @@ them with IK (including the hand-seal pose). The step-by-step guide is in
   `art/audio/make_sfx.py` (original, no licensing). They're game-jam quality,
   not studio foley. Drop recorded sounds with the same file names into
   `game/assets/audio/sfx/` to replace any of them.
-- **The music is sequenced, not performed.** Fourteen original tracks (the
-  title, a theme for each of the six islands, the sea, the night, two battle
-  themes, the boss, and a tense and a sad cue for the story) are written note
-  by note in `art/audio/make_music.py` and rendered with a General MIDI
-  soundfont's koto, shakuhachi, shamisen, taiko, strings, choir, harp and
-  bells. That sounds like good MIDI, not a recorded orchestra, and each
-  track is a loop of about a minute, so a long walk repeats them. Replace any
+- **The music is sequenced, not performed.** Twenty-nine original tracks (the
+  title; a theme and a night piece for each of the six regions; the sea and
+  the road between them; a village, a shrine and a ruin each with its own;
+  three battle themes, a camp's, a duel's and a boss's; a last-stand piece;
+  and a tense and a sad cue for the story) are written note by note in
+  `art/audio/make_music.py` and rendered with a General MIDI soundfont's
+  koto, shakuhachi, shamisen, taiko, strings, choir, harp and bells. That
+  sounds like good MIDI, not a recorded orchestra, and each track is a loop
+  of a minute or more, so a long walk repeats them. Replace any
   `game/assets/audio/music/*.ogg` with a real recording of the same name.
 - **Voices are text-to-speech.** Every story character is voiced with the
   Kokoro neural model (`art/audio/make_voices.py`: a cast voice per

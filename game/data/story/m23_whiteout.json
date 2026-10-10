@@ -32,7 +32,7 @@
 			{"cam": "low", "on": "shirou", "seconds": 4},
 			{"say": [["shirou", "You are the keeper. I was told you would be taller.", "relaxed"], ["shirou", "I was a scout once, on a ridge like this one. A courier came through with a book, and when I went home my mother asked who I was."], ["shirou", "Mikage found me in the snow. She said she could write me back, if I carried her letters. I have carried them eleven years."]]}
 		]},
-		{"do": "boss", "who": "shirou", "rank": "jonin", "health": 380, "element": "water", "taunt": "I do not enjoy this. That does not make me gentler.",
+		{"do": "boss", "music": "duel", "who": "shirou", "rank": "jonin", "health": 380, "element": "water", "taunt": "I do not enjoy this. That does not make me gentler.",
 			"specials": [{"kind": "ring", "every": 10, "damage": 18}, {"kind": "chain", "every": 13, "below": 0.7, "count": 4, "damage": 17}, {"kind": "quake", "every": 14, "below": 0.4, "count": 4, "damage": 17}],
 			"phases": [
 				{"at": 0.5, "element": "wind", "say": "A blizzard has no name to take.", "summon": [["genin", "wind"], ["genin", "water"]]}

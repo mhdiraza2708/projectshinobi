@@ -25,7 +25,7 @@
 			["kurogane", "I took it hoping. It is a different crime, and not a smaller one."],
 			["kurogane", "I will not draw the map for a stranger. I will draw it for someone who can cut me. That is the whole of my honour, and I would like it kept."]
 		]},
-		{"do": "boss", "who": "kurogane", "rank": "jonin", "health": 360, "element": "fire", "taunt": "Edge to edge. No tricks.",
+		{"do": "boss", "music": "duel", "who": "kurogane", "rank": "jonin", "health": 360, "element": "fire", "taunt": "Edge to edge. No tricks.",
 			"specials": [{"kind": "ring", "every": 12, "below": 0.9, "damage": 17}, {"kind": "chain", "every": 16, "below": 0.5, "count": 3, "damage": 17}],
 			"phases": [
 				{"at": 0.6, "element": "wind", "say": "Wind, for the road I did not walk."},

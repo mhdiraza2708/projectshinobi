@@ -249,31 +249,40 @@ that fight, not the chapter.
 
 The game picks the music for each beat (`game/scripts/story/story_director.gd`):
 
-- `fight` and `survive` play a battle theme. Missions take turns: odd-numbered
-  missions get `battle`, even-numbered ones `battle2`. `boss` always plays
-  `boss`.
+- `fight` and `survive` play a battle theme. Missions take turns through
+  `battle`, `battle2` and `battle3` (mission 1 gets the first, 2 the second,
+  3 the third, 4 the first again). `boss` plays `boss`, or the track the beat
+  names with `music`: `duel` for the one-on-one rivals, `finale` for the
+  last stand of a part.
 - `say` and `task` play the beat's own `music`, else the mission's `music`,
   else the island's theme: `calm` for Emberwood, and `autumn_wood`,
   `ashen_pass`, `old_dam`, `frozen_road` or `five_winds` for the others.
 - Entrances, exits, banners and waits keep what is playing, and a `scene`
   can change it with a `{"music": "..."}` step.
 
-Name a track in `music` (a chapter, a `say` or a `task`; a scene step also
+Name a track in `music` (a chapter, a `say`, a `task` or a `boss`; a scene step also
 takes `"none"` for silence) to colour a moment: `tension` is a low, uneasy
-cue; `sorrow` a slow lament. The two Kagerou chapters and the night before
-the finale use both. In free roam the music follows the place and the hour
-instead: the island's theme, `sea` between islands and `night` after dark.
+cue; `sorrow` a slow lament; `hollow` a cold, hollow drone for the Hollow
+Court. The two Kagerou chapters and the night before the finale use the
+first two. In free roam the music follows the place and the hour instead: the
+region's theme by day and its own night piece after dark, `road` and
+`road_night` out in the continent's wilds (`sea` and `night` between islands),
+and a village, shrine or ruin's own while you are in it.
 
 | Track | Where it plays |
 |---|---|
 | `title` | The title screen |
 | `calm` | Emberwood, and the training ground |
-| `autumn_wood`, `ashen_pass`, `old_dam`, `frozen_road`, `five_winds` | Exploring that island |
-| `sea` | Running across the water between islands |
-| `night` | Free roam after dark, anywhere |
-| `battle`, `battle2` | Fights: the trial plays `battle`, quest fights take turns, story fights go by mission |
-| `boss` | Boss fights |
-| `tension`, `sorrow` | Story moments, chosen with `music` |
+| `autumn_wood`, `ashen_pass`, `old_dam`, `frozen_road`, `five_winds` | Exploring that region |
+| `calm_night`, `autumn_wood_night`, `ashen_pass_night`, `old_dam_night`, `frozen_road_night`, `five_winds_night` | That region after dark |
+| `road`, `road_night` | The continent's wilds, by day and after dark |
+| `sea`, `night` | Running across the water between islands, and after dark out at sea |
+| `village`, `shrine`, `hollow` | In a village, at a shrine, among ruins |
+| `battle`, `battle2`, `battle3` | Fights: the trial plays `battle`, quest fights take turns, story fights go by mission |
+| `camp` | A raiders' camp's fight |
+| `duel` | A named rival or a wanted shinobi's duel, and the one-on-one story bosses |
+| `boss`, `finale` | Boss fights, and the last stand of a part |
+| `tension`, `sorrow`, `hollow` | Story moments, chosen with `music` |
 
 A new track is a new function in `art/audio/make_music.py` (add it to
 `TRACKS`, run `make music`) and a line in `Music.TRACKS`

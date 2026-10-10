@@ -28,8 +28,8 @@ done. Written so a new session can pick the work up cold.
 
 **Status:** steps 1 and 2 are done (drop-in world behind a setting, map, fast
 travel, quests, day/night) and step 3 has begun (sites, contracts, bounties).
-What is left of step 3 is region palettes and pad paths, roads' look, music
-for the wilds and more kinds of site. Step 4 (make it the default, retire the
+What is left of step 3 is region palettes and pad paths, roads' look and more
+kinds of site. Step 4 (make it the default, retire the
 islands) waits for someone to play it and for a performance check on a real
 GPU.
 

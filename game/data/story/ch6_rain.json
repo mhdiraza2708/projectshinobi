@@ -34,7 +34,7 @@
 			["tsumugi", "Something with a name. Nue. A spirit stitched together from five beasts, one for each nature. Break the seal and it wakes."],
 			["tsumugi", "I don't work with academies. But I'll work with anyone who can keep up. Show me, {name}."]
 		]},
-		{"do": "boss", "who": "tsumugi", "rank": "chunin", "health": 210,
+		{"do": "boss", "music": "duel", "who": "tsumugi", "rank": "chunin", "health": 210,
 			"taunt": "Keep up, or go home.",
 			"specials": [{"kind": "chain", "every": 13, "below": 0.85, "count": 3, "damage": 14}],
 			"phases": [

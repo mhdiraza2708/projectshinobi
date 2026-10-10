@@ -42,6 +42,15 @@ const ISLAND_KANJI := {
 ## its name card, so it doesn't flicker at the shore.
 const SEA_TRACK := &"sea"
 const NIGHT_TRACK := &"night"
+## Out in the continent's wilds, by day and after dark.
+const ROAD_TRACK := &"road"
+const ROAD_NIGHT_TRACK := &"road_night"
+## What plays in a place of the continent (WorldSites.place_near): a village's
+## quiet, a shrine's hush, a ruin's dread.
+## Fights: a camp's, and a duel's (a named rival or a wanted shinobi).
+const CAMP_TRACK := &"camp"
+const DUEL_TRACK := &"duel"
+const PLACE_TRACKS := {"village": &"village", "shrine": &"shrine", "ruin": &"hollow"}
 const SHORE_HOLD := 14.0
 ## The weather that settles over a region while you are in it.
 const REGION_WEATHER := {"frozen_road": "snow", "autumn_wood": "leaves"}
@@ -74,6 +83,7 @@ var _duelist: EnemyShinobi
 var _interact: Dictionary = {}     # {kind, id, node}
 var _island := ""
 var _music_island := ""
+var _music_place := ""
 var _fights := 0                   # quest fights begun (they take turns at the battle themes)
 var _save_left := SAVE_EVERY
 var _ripple_left := 0.0
@@ -103,12 +113,18 @@ func phase(at := -1.0) -> String:
 	return out
 
 
-## The music for a place at a time of day: night beats everything, then the
-## open sea, then the island's own theme. `island` is "" out at sea.
-static func track_for(island: String, day_phase: String) -> StringName:
-	if day_phase == "night":
-		return NIGHT_TRACK
-	return SEA_TRACK if island == "" else Music.island_theme(island)
+## The music for a place at a time of day: a village, shrine or ruin has its
+## own; otherwise after dark the region's night, by day the region's theme.
+## `island` is "" out at sea, or in the continent's wilds (`continent`), which
+## have the road instead of the sea. `place` is WorldSites.place_near.
+static func track_for(island: String, day_phase: String, continent := false, place := "") -> StringName:
+	if PLACE_TRACKS.has(place):
+		return PLACE_TRACKS[place]
+	if island == "":
+		if day_phase == "night":
+			return ROAD_NIGHT_TRACK if continent else NIGHT_TRACK
+		return ROAD_TRACK if continent else SEA_TRACK
+	return Music.island_night(island) if day_phase == "night" else Music.island_theme(island)
 
 
 ## Crossfades to the music for where you stand and what time it is. It waits
@@ -118,7 +134,8 @@ func update_music() -> void:
 		return
 	var reach := 18.0 + (SHORE_HOLD if _music_island != "" else 0.0)
 	_music_island = archipelago.island_near(player.global_position, reach)
-	Music.play(track_for(_music_island, phase()))
+	_music_place = sites.place_near(player.global_position, _music_place) if sites != null else ""
+	Music.play(track_for(_music_island, phase(), sites != null, _music_place))
 
 
 func _process(delta: float) -> void:
@@ -671,6 +688,11 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	busy = true
 	var battle := Music.battle_for(_fights)
 	_fights += 1
+	# A camp has its own fight music and a named rival a duel's; the rest take turns.
+	if q["type"] == "duel":
+		battle = DUEL_TRACK
+	elif str(q["id"]).begins_with(SiteActivities.PREFIX):
+		battle = CAMP_TRACK
 	var first := not _films_seen.has(q["id"])
 	_films_seen[q["id"]] = true
 	if first and q["type"] != "duel":
@@ -773,8 +795,8 @@ func start_bounty(b: Dictionary, spot: Vector3, quest_id: String) -> void:
 		return
 	_fight_quest = quest_id
 	busy = true
-	var battle := Music.battle_for(_fights)
 	_fights += 1
+	var battle := DUEL_TRACK
 	var e := EnemyShinobi.new()
 	e.rank = &"jonin"
 	e.element = Element.from_name(str(b["element"]))

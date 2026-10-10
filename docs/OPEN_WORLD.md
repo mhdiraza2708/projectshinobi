@@ -56,12 +56,27 @@ Code: `SiteBuilder` (layouts from the island props), `SiteNode`, `SiteMarker`,
 `WorldSites` (streams sites by distance, state), `SiteActivities` (what to
 do), `Bounties` (data loader).
 
+## Music
+
+`OpenWorld.track_for` picks it each frame from where you stand and the hour:
+
+- inside a **village, shrine or ruin** (`WorldSites.place_near`: its grounds
+  plus a margin, held a little longer once you are in): `village`, `shrine`
+  or `hollow`;
+- otherwise in a **region** (`Music.island_theme` by day, `Music.island_night`
+  after dark: every region has a night piece of its own);
+- out in the **wilds**: `road` by day, `road_night` after dark (the island
+  layout keeps `sea` and `night`).
+
+Fights choose their own: a camp plays `camp`, a named rival or a wanted
+shinobi `duel`, and the other quest fights take turns at `battle`, `battle2`
+and `battle3`. See [STORY.md](STORY.md#music) for the story's picks.
+
 ## Not yet
 
 - Five Winds' leap stones, islets and gulls (the island layout only).
 - Per-region ground palettes and paths on the pads (the continent is Emberwood
   green everywhere; region yards are bare earth).
-- Music for the wilds (it plays the sea track between regions).
 - Roaming patrols, weather by region, collectibles beyond relics.
 - Performance on real hardware has not been measured (the work here ran on
   CPU rendering only).

@@ -5,6 +5,7 @@
 	"objective": "Cross the sea north-west to the Old Dam: Iwao and Chiyo are opening the drowned vault",
 	"title": "The Drowned Ledger",
 	"location": "The spillway, Old Dam",
+	"music": "hollow",
 	"time": "dusk",
 	"island": "old_dam",
 	"weather": "storm",

@@ -18,7 +18,7 @@ const BEATS := {
 	"fight": [["waves"], ["text"]],
 	"survive": [["seconds", "enemies"], ["text", "max_alive"]],
 	"ally": [["who", "rank"], ["health", "at"]],
-	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "specials", "size", "aura"]],
+	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "specials", "size", "aura", "music"]],
 	"wait": [["seconds"], []],
 	"banner": [["text"], []],
 	"scene": [["steps"], []],
@@ -471,6 +471,8 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 			b["at"] = _vec2(label, raw.get("at", [2, 3]))
 			present[b["who"]] = true
 		"boss":
+			if raw.has("music"):
+				b["music"] = _track(label, raw["music"])
 			b["size"] = float(raw.get("size", 1.0))
 			b["aura"] = Color.html(str(raw["aura"])) if raw.has("aura") and Color.html_is_valid(str(raw["aura"])) else Color(0, 0, 0, 0)
 			if raw.has("aura") and not Color.html_is_valid(str(raw["aura"])):

@@ -20,14 +20,24 @@ const DIR := "res://assets/audio/music/"
 const TRACKS: Array[StringName] = [
 	&"title", &"calm", &"battle", &"boss", &"autumn_wood", &"ashen_pass", &"old_dam", &"frozen_road",
 	&"five_winds", &"night", &"sea", &"battle2", &"tension", &"sorrow",
+	# The open world's own: the road, villages and shrines, camps, duels and the last stand.
+	&"road", &"village", &"shrine", &"camp", &"duel", &"battle3", &"finale", &"hollow",
+	# Each region's night.
+	&"calm_night", &"autumn_wood_night", &"ashen_pass_night", &"old_dam_night", &"frozen_road_night",
+	&"five_winds_night", &"road_night",
 ]
 ## What plays while you explore each island (Emberwood's is "calm").
 const ISLAND_THEMES := {
 	"emberwood": &"calm", "autumn_wood": &"autumn_wood", "ashen_pass": &"ashen_pass",
 	"old_dam": &"old_dam", "frozen_road": &"frozen_road", "five_winds": &"five_winds",
 }
-## The two fight themes: fight number 0 gets the first, 1 the second, and so on.
-const BATTLES: Array[StringName] = [&"battle", &"battle2"]
+## What plays there after dark (any other place has the plain "night" piece).
+const ISLAND_NIGHTS := {
+	"emberwood": &"calm_night", "autumn_wood": &"autumn_wood_night", "ashen_pass": &"ashen_pass_night",
+	"old_dam": &"old_dam_night", "frozen_road": &"frozen_road_night", "five_winds": &"five_winds_night",
+}
+## The fight themes: fight number 0 gets the first, 1 the second, and so on.
+const BATTLES: Array[StringName] = [&"battle", &"battle2", &"battle3"]
 const FADE := 1.4
 const SILENT_DB := -50.0
 ## How far music drops under a voice line.
@@ -62,6 +72,11 @@ func has_track(track: StringName) -> bool:
 ## The exploration theme of an island (calm for one without a theme of its own).
 func island_theme(island: String) -> StringName:
 	return ISLAND_THEMES.get(island, &"calm")
+
+
+## The theme of an island after dark.
+func island_night(island: String) -> StringName:
+	return ISLAND_NIGHTS.get(island, &"night")
 
 
 ## The battle theme for the `count`th fight, so fights take turns.

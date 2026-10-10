@@ -1019,11 +1019,478 @@ def sorrow() -> Song:
 	return s
 
 
+# --------------------------------------------------------------------------
+# The open world's own pieces. Each place and hour has its music: the regions'
+# themes at night (below), the wilds, a village, a shrine, a camp, a duel,
+# a third battle theme, a finale and the Hollow Court.
+# --------------------------------------------------------------------------
+
+def bars_of(*bars: str) -> str:
+	"""A melody written a bar at a time ("A4:1 C5:1 D5:2" ...), joined up. A
+	bar that does not add up to the song's bar length is a typo."""
+	return " ".join(bars)
+
+
+# Road: "The Long Road". C ryo (C D E G A), 96 BPM: travelling music for the wilds.
+def road() -> Song:
+	s = Song("road", bpm=96, bars=32, seed=211)
+	taiko = s.part(TAIKO, volume=72, pan=64, reverb=60, humanize=0.0)
+	bass = s.part(PIZZICATO, volume=92, pan=64, reverb=40)
+	koto = s.part(KOTO, volume=90, pan=42, reverb=65)
+	sham = s.part(SHAMISEN, volume=78, pan=88, reverb=45)
+	flute = s.part(FLUTE, volume=98, pan=60, reverb=75)
+	shaku = s.part(SHAKUHACHI, volume=84, pan=72, reverb=85)
+	pad = s.part(SLOW_STRINGS, volume=52, pan=64, reverb=80)
+	harp = s.part(HARP, volume=60, pan=30, reverb=80)
+
+	# Two bars to a chord: C, Am, G sus, D sus.
+	pools = [notes("C3 G3 C4 D4 E4 G4"), notes("A2 E3 A3 C4 D4 E4"), notes("G2 D3 G3 A3 D4 E4"), notes("D3 A3 D4 E4 G4 A4")]
+	comp = [notes("C4 E4 G4"), notes("A3 C4 E4"), notes("G3 A3 D4"), notes("D4 E4 A4")]
+	roots = [n("C2"), n("A1"), n("G1"), n("D2")]
+	roll(koto, s, 1, 32, pools, 2, [[0, 1, 2, 3, 4, 3, 2, 1]], vel=50, accent=8, ring=2.0)
+	bed(pad, s, 5, 32, comp, 2, 38)
+	for b in range(1, s.bars + 1):
+		t = s.bar(b)
+		r = roots[((b - 1) // 2) % 4]
+		for beat, pitch, vel in [(0, r, 84), (1.5, r + 7, 60), (2, r + 12, 70), (3, r + 7, 58)]:
+			bass.note(t + beat, 0.4, pitch, vel)
+		if b >= 9 and b % 2 == 1:
+			taiko_hits(taiko, t, [(0, n("C2"), 80), (2.5, n("G2"), 52)])
+		if b >= 9 and b not in range(17, 25):
+			for beat in (1.5, 3.5):
+				sham.chord(t + beat, 0.3, comp[((b - 1) // 2) % 4], 56)
+	for bar_no in (1, 9, 17, 25):
+		for i, p in enumerate(notes("C4 D4 E4 G4 A4 C5 D5 E5 G5 A5 C6")):
+			harp.note(s.bar(bar_no) + i * 0.1, 2.5, p, 42 + i * 2)
+	m1 = bars_of("E5:1 G5:1 A5:2", "G5:1 E5:1 D5:2", "C5:1 D5:1 E5:2", "G5:3 r:1",
+		"A5:1 G5:1 E5:2", "D5:1 E5:1 G5:2", "E5:1 D5:1 C5:2", "D5:2 C5:2")
+	m2 = bars_of("A5:2 G5:1 E5:1", "G5:2 A5:2", "C6:2 A5:1 G5:1", "E5:3 r:1",
+		"D5:1 E5:1 G5:1 A5:1", "C6:1 A5:1 G5:2", "E5:1 G5:1 E5:1 D5:1", "C5:4")
+	flute.phrase(s.bar(9), m1, vel=84, vibrato=True)
+	shaku.phrase(s.bar(17), m2, vel=80, slide=True, vibrato=True)
+	flute.phrase(s.bar(17), m1, vel=50, transpose=-12)
+	flute.phrase(s.bar(25), m2, vel=88, vibrato=True)
+	shaku.phrase(s.bar(25), m1, vel=64, transpose=-12, slide=True)
+	return s
+
+
+# Village: "Market Day". A minor pentatonic (A C D E G), 112 BPM: a shamisen, a flute, woodblocks.
+def village() -> Song:
+	s = Song("village", bpm=112, bars=24, seed=223)
+	perc = s.part(DRUMS, volume=70, reverb=25)
+	bass = s.part(PIZZICATO, volume=92, pan=64, reverb=35)
+	sham = s.part(SHAMISEN, volume=96, pan=84, reverb=40)
+	koto = s.part(KOTO, volume=76, pan=40, reverb=60)
+	flute = s.part(FLUTE, volume=100, pan=58, reverb=70)
+	violin = s.part(VIOLIN, volume=70, pan=72, reverb=70)
+	pad = s.part(WARM_PAD, volume=44, pan=64, reverb=75, chorus=30)
+
+	# A bar to a chord: Am, G, C, D sus.
+	pools = [notes("A2 E3 A3 C4 E4"), notes("G2 D3 G3 A3 D4"), notes("C3 G3 C4 D4 E4"), notes("D3 A3 D4 E4 G4")]
+	roots = [n("A1"), n("G1"), n("C2"), n("D2")]
+	roll(koto, s, 1, 24, pools, 1, [[0, 2, 1, 3, 2, 4, 3, 1]], vel=46, accent=8, ring=1.6)
+	bed(pad, s, 5, 24, [p[1:4] for p in pools], 1, 34)
+	for b in range(1, s.bars + 1):
+		t = s.bar(b)
+		k = (b - 1) % 4
+		r = roots[k]
+		for beat, pitch, vel in [(0, r, 86), (1, r + 7, 60), (2, r, 76), (3, r + 7, 62)]:
+			bass.note(t + beat, 0.35, pitch, vel)
+		for beat in (1, 3):
+			perc.note(t + beat, 0.15, CLAVES, 66)
+		for i in range(8):
+			perc.note(t + i * 0.5, 0.15, TAMBOURINE if i % 2 == 1 else WOODBLOCK, 40 if i % 2 == 1 else 30)
+		if b >= 5:
+			chord = pools[k][1:4]
+			for beat in (0.5, 1.5, 2.5, 3.5):
+				sham.chord(t + beat, 0.28, chord, 70 if beat in (0.5, 2.5) else 54)
+	a = bars_of("A4:1 C5:1 D5:1 E5:1", "G5:2 E5:2", "D5:1 C5:1 D5:1 E5:1", "C5:4",
+		"A4:1 C5:1 D5:1 E5:1", "G5:1 A5:1 G5:2", "E5:1 D5:1 C5:1 D5:1", "A4:4")
+	b_ = bars_of("E5:1 E5:1 G5:2", "A5:2 G5:2", "E5:1 D5:1 C5:2", "D5:2 E5:2",
+		"G5:1 A5:1 C6:2", "A5:2 G5:2", "E5:1 G5:1 E5:1 D5:1", "C5:1 A4:3")
+	flute.phrase(s.bar(5), a, vel=82, vibrato=True)
+	sham.phrase(s.bar(13), b_, vel=92)
+	flute.phrase(s.bar(13), b_, vel=70)
+	violin.phrase(s.bar(13), b_, vel=56, transpose=-12)
+	flute.phrase(s.bar(21), bars_of("A4:1 C5:1 D5:1 E5:1", "G5:1 A5:1 G5:2"), vel=84, vibrato=True)
+	return s
+
+
+# Shrine: "Wayside Bell". A hirajoshi (A B C E F), 58 BPM: bells, a choir's breath, long shakuhachi.
+def shrine() -> Song:
+	s = Song("shrine", bpm=58, bars=20, seed=233)
+	bells = s.part(TUBULAR_BELLS, volume=78, pan=66, reverb=100)
+	choir = s.part(VOICE_OOH, volume=62, pan=64, reverb=95)
+	pad = s.part(SLOW_STRINGS, volume=44, pan=50, reverb=90)
+	koto = s.part(KOTO, volume=86, pan=40, reverb=90)
+	shaku = s.part(SHAKUHACHI, volume=100, pan=70, reverb=95)
+	crystal = s.part(CRYSTAL, volume=34, pan=92, reverb=100)
+
+	# Four bars to a chord: Am(add b6), F, Em sus, Am.
+	pools = [notes("A2 E3 A3 C4 E4 F4"), notes("F2 C3 F3 A3 C4 E4"), notes("E2 B2 E3 A3 B3 E4"), notes("A2 E3 A3 B3 C4 E4")]
+	bed(pad, s, 1, 20, [notes("A3 C4 E4"), notes("F3 A3 C4"), notes("E3 A3 B3"), notes("A3 C4 E4")], 4, 44)
+	bed(choir, s, 5, 20, [notes("A3 E4"), notes("F3 C4"), notes("E3 B3"), notes("A3 E4")], 4, 40)
+	roll(koto, s, 1, 20, pools, 4, [[0, 3, 5, 2, 4, 1, 3, 0]], vel=48, step=1.0, accent=6, ring=4.0)
+	for bar_no, name in [(1, "A4"), (5, "E5"), (9, "C5"), (13, "A4"), (17, "E5")]:
+		bells.note(s.bar(bar_no), 8.0, n(name), 56)
+	for bar_no, name in [(3, "A5"), (11, "F6"), (19, "E6")]:
+		crystal.note(s.bar(bar_no), 4.0, n(name), 38)
+	shaku.phrase(s.bar(5), "E5:3 F5:1 E5:2 C5:2 B4:4 A4:4", vel=66, slide=True, vibrato=True)
+	shaku.phrase(s.bar(9), "A5:4 F5:2 E5:2 C5:3 B4:1 A4:4", vel=72, slide=True, vibrato=True)
+	shaku.phrase(s.bar(15), "E5:4 F5:2 E5:2 C5:4 A4:4", vel=64, slide=True, vibrato=True)
+	return s
+
+
+# Camp: "Campfire Knives". D in (D Eb G A Bb), 126 BPM: rough, close, not epic.
+def camp() -> Song:
+	s = Song("camp", bpm=126, bars=32, seed=241)
+	drums = s.part(DRUMS, volume=92, reverb=30)
+	taiko = s.part(TAIKO, volume=104, pan=64, reverb=55, humanize=0.0)
+	bass = s.part(CONTRABASS, volume=100, pan=64, reverb=30)
+	sham = s.part(SHAMISEN, volume=104, pan=86, reverb=35)
+	strings = s.part(TREMOLO_STRINGS, volume=64, pan=40, reverb=60)
+	shaku = s.part(SHAKUHACHI, volume=100, pan=64, reverb=65)
+	violin = s.part(VIOLIN, volume=74, pan=76, reverb=55)
+
+	roots = [n("D2"), n("Bb1"), n("G1"), n("A1")]
+	pools = [notes("D3 A3 D4 Eb4 G4"), notes("Bb2 F3 Bb3 D4 G4"), notes("G2 D3 G3 Bb3 D4"), notes("A2 Eb3 A3 D4 Eb4")]
+	riff = notes("D4 D4 A4 D4 Bb4 A4 G4 D4 Eb4 D4 A4 D4 G4 A4 Bb4 A4")
+	for b in range(1, s.bars + 1):
+		t = s.bar(b)
+		ci = ((b - 1) // 2) % 4
+		root = roots[ci]
+		if b <= 4 or b >= 29:
+			taiko_hits(taiko, t, [(0, n("D2"), 106), (0.75, n("A2"), 66), (2, n("D2"), 92), (3, n("A2"), 70)])
+		else:
+			for beat, vel in [(0, 100), (1.5, 74), (2, 90), (3.5, 70)]:
+				bass.note(t + beat, 0.45, root + (12 if beat == 1.5 else 0), vel)
+			for k in range(8):
+				drums.note(t + k * 0.5, 0.2, HAT, 60 if k % 2 == 0 else 44)
+			for beat in (0, 2.5):
+				drums.note(t + beat, 0.2, KICK, 98)
+			for beat in (1, 3):
+				drums.note(t + beat, 0.2, SNARE if b >= 13 else SIDE_STICK, 90 if b >= 13 else 72)
+			if b % 2 == 1:
+				taiko_hits(taiko, t, [(0, n("D2"), 100)])
+		if b >= 5 and b <= 28 and (b % 2 == 0 or b >= 13):
+			for k, p in enumerate(riff):
+				sham.note(t + k * 0.25, 0.22, p + (root - n("D2") if ci in (1, 2, 3) else 0) - (12 if ci == 3 else 0) * 0, 82 if k % 4 == 0 else 62)
+		if b >= 13 and b <= 28:
+			strings.chord(t, 3.9, pools[ci][1:4], 54)
+		if b in (12, 28):
+			for k in range(8):
+				drums.note(t + 2 + k * 0.25, 0.2, [HIGH_TOM, HIGH_TOM, MID_TOM, MID_TOM, LOW_TOM, LOW_TOM, LOW_TOM, CRASH][k], 84 + k * 3)
+	call = bars_of("D5:1 Eb5:1 D5:1 A4:1", "Bb4:2 A4:1 G4:1", "A4:1 Bb4:1 D5:2", "Eb5:1 D5:1 A4:2", "G4:2 A4:2", "D5:4")
+	shaku.phrase(s.bar(13), call, vel=96, slide=True, vibrato=True)
+	violin.phrase(s.bar(21), call, vel=82)
+	shaku.phrase(s.bar(21), call, vel=70, transpose=12, slide=True)
+	return s
+
+
+# Duel: "Two Blades". A in (A Bb D E F), 132 BPM: mostly space and a pulse.
+def duel() -> Song:
+	s = Song("duel", bpm=132, bars=32, seed=251)
+	drums = s.part(DRUMS, volume=84, reverb=40)
+	taiko = s.part(TAIKO, volume=108, pan=64, reverb=65, humanize=0.0)
+	timp = s.part(TIMPANI, volume=86, pan=64, reverb=70, humanize=0.0)
+	sham = s.part(SHAMISEN, volume=104, pan=84, reverb=45)
+	strings = s.part(TREMOLO_STRINGS, volume=60, pan=44, reverb=75)
+	bass = s.part(CONTRABASS, volume=92, pan=64, reverb=40)
+	shaku = s.part(SHAKUHACHI, volume=104, pan=60, reverb=80)
+	violin = s.part(VIOLIN, volume=76, pan=74, reverb=65)
+
+	roots = [n("A1"), n("A1"), n("Bb1"), n("E2")]
+	clusters = [notes("A3 E4 F4"), notes("A3 D4 E4"), notes("Bb3 D4 F4"), notes("E3 A3 Bb3")]
+	for b in range(1, s.bars + 1):
+		t = s.bar(b)
+		ci = ((b - 1) // 2) % 4
+		# The pulse: two hits and a breath.
+		taiko_hits(taiko, t, [(0, n("A2"), 104), (0.75, n("A2"), 70)] + ([(2.5, n("E2"), 84)] if b % 2 == 0 else []))
+		if b >= 5:
+			strings.chord(t, 3.9, clusters[ci], 46 + (8 if b >= 17 else 0))
+		if b >= 9:
+			bass.note(t, 1.0, roots[ci], 92)
+			bass.note(t + 2, 0.5, roots[ci] + 12, 70)
+		if b >= 17:
+			for k in range(8):
+				drums.note(t + k * 0.5, 0.15, HAT, 56 if k % 2 == 0 else 40)
+			drums.note(t, 0.2, KICK, 100)
+			drums.note(t + 2, 0.2, SNARE, 92)
+			drums.note(t + 3.5, 0.2, KICK, 80)
+		elif b >= 9:
+			drums.note(t + 1, 0.15, SIDE_STICK, 60)
+			drums.note(t + 3, 0.15, SIDE_STICK, 60)
+		if b in (8, 16, 24):
+			for k in range(8):
+				timp.note(t + 2 + k * 0.25, 0.3, n("A2"), 56 + k * 5)
+	# The shamisen's motif: a flick, a held note, a flick back.
+	motif = [bars_of("A4:0.5 r:0.5 A4:0.5 Bb4:0.5 A4:1 E4:1"), bars_of("D5:0.5 r:0.5 D5:0.5 E5:0.5 D5:1 A4:1"),
+		bars_of("F5:0.5 E5:0.5 D5:1 Bb4:1 A4:1"), bars_of("E5:0.5 r:0.5 E5:0.5 F5:0.5 E5:2")]
+	for b in range(9, 17):
+		sham.phrase(s.bar(b), motif[(b - 9) % 4], vel=88)
+	for b in range(17, 25):
+		sham.phrase(s.bar(b), motif[(b - 17) % 4], vel=96, transpose=0)
+	cry = bars_of("E5:4", "F5:2 E5:2", "D5:3 E5:1", "A4:4", "Bb4:2 A4:2", "E5:4", "F5:2 E5:1 D5:1", "A4:4")
+	shaku.phrase(s.bar(5), cry, vel=70, slide=True, vibrato=True)
+	violin.phrase(s.bar(17), cry, vel=84)
+	shaku.phrase(s.bar(25), cry[:len("E5:4 F5:2 E5:2 D5:3 E5:1 A4:4")], vel=92, slide=True, vibrato=True, transpose=12)
+	return s
+
+
+# Battle 3: "Iron Rain". C in (C Db F G Bb), 152 BPM.
+def battle3() -> Song:
+	s = Song("battle3", bpm=152, bars=40, seed=263)
+	drums = s.part(DRUMS, volume=104, reverb=30)
+	taiko = s.part(TAIKO, volume=110, pan=64, reverb=50, humanize=0.0)
+	bass = s.part(FINGER_BASS, volume=100, pan=64, reverb=20, humanize=0.005)
+	ost = s.part(STRINGS, volume=90, pan=40, reverb=45, humanize=0.005)
+	sham = s.part(SHAMISEN, volume=96, pan=88, reverb=40, humanize=0.006)
+	lead = s.part(FLUTE, volume=108, pan=60, reverb=60)
+	violin = s.part(VIOLIN, volume=86, pan=72, reverb=60)
+	brass = s.part(BRASS, volume=96, pan=52, reverb=55)
+	choir = s.part(CHOIR, volume=70, pan=64, reverb=85)
+
+	roots = [n("C2"), n("Db2"), n("Bb1"), n("G1")]
+	triads = [notes("C3 G3 C4 F4"), notes("Db3 F3 Db4 G4"), notes("Bb2 F3 Bb3 Db4"), notes("G2 Db3 G3 Bb3")]
+	riff = notes("C4 C4 G4 C4 Db4 C4 F4 G4 Bb4 G4 F4 Db4 C4 Db4 F4 G4")
+
+	def section(b: int) -> str:
+		if b <= 4:
+			return "intro"
+		if b <= 12:
+			return "A"
+		if b <= 20:
+			return "B"
+		if b <= 28:
+			return "C"
+		if b <= 32:
+			return "break"
+		return "B2"
+
+	for b in range(1, s.bars + 1):
+		sec = section(b)
+		chord = ((b - 1) // 2) % 4
+		root = roots[chord]
+		t = s.bar(b)
+		o = root + 12
+		for k, p in enumerate([o, o + 7, o + 12, o + 7, o, o + 7, o + 12, o + 5]):
+			vel = 68 + (14 if k in (0, 4) else 0) + (8 if sec in ("C", "B2") else 0)
+			if sec == "intro":
+				vel -= 24 - 5 * b
+			ost.note(t + k * 0.5, 0.3, p, vel)
+		if sec not in ("intro", "break"):
+			for k in range(8):
+				bass.note(t + k * 0.5, 0.42, root + (12 if k in (2, 6) else 0), 94 if k in (0, 3, 5) else 72)
+		elif sec == "break":
+			bass.note(t, 3.8, root, 90)
+		if sec in ("A", "C", "B2") or (sec == "B" and b % 2 == 0):
+			for k, p in enumerate(riff):
+				sham.note(t + k * 0.25, 0.22, p, 84 if k % 4 == 0 else 64)
+		if sec in ("A", "B", "C", "B2"):
+			for k in range(8):
+				drums.note(t + k * 0.5, 0.2, OPEN_HAT if k == 7 else HAT, 72 if k % 2 == 0 else 54)
+			for beat in (0, 0.75, 2, 2.5):
+				drums.note(t + beat, 0.2, KICK, 102)
+			for beat in (1, 3):
+				drums.note(t + beat, 0.2, SNARE, 100)
+			if b in (5, 13, 21, 25, 33):
+				drums.note(t, 1, CRASH, 100)
+		elif sec == "break":
+			drums.note(t, 0.2, KICK, 100)
+			drums.note(t + 2, 0.2, KICK, 96)
+			if b == 32:
+				for k in range(16):
+					drums.note(t + k * 0.25, 0.2, SNARE, 50 + k * 4)
+		if sec in ("intro", "break"):
+			taiko_hits(taiko, t, [(0, n("C2"), 112), (0.75, n("G2"), 72), (1.5, n("C2"), 96), (2, n("G2"), 82), (3, n("C2"), 104)])
+		elif b % 2 == 1:
+			taiko_hits(taiko, t, [(0, n("C2"), 108), (2.5, n("G2"), 80)])
+		if sec in ("C", "B2") and b % 2 == 1:
+			brass.chord(t, 0.45, triads[chord], 94)
+			brass.chord(t + 1.5, 0.45, triads[chord], 86)
+			brass.chord(t + 3, 0.9, triads[chord], 92)
+		if sec in ("C", "B2") and b % 4 == 1:
+			choir.chord(t, 7.8, triads[chord][:3], 66)
+	for bar_no in (28, 40):
+		t = s.bar(bar_no) + 2
+		for k, p in enumerate([HIGH_TOM, HIGH_TOM, MID_TOM, MID_TOM, LOW_TOM, LOW_TOM, LOW_TOM, CRASH]):
+			drums.note(t + k * 0.25, 0.2, p, 90 + k * 3)
+	m1 = bars_of("G5:2 F5:1 G5:1", "Bb5:2 G5:2", "F5:1 Db5:1 C5:2", "Db5:1 F5:1 G5:2",
+		"C6:2 Bb5:1 G5:1", "F5:2 G5:2", "Db5:1 F5:1 G5:1 F5:1", "C5:4")
+	m2 = bars_of("C6:1 Bb5:1 G5:1 F5:1", "G5:2 Bb5:2", "C6:2 Db6:2", "C6:1 Bb5:1 G5:2",
+		"F5:1 G5:1 Bb5:1 C6:1", "Db6:2 C6:2", "Bb5:1 G5:1 F5:1 Db5:1", "C5:4")
+	lead.phrase(s.bar(13), m1, vel=100, vibrato=True, legato=0.9)
+	violin.phrase(s.bar(13), m1, vel=70, transpose=-12, legato=0.9)
+	violin.phrase(s.bar(21), m2, vel=92, legato=0.9)
+	lead.phrase(s.bar(21), m2, vel=86, transpose=-12, legato=0.9)
+	lead.phrase(s.bar(33), m1, vel=108, vibrato=True, transpose=12, legato=0.9)
+	violin.phrase(s.bar(33), m2, vel=84, legato=0.9)
+	return s
+
+
+# Finale: "The Last Name". D in-less miyako-bushi (D Eb G A Bb), 144 BPM: choir, brass, timpani, taiko.
+def finale() -> Song:
+	s = Song("finale", bpm=144, bars=48, seed=277)
+	drums = s.part(DRUMS, volume=100, reverb=40)
+	taiko = s.part(TAIKO, volume=116, pan=64, reverb=60, humanize=0.0)
+	timp = s.part(TIMPANI, volume=106, pan=64, reverb=65, humanize=0.0)
+	low = s.part(CELLO, volume=104, pan=44, reverb=50, humanize=0.004)
+	strings = s.part(STRINGS, volume=84, pan=36, reverb=70)
+	choir = s.part(CHOIR, volume=92, pan=64, reverb=92)
+	brass = s.part(BRASS, volume=100, pan=76, reverb=60)
+	horns = s.part(FRENCH_HORN, volume=84, pan=52, reverb=70)
+	lead = s.part(SHAKUHACHI, volume=112, pan=58, reverb=70)
+	violin = s.part(VIOLIN, volume=84, pan=84, reverb=70)
+	bells = s.part(TUBULAR_BELLS, volume=60, pan=70, reverb=100)
+
+	# Two bars to a chord: Dm, Gm, Bb, A.
+	roots = [n("D2"), n("G1"), n("Bb1"), n("A1")]
+	chords = [notes("D3 A3 D4 F4"), notes("G2 D3 G3 Bb3"), notes("Bb2 F3 Bb3 D4"), notes("A2 E3 A3 C#4")]
+
+	def section(b: int) -> str:
+		if b <= 4:
+			return "intro"
+		if b <= 12:
+			return "A"
+		if b <= 20:
+			return "B"
+		if b <= 28:
+			return "slow"
+		if b <= 36:
+			return "C"
+		return "turn"
+
+	for b in range(1, s.bars + 1):
+		sec = section(b)
+		ci = ((b - 1) // 2) % 4
+		root = roots[ci] + 12
+		t = s.bar(b)
+		for k, off in enumerate([0, 0, 12, 0, 7, 0, 12, 7]):
+			low.note(t + k * 0.5, 0.32, root + off, 86 if k in (0, 3, 6) else 68)
+		if b % 2 == 1:
+			choir.chord(t, 7.8, chords[ci], 72 if sec in ("intro", "slow") else 88)
+			if sec not in ("intro",):
+				strings.chord(t, 7.8, [p + 12 for p in chords[ci][1:]], 60 if sec == "slow" else 74)
+		if sec in ("intro", "slow"):
+			timp.note(t, 1.0, roots[ci] + 12, 100)
+			timp.note(t + 2.5, 0.5, roots[ci] + 12, 76)
+		else:
+			if b % 2 == 1:
+				timp.note(t, 1.0, roots[ci] + 12, 98)
+			taiko_hits(taiko, t, [(0, n("C2"), 114), (1.5, n("C2"), 90), (2, n("G2"), 80), (3, n("C2"), 100)]
+				if sec in ("A", "B") else [(0, n("C2"), 116), (0.5, n("G2"), 74), (1, n("C2"), 92), (1.75, n("G2"), 78),
+					(2, n("C2"), 106), (2.75, n("G2"), 82), (3, n("C2"), 98), (3.5, n("G2"), 86)])
+			drums.note(t, 0.2, KICK, 108)
+			drums.note(t + 1, 0.2, SNARE, 100)
+			drums.note(t + 2.5, 0.2, KICK, 98)
+			drums.note(t + 3, 0.2, SNARE, 100)
+			for k in range(8):
+				drums.note(t + k * 0.5, 0.2, HAT, 64 if k % 2 == 0 else 48)
+		if sec in ("C", "turn") and b % 2 == 1:
+			brass.chord(t, 0.5, chords[ci], 98)
+			brass.chord(t + 1.5, 0.5, chords[ci], 90)
+			brass.chord(t + 3, 1.2, chords[ci], 96)
+		if b in (4, 12, 20, 28, 36, 48):
+			for k in range(8):
+				timp.note(t + 2 + k * 0.25, 0.25, n("D3") if b != 48 else n("A2"), 60 + k * 6)
+	for bar_no in (1, 13, 29, 41):
+		for i, name in enumerate(["D5", "F5", "A5", "D6"]):
+			bells.note(s.bar(bar_no) + i * 1.0, 6.0, n(name), 58)
+	p1 = bars_of("A4:2 Bb4:1 A4:1", "G4:2 A4:2", "D5:3 Eb5:1", "D5:2 A4:2", "Bb4:2 A4:2", "G4:2 A4:2", "D5:1 Eb5:1 D5:2", "A4:4")
+	p2 = bars_of("D5:1 Eb5:1 G5:2", "A5:2 G5:2", "Eb5:1 D5:1 A4:2", "Bb4:4", "G5:2 A5:2", "Bb5:3 A5:1", "G5:2 Eb5:2", "D5:4")
+	lead.phrase(s.bar(5), p1, vel=88, slide=True, vibrato=True)
+	violin.phrase(s.bar(13), p2, vel=84)
+	lead.phrase(s.bar(13), p2, vel=94, slide=True, vibrato=True, transpose=-12)
+	violin.phrase(s.bar(21), p1, vel=62, transpose=12)
+	horns.phrase(s.bar(21), p1, vel=64, transpose=-12)
+	lead.phrase(s.bar(29), p2, vel=108, slide=True, vibrato=True, transpose=12)
+	horns.phrase(s.bar(29), p2, vel=90, transpose=-12)
+	brass.phrase(s.bar(37), p1, vel=96, legato=0.9)
+	lead.phrase(s.bar(37), p2, vel=104, slide=True, vibrato=True, transpose=12)
+	violin.phrase(s.bar(37), p2, vel=86, legato=0.9)
+	return s
+
+
+# Hollow: "Ledger of Names". D whole-tone-ish (D E F# G# Bb C), 66 BPM: bowed glass, bells, low strings.
+def hollow() -> Song:
+	s = Song("hollow", bpm=66, bars=32, seed=283)
+	drone = s.part(CONTRABASS, volume=82, pan=60, reverb=70)
+	bowed = s.part(BOWED_PAD, volume=64, pan=44, reverb=95)
+	air = s.part(ATMOSPHERE, volume=44, pan=64, reverb=100)
+	celesta = s.part(CELESTA, volume=70, pan=84, reverb=95)
+	crystal = s.part(CRYSTAL, volume=38, pan=24, reverb=100)
+	cello = s.part(CELLO, volume=84, pan=70, reverb=85)
+	choir = s.part(VOICE_OOH, volume=52, pan=64, reverb=100)
+	timp = s.part(TIMPANI, volume=64, pan=64, reverb=80, humanize=0.0)
+
+	drone.note(s.bar(1), 64.0, n("D1"), 54)
+	drone.note(s.bar(17), 56.0, n("Bb0") + 12, 46)
+	beds = [notes("D3 F#3 G#3 C4"), notes("E3 G#3 Bb3 D4"), notes("Bb2 D3 F#3 G#3"), notes("C3 E3 G#3 Bb3")]
+	bed(bowed, s, 1, 32, beds, 4, 50)
+	bed(air, s, 5, 32, [notes("D2 A2 C#3"), notes("Bb1 F2 G#2")], 8, 36)
+	bed(choir, s, 13, 28, [notes("D4 F#4 C5"), notes("Bb3 D4 G#4"), notes("E4 G#4 D5"), notes("C4 E4 Bb4")], 4, 40)
+	# A slow figure on the celesta that never settles on a key.
+	figure = [notes("F#5 D5 G#4 C5"), notes("G#5 E5 Bb4 D5"), notes("D5 Bb4 F#4 G#4"), notes("E5 C5 G#4 Bb4")]
+	for b in range(3, 31):
+		pool = figure[((b - 1) // 4) % 4]
+		for i, p in enumerate(pool):
+			celesta.note(s.bar(b) + i * 1.0, 3.0, p, 44 + (6 if i == 0 else 0))
+	cello.phrase(s.bar(5), "D3:6 F#3:2 G#3:8", vel=70, vibrato=True)
+	cello.phrase(s.bar(13), "Bb3:6 G#3:2 F#3:4 D3:4", vel=76, vibrato=True)
+	cello.phrase(s.bar(21), "E3:6 G#3:2 Bb3:4 D4:4", vel=80, vibrato=True)
+	cello.phrase(s.bar(27), "D4:4 C4:2 Bb3:2 G#3:8", vel=72, vibrato=True)
+	for bar_no, name in [(4, "G#6"), (10, "D7"), (16, "F#6"), (22, "C7"), (28, "G#6")]:
+		crystal.note(s.bar(bar_no) + 2, 6.0, n(name), 42)
+	for bar_no in range(9, 33):
+		if bar_no % 2 == 1:
+			timp.note(s.bar(bar_no), 1.0, n("D2"), 44 + (bar_no - 9))
+	return s
+
+
+# --------------------------------------------------------------------------
+# Night versions of the regions' themes: the same melodies, slower and softer,
+# the percussion gone, the plucked and bowed instruments swapped for gentler
+# ones. Made by changing a finished song, so a region's night sounds like its
+# own place.
+# --------------------------------------------------------------------------
+
+NIGHT_PROGRAMS = {KOTO: HARP, SHAMISEN: KOTO, BRASS: FRENCH_HORN, STRINGS: SLOW_STRINGS, VIOLIN: SLOW_STRINGS,
+	PIZZICATO: KALIMBA, FLUTE: SHAKUHACHI, CHOIR: VOICE_OOH, TREMOLO_STRINGS: SLOW_STRINGS}
+
+
+def nightfall(make, name: str, bpm_scale: float = 0.78) -> Song:
+	s = make()
+	s.name = name
+	s.bpm = s.bpm * bpm_scale
+	kept = []
+	for part in s.parts:
+		if part.program in (DRUMS, TAIKO, TIMPANI):
+			continue
+		part.program = NIGHT_PROGRAMS.get(part.program, part.program)
+		part.volume = int(part.volume * 0.78)
+		part.reverb = min(127, part.reverb + 25)
+		part.events = [(beat, length * 1.1, pitch, max(1, int(vel * 0.76))) for beat, length, pitch, vel in part.events]
+		kept.append(part)
+	s.parts = kept
+	return s
+
+
 TRACKS = {
 	"title": (title, -19.0), "calm": (calm, -21.0), "battle": (battle, -17.0), "boss": (boss, -17.0),
 	"autumn_wood": (autumn_wood, -21.0), "ashen_pass": (ashen_pass, -22.0), "old_dam": (old_dam, -20.0),
 	"frozen_road": (frozen_road, -22.0), "five_winds": (five_winds, -19.0), "night": (night, -26.5),
 	"sea": (sea, -20.0), "battle2": (battle2, -17.0), "tension": (tension, -23.0), "sorrow": (sorrow, -22.0),
+	# The open world's own.
+	"road": (road, -21.0), "village": (village, -21.0), "shrine": (shrine, -24.0), "camp": (camp, -18.0),
+	"duel": (duel, -19.0), "battle3": (battle3, -17.0), "finale": (finale, -17.0), "hollow": (hollow, -24.0),
+	# Night versions.
+	"calm_night": (lambda: nightfall(calm, "calm_night"), -27.0),
+	"autumn_wood_night": (lambda: nightfall(autumn_wood, "autumn_wood_night"), -27.0),
+	"ashen_pass_night": (lambda: nightfall(ashen_pass, "ashen_pass_night"), -28.0),
+	"old_dam_night": (lambda: nightfall(old_dam, "old_dam_night"), -27.0),
+	"frozen_road_night": (lambda: nightfall(frozen_road, "frozen_road_night"), -28.0),
+	"five_winds_night": (lambda: nightfall(five_winds, "five_winds_night", 0.82), -26.0),
+	"road_night": (lambda: nightfall(road, "road_night"), -27.0),
 }
 
 

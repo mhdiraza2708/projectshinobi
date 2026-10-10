@@ -95,14 +95,19 @@ func test_missions_name_their_music() -> void:
 	assert_eq(Music.current, &"sorrow", "a beat can name its own")
 	d._score("boss")
 	assert_eq(Music.current, &"boss", "bosses keep their theme")
+	d._score("boss", {"music": "finale"})
+	assert_eq(Music.current, &"finale", "unless the beat names one")
 	d.chapter = {"number": 8, "island": "frozen_road"}
 	d._score("say")
 	assert_eq(Music.current, &"frozen_road", "without a name, the island's theme")
 	d._score("survive")
-	assert_eq(Music.current, &"battle2", "even-numbered missions fight to the second battle theme")
+	assert_eq(Music.current, &"battle2", "the eighth mission fights to the second battle theme")
 	d.chapter = {"number": 9, "island": "old_dam"}
 	d._score("fight")
-	assert_eq(Music.current, &"battle", "and odd-numbered ones to the first")
+	assert_eq(Music.current, &"battle3", "the ninth to the third")
+	d.chapter = {"number": 10, "island": "old_dam"}
+	d._score("fight")
+	assert_eq(Music.current, &"battle", "and they come round again")
 	d.queue_free()
 	var story := Story.load_all()
 	assert_eq(story.errors, [] as Array[String])
@@ -130,7 +135,13 @@ func test_the_story_checks_music_names() -> void:
 	assert_eq(s.errors.size(), 2, "say and task beats are checked too")
 	s.errors.clear()
 	s._parse_beat("beat", {"do": "fight", "waves": [{"element": "fire", "enemies": ["genin"]}], "music": "battle2"}, {})
-	assert_true("\n".join(s.errors).contains("unknown key 'music'"), "only talking and lessons take a track")
+	assert_true("\n".join(s.errors).contains("unknown key 'music'"), "only talking, lessons and bosses take a track")
+	s.errors.clear()
+	s._parse_beat("beat", {"do": "boss", "who": "nue", "rank": "jonin", "health": 100, "music": "finale"}, {})
+	assert_false("\n".join(s.errors).contains("music"), "a boss may name its own theme")
+	s.errors.clear()
+	s._parse_beat("beat", {"do": "boss", "who": "nue", "rank": "jonin", "health": 100, "music": "polka"}, {})
+	assert_true("\n".join(s.errors).contains("unknown music 'polka'"))
 
 
 func test_every_track_is_listed_and_every_name_in_code_and_data_exists() -> void:

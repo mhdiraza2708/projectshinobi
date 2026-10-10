@@ -127,6 +127,26 @@ func test_nearest_finds_the_closest_anchor_of_a_kind() -> void:
 	assert_true(sites.nearest(at, ["camp"], "interact", 5.0).is_empty(), "wrong kind")
 
 
+func test_places_that_have_their_own_music_are_found_with_a_little_to_spare() -> void:
+	var sites := _make()
+	var want := {"village": "village", "shrine": "shrine", "ruin": "ruin"}
+	for kind: String in want:
+		var s: Dictionary = sites.plan.of_kind(kind)[0]
+		_stand_at(s)
+		assert_eq(sites.place_near(marker.global_position), kind, "the middle of a %s" % kind)
+		var rim := float(SiteBuilder.RADIUS[kind]) + float(WorldSites.PLACE_MARGIN[kind])
+		var at: Vector2 = s["at"]
+		marker.global_position = world.to_global(Vector3(at.x + rim - 2.0, float(s["y"]), at.y))
+		assert_eq(sites.place_near(marker.global_position), kind, "just inside the reach of a %s" % kind)
+		marker.global_position = world.to_global(Vector3(at.x + rim + WorldSites.PLACE_HOLD * 0.5, float(s["y"]), at.y))
+		assert_eq(sites.place_near(marker.global_position), "", "past it, not yet in it")
+		assert_eq(sites.place_near(marker.global_position, kind), kind, "but once in it, the music holds a little longer")
+		marker.global_position = world.to_global(Vector3(at.x + rim + WorldSites.PLACE_HOLD + 4.0, float(s["y"]), at.y))
+		assert_eq(sites.place_near(marker.global_position, kind), "", "and lets go beyond that")
+	_stand_at(sites.plan.of_kind("camp")[0])
+	assert_eq(sites.place_near(marker.global_position), "", "a camp has fight music, not a place's")
+
+
 func test_trees_keep_out_of_every_footprint() -> void:
 	var land := ContinentLand.new()
 	land.plan_sites()

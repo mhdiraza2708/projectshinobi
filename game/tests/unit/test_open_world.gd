@@ -119,15 +119,25 @@ func test_every_island_stands_in_one_sea() -> void:
 
 
 func test_music_follows_the_island_the_sea_and_the_night() -> void:
-	# The choice itself: night beats all, then the sea, then the island's theme.
+	# The choice itself: a place's own music, else the region's night or theme.
 	for id: String in Island.PRESETS:
 		assert_eq(OpenWorld.track_for(id, "day"), Music.island_theme(id), "%s has its theme by day" % id)
-		assert_eq(OpenWorld.track_for(id, "night"), &"night", "and the night piece after dark")
+		assert_eq(OpenWorld.track_for(id, "night"), Music.island_night(id), "and its own piece after dark")
+		assert_true(Music.island_night(id) != &"night" and Music.has_track(Music.island_night(id)), "%s has a night of its own" % id)
 	assert_eq(OpenWorld.track_for("emberwood", "dawn"), &"calm", "Emberwood keeps calm")
 	assert_eq(OpenWorld.track_for("ashen_pass", "dusk"), &"ashen_pass")
 	assert_eq(OpenWorld.track_for("", "day"), &"sea")
 	assert_eq(OpenWorld.track_for("", "night"), &"night", "night over the water too")
-	# In the world.
+	assert_eq(OpenWorld.track_for("", "day", true), &"road", "the continent's wilds have the road, not the sea")
+	assert_eq(OpenWorld.track_for("", "night", true), &"road_night")
+	assert_eq(OpenWorld.track_for("old_dam", "night", true), Music.island_night("old_dam"), "a region keeps its night")
+	for kind: String in OpenWorld.PLACE_TRACKS:
+		for when in ["day", "night"]:
+			assert_eq(OpenWorld.track_for("", when, true, kind), OpenWorld.PLACE_TRACKS[kind], "a %s by %s" % [kind, when])
+	assert_eq(OpenWorld.track_for("ashen_pass", "day", true, "camp"), &"ashen_pass", "a place without music of its own changes nothing")
+	# In the world (the wilds are the sea on the islands and the road on the continent).
+	var wilds := &"road" if OpenWorld.uses_continent() else &"sea"
+	var wilds_night := &"road_night" if OpenWorld.uses_continent() else &"night"
 	await _load()
 	assert_eq(Music.current, &"calm", "a new game starts on Emberwood in the morning")
 	for id: String in ["autumn_wood", "ashen_pass", "old_dam", "frozen_road", "five_winds", "emberwood"]:
@@ -135,13 +145,13 @@ func test_music_follows_the_island_the_sea_and_the_night() -> void:
 		assert_eq(Music.current, Music.island_theme(id), "%s plays its own music" % id)
 	var sea := world.archipelago.to_global(Vector3(220.0, Archipelago.SEA_LEVEL + 1.0, -90.0))
 	await _stand_at(sea)
-	assert_eq(Music.current, &"sea", "out on the water")
+	assert_eq(Music.current, wilds, "out in the open")
 	world.clock = 0.8 * OpenWorld.DAY_LENGTH
 	await physics_frames(2)
 	assert_eq(world.phase(), "night")
-	assert_eq(Music.current, &"night", "night falls over the sea")
+	assert_eq(Music.current, wilds_night, "night falls over the open")
 	await _stand_at(world.archipelago.on_island("old_dam", OpenWorld.TRAVEL_POINT))
-	assert_eq(Music.current, &"night", "and over the islands")
+	assert_eq(Music.current, Music.island_night("old_dam"), "and each region has its own night")
 	world.clock = 0.3 * OpenWorld.DAY_LENGTH
 	await physics_frames(2)
 	assert_eq(Music.current, &"old_dam", "morning brings the island's theme back")
@@ -159,9 +169,10 @@ func test_island_music_holds_a_little_way_past_the_shore() -> void:
 	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD * 0.5))
 	assert_eq(Music.current, &"calm", "past the name card's reach the island's music holds")
 	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD + 6.0))
-	assert_eq(Music.current, &"sea", "further out it gives way to the sea")
+	var wilds := &"road" if OpenWorld.uses_continent() else &"sea"
+	assert_eq(Music.current, wilds, "further out it gives way to the open")
 	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD * 0.5))
-	assert_eq(Music.current, &"sea", "and does not flicker back at the same spot")
+	assert_eq(Music.current, wilds, "and does not flicker back at the same spot")
 	await _stand_at(out_to.call(18.0 - 4.0))
 	assert_eq(Music.current, &"calm", "it returns once you are properly inside")
 	world.busy = true
@@ -259,7 +270,7 @@ func test_a_duel_turns_the_giver_into_the_foe() -> void:
 	await _skip_dialogue()
 	await physics_frames(2)
 	assert_true(is_instance_valid(world._duelist), "Kurogane draws")
-	assert_eq(Music.current, &"battle", "a duel is a fight too")
+	assert_eq(Music.current, &"duel", "a duel has its own music")
 	assert_eq(world._fights, 1)
 	assert_eq(world._duelist.title_override, "Kurogane")
 	assert_false(world._givers.has("kurogane"), "he isn't standing there as well")

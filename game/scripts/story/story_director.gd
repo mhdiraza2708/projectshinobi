@@ -157,15 +157,16 @@ func _next() -> void:
 
 ## Music follows the beat: a battle theme for fights (missions take turns:
 ## the first gets "battle", the second "battle2"...), the boss theme for
-## bosses, and for talking and lessons the beat's own "music", else the
-## mission's, else the island's theme. Entrances, banners and waits keep
-## what's playing.
+## bosses (or the one the beat names), and for talking and lessons the beat's
+## own "music", else the mission's, else the island's theme. Entrances,
+## banners and waits keep what's playing.
 func _score(kind: String, beat := {}) -> void:
 	match kind:
 		"fight", "survive":
 			Music.play(Music.battle_for(int(chapter.get("number", 1)) - 1))
 		"boss":
-			Music.play(&"boss")
+			var theme := str(beat.get("music", ""))
+			Music.play(StringName(theme) if theme != "" else &"boss")
 		"say", "task":
 			var named := str(beat.get("music", chapter.get("music", "")))
 			Music.play(StringName(named) if named != "" else Music.island_theme(str(chapter.get("island", ""))))

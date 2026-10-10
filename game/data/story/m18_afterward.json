@@ -40,7 +40,7 @@
 				["asahi", "And this time I've been practising. Lightning first, then something you haven't seen.", "angry"]
 			]}
 		]},
-		{"do": "boss", "who": "asahi", "rank": "jonin", "health": 340, "element": "lightning",
+		{"do": "boss", "music": "duel", "who": "asahi", "rank": "jonin", "health": 340, "element": "lightning",
 			"taunt": "Try to keep up!",
 			"specials": [{"kind": "chain", "every": 11, "below": 0.9, "count": 3, "damage": 16}, {"kind": "ring", "every": 14, "below": 0.5, "damage": 18}],
 			"phases": [

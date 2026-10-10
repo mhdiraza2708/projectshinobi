@@ -5,6 +5,7 @@
 	"objective": "Climb the Five Winds at the new moon: bring the ones who remember you",
 	"title": "The Hollow Court",
 	"location": "The summit, Five Winds",
+	"music": "hollow",
 	"time": "night",
 	"island": "five_winds",
 	"weather": "none",
@@ -32,7 +33,7 @@
 		]},
 		{"do": "ally", "who": "asahi", "rank": "chunin", "health": 240},
 		{"do": "ally", "who": "tsumugi", "rank": "chunin", "health": 240},
-		{"do": "boss", "who": "mikage", "rank": "jonin", "health": 520, "element": "water", "size": 1.05, "aura": "#7a5fb0aa", "taunt": "A name is only a sound. I have kept the sound of mine for no one.",
+		{"do": "boss", "music": "finale", "who": "mikage", "rank": "jonin", "health": 520, "element": "water", "size": 1.05, "aura": "#7a5fb0aa", "taunt": "A name is only a sound. I have kept the sound of mine for no one.",
 			"specials": [{"kind": "chain", "every": 11, "below": 0.9, "count": 4, "damage": 17}, {"kind": "quake", "every": 12, "below": 0.7, "count": 5, "damage": 18}, {"kind": "ring", "every": 13, "below": 0.5, "damage": 20}],
 			"phases": [
 				{"at": 0.75, "element": "wind", "say": "Wind, which forgets everything it carries.", "summon": [["genin", "wind"], ["genin", "wind"]]},

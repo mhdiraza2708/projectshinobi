@@ -29,7 +29,7 @@
 			["player", "Wind cuts lightning."],
 			["hisame", "Then find some wind. Or hit him hard enough to break his seals. Begin!"]
 		]},
-		{"do": "boss", "who": "asahi", "rank": "chunin", "health": 200,
+		{"do": "boss", "music": "duel", "who": "asahi", "rank": "chunin", "health": 200,
 			"taunt": "Try to keep up!",
 			"specials": [{"kind": "chain", "every": 15, "below": 0.75, "count": 2, "damage": 12}],
 			"phases": [

@@ -14,6 +14,10 @@ const BUILD_RANGE := 560.0
 const KEEP_RANGE := 860.0
 ## Close enough to find a place (and have it named on the map).
 const FOUND_RANGE := 60.0
+## How far past a place's grounds its music reaches (metres), by kind, and how
+## much further it holds once you are in it.
+const PLACE_MARGIN := {"village": 22.0, "shrine": 14.0, "ruin": 16.0}
+const PLACE_HOLD := 14.0
 const RECORD := "sites"
 const FOUND := "found"
 const DONE := "done"
@@ -127,6 +131,26 @@ func found_sites(kind := "") -> Array[Dictionary]:
 
 
 # --- Where ------------------------------------------------------------------------
+
+## What kind of place `point` is in, for the music: "village", "shrine" or
+## "ruin" within their grounds (and a little way beyond, more so while you
+## are already there, so the music doesn't flicker at the edge), else "".
+func place_near(point: Vector3, already := "") -> String:
+	var p := world.to_local(point)
+	var here := Vector2(p.x, p.z)
+	var best := ""
+	var best_d := INF
+	for s: Dictionary in plan.sites:
+		var kind := str(s["kind"])
+		if not PLACE_MARGIN.has(kind):
+			continue
+		var reach := float(SiteBuilder.RADIUS[kind]) + float(PLACE_MARGIN[kind]) + (PLACE_HOLD if kind == already else 0.0)
+		var d := here.distance_to(s["at"])
+		if d < reach and d < best_d:
+			best_d = d
+			best = kind
+	return best
+
 
 ## A site's middle in world space, on the ground.
 func position_of(id: String) -> Vector3:
