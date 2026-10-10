@@ -500,8 +500,8 @@ func _build_accessibility() -> Control:
 	list.add_child(_section("World"))
 	list.add_child(_option_row("Difficulty (fighters, from their next fight)", _choice(&"difficulty", ["normal", "hard", "nightmare"],
 		["Normal", "Hard  (+2 tiers)", "Nightmare  (+4 tiers)"])))
-	list.add_child(_option_row("Open world (applies next time you enter it)", _choice(&"world_layout", ["islands", "continent"],
-		["Sea of islands", "Continent (beta)"])))
+	list.add_child(_option_row("Open world (applies next time you enter it)", _choice(&"world_layout", ["continent", "islands"],
+		["Continent", "Sea of islands (classic)"])))
 
 	list.add_child(_section("Display"))
 	list.add_child(_option_row("Screen shake", _slider(&"screen_shake", 0.0, 1.0, 0.1, "%.0f%%", 100.0)))
