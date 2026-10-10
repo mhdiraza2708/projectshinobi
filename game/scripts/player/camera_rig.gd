@@ -4,6 +4,9 @@ extends Node3D
 ## lock-on target it swings to keep both fighters in view. Top-level so the
 ## player body can rotate freely underneath it.
 
+## The height of shinobi the customize and title framing was made for.
+const SHOWCASE_FOR := 1.65
+
 @export var follow_height := 1.55
 @export var distance := 4.3
 @export var mouse_scale := 0.0025
@@ -117,13 +120,25 @@ func begin_showcase(offset := -0.55) -> void:
 	if _saved.is_empty():
 		_saved = {"length": spring.spring_length, "height": follow_height, "pitch": pitch}
 	lock_target = null
-	spring.spring_length = 2.7
-	follow_height = 1.05
+	var k := showcase_scale()
+	spring.spring_length = 2.7 * k
+	follow_height = 1.05 * k
 	pitch = deg_to_rad(-4.0)
 	frame_offset = offset
 	if target:
 		yaw = target.global_rotation.y + PI
 	snap()
+
+
+## The target's height over the height the showcase was framed for, so a
+## shorter or taller shinobi is still framed head to foot.
+func showcase_scale() -> float:
+	var worn: Variant = target.get(&"model") if target else null
+	if worn is CharacterModel and (worn as CharacterModel).instance:
+		var height := (worn as CharacterModel).measure_height()
+		if height > 0.5:
+			return clampf(height / SHOWCASE_FOR, 0.6, 1.8)
+	return 1.0
 
 
 func end_showcase() -> void:
