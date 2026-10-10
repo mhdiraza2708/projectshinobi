@@ -71,6 +71,60 @@ static func hittables_in_sphere(world: World3D, center: Vector3, radius: float,
 	return found
 
 
+## `point` if a standing fighter fits there; otherwise the nearest spot that
+## does, searching ring by ring outward (the one nearest the middle of the
+## land first), so nobody is placed inside a rock, a wall or a prop. `point`
+## keeps the height it was given above the ground.
+##
+## `ground_at` (x, z) -> the terrain's height there, such as Island.height_at.
+## An island builds its rocks into the same body as its ground, so a ray
+## cannot tell the top of a rock from the ground: without it the search
+## trusts the ray and so can place a fighter on top of a rock.
+static func clear_spot(world: World3D, point: Vector3, ground_at := Callable(),
+		radius := 0.45, height := 1.8, mask := LAYER_WORLD | LAYER_WALLS) -> Vector3:
+	var shape := CapsuleShape3D.new()
+	shape.radius = radius
+	shape.height = height
+	var params := PhysicsShapeQueryParameters3D.new()
+	params.shape = shape
+	params.collision_mask = mask
+	var space := world.direct_space_state
+	var ground := _terrain(world, ground_at, point, point.y)
+	var lift := maxf(point.y - ground, 0.0) if ground_at.is_valid() else 0.2
+	var start := Vector3(point.x, ground + lift, point.z)
+	if _fits(space, params, start, height):
+		return point if ground_at.is_valid() else start
+	for ring in range(1, 13):
+		var best := Vector3.INF
+		var best_len := INF
+		for k in 16:
+			var a := TAU * float(k) / 16.0 + float(ring) * 0.4
+			var p := point + Vector3(cos(a), 0.0, sin(a)) * 0.75 * float(ring)
+			var g := _terrain(world, ground_at, p, ground)
+			# Not in some steep hollow or up a bank.
+			if absf(g - ground) > 0.9:
+				continue
+			p.y = g + lift
+			var flat_len := Vector2(p.x, p.z).length()
+			if flat_len < best_len and _fits(space, params, p, height):
+				best = p
+				best_len = flat_len
+		if best != Vector3.INF:
+			return best
+	return point
+
+
+static func _terrain(world: World3D, ground_at: Callable, p: Vector3, fallback: float) -> float:
+	if ground_at.is_valid():
+		return float(ground_at.call(p.x, p.z))
+	return ground_height(world, p, fallback)
+
+
+static func _fits(space: PhysicsDirectSpaceState3D, params: PhysicsShapeQueryParameters3D, at: Vector3, height: float) -> bool:
+	params.transform = Transform3D(Basis.IDENTITY, at + Vector3.UP * (height * 0.5 + 0.1))
+	return space.intersect_shape(params, 1).is_empty()
+
+
 ## Returns the ground height under `point`, or `fallback` if there is none.
 static func ground_height(world: World3D, point: Vector3, fallback: float) -> float:
 	var query := PhysicsRayQueryParameters3D.create(

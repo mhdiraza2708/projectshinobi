@@ -34,6 +34,9 @@ var player: Player
 var waves: Array = WAVES
 ## How far into the story its fighters are (see EnemyTier); Trials stay 0.
 var tier := 0
+## (x, z) -> the terrain's height, if the stage knows it (Island.height_at):
+## spawns are kept clear of rocks and props with it (see Combat.clear_spot).
+var ground_at := Callable()
 ## Where the completion time is recorded ("" = not recorded).
 var record_id := TRIAL_ID
 ## Announce each wave with its sound (story fights do their own intro).
@@ -121,7 +124,10 @@ func spawn_point(index: int, count: int) -> Vector3:
 		flat = _inside_arena(player.global_position + turned * SPAWN_DISTANCE)
 	var at := Vector3(flat.x, center.y, flat.y)
 	if is_inside_tree() and player.is_inside_tree():
-		at.y = Combat.ground_height(player.get_world_3d(), at + Vector3.UP * 10.0, center.y)
+		at.y = float(ground_at.call(at.x, at.z)) if ground_at.is_valid() \
+			else Combat.ground_height(player.get_world_3d(), at + Vector3.UP * 10.0, center.y)
+		# Not inside a rock or a prop either.
+		return Combat.clear_spot(player.get_world_3d(), at + Vector3.UP * 0.2, ground_at)
 	return at + Vector3.UP * 0.2
 
 

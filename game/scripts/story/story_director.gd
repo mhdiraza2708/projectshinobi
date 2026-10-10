@@ -330,6 +330,7 @@ func _show_task() -> void:
 func _start_fight(b: Dictionary) -> void:
 	fight = TrialDirector.new()
 	fight.tier = _tier()
+	fight.ground_at = _ground_at()
 	fight.name = "StoryFight"
 	fight.waves = b["waves"]
 	fight.record_id = ""
@@ -345,6 +346,13 @@ func _start_fight(b: Dictionary) -> void:
 	hud.set_objective(b["text"])
 	Sfx.play(&"wave_start")
 	fight.start(player)
+
+
+## The terrain's height at (x, z) on this chapter's island, for placing
+## fighters clear of its rocks (invalid when the stage has no island).
+func _ground_at() -> Callable:
+	var island: Variant = stage.get(&"island") if stage else null
+	return (island as Island).height_at if island is Island else Callable()
 
 
 ## How far into the story this chapter's fighters are (EnemyTier): its part,
@@ -451,7 +459,9 @@ func _spawn_point(index: int, count: int) -> Vector3:
 	var flat := Vector2(p.x, p.z)
 	if flat.length() > 19.0:
 		flat = flat.normalized() * 19.0
-	return Vector3(flat.x, 0.2, flat.y)
+	var at := Vector3(flat.x, 0.2, flat.y)
+	# Not inside a rock or a prop: the clearing has them near its edge.
+	return Combat.clear_spot(player.get_world_3d(), at, _ground_at()) if player.is_inside_tree() else at
 
 
 func _start_boss(b: Dictionary) -> void:
