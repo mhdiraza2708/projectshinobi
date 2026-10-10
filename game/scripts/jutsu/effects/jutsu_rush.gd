@@ -61,24 +61,25 @@ static func hand_visual(nature: int) -> Node3D:
 	var root := Node3D.new()
 	var color := Element.color(nature)
 	if pierces(nature):
-		var core := Vfx.sphere(0.07, Vfx.glow_material(color.lightened(0.6), 4.0))
+		var core := Vfx.sphere(0.1, Vfx.glow_material(color.lightened(0.4), 3.0))
 		root.add_child(core)
-		var arcs := ArcCluster.new(0.3)
+		var arcs := ArcCluster.new(0.4)
 		arcs.name = "Arcs"
-		arcs.count = 6
-		arcs.color = color.lightened(0.3)
+		arcs.count = 9
+		arcs.width = 0.075
+		arcs.color = color
 		root.add_child(arcs)
 	else:
-		var core := Vfx.sphere(0.15, Vfx.energy_material(color.lightened(0.35), 1.8, 0.45, 2.0, true))
+		var core := Vfx.sphere(0.16, Vfx.energy_material(color, 1.2, 0.3, 2.4))
 		root.add_child(core)
 		for i in 3:
-			var band := Vfx.spiral(Color(color.lightened(0.5), 0.85), 0.42, 0.2, 0.2, 1.2)
+			var band := Vfx.spiral(Color(color.lightened(0.45), 0.9), 0.46, 0.22, 0.22, 1.2)
 			band.spin = 14.0 if i % 2 == 0 else -11.0
-			band.width = 0.05
+			band.width = 0.06
 			band.rotation = Vector3(i * 1.05, i * 0.9, 0.4 * i)
 			band.position = band.basis * Vector3(0.0, -0.21, 0.0)
 			root.add_child(band)
-	root.add_child(Vfx.light(color, 3.0, 2.5))
+	root.add_child(Vfx.light(color, 3.0, 1.6))
 	return root
 
 
@@ -220,12 +221,20 @@ func _burst(at: Vector3) -> void:
 			_notify(victim)
 			if victim is EnemyShinobi:
 				(victim as EnemyShinobi).stagger(caster, BURST_PUSH)
+	# Thrown forward, away from the caster (and the camera behind them): a
+	# ring and a twist of wind out along the rush, a ring on the ground.
 	var color := Element.color(element)
-	Vfx.impact(_world(), at, element, 1.8)
-	Vfx.shockwave(_world(), at, color.lightened(0.3), BURST_RADIUS * 1.4, 0.4, _dir)
+	Vfx.impact(_world(), at, element, 1.3)
+	Vfx.shockwave(_world(), at + _dir * 0.6, color.lightened(0.3), 1.6, 0.3, _dir)
+	var twist := Vfx.spiral(Color(color.lightened(0.4), 0.8), 3.2, 0.3, 1.4, 1.4, 16.0, 3, 0.16, false, 0.4)
+	_world().add_child(twist)
+	twist.global_position = at
+	twist.global_basis = Basis.looking_at(_dir, Vector3.UP) * Basis(Vector3.RIGHT, -PI * 0.5)
 	var ground := at
 	ground.y = Combat.ground_height(get_world_3d(), at, caster.global_position.y)
-	Vfx.area_blast(_world(), ground + Vector3.UP * 0.5, element, BURST_RADIUS)
+	Vfx.shockwave(_world(), ground + Vector3.UP * 0.05, color, BURST_RADIUS, 0.4)
+	Vfx.dust(_world(), ground + _dir, 1.2)
+	Vfx.sparks(_world(), at, color.lightened(0.5), 16, 10.0, _dir, 50.0, -2.0)
 	Sfx.play_at(&"explosion", at, -3.0)
 	_jolt(0.1 if landed else 0.0, 0.5)
 

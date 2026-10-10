@@ -1176,6 +1176,8 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			# A rush jutsu from the gameplay camera, locked on to a dummy:
 			# --demo=rush:cyclone_core (--frames=<physics frames after the cast>).
 			hud.visible = false
+			for old in find_children("*", "TrainingDummy", true, false):
+				old.free()
 			var forward := -player.global_basis.z
 			forward.y = 0.0
 			var dummy: TrainingDummy = preload("res://scenes/training_dummy.tscn").instantiate()
