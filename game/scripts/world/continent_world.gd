@@ -21,7 +21,6 @@ func _init() -> void:
 
 func _ready() -> void:
 	continent = Continent.new()
-	continent.target = player
 	add_child(continent)
 
 
@@ -36,7 +35,7 @@ func offset(id: String) -> Vector3:
 func layout() -> Dictionary:
 	var out := {}
 	for id: String in LAYOUT:
-		out[id] = ContinentLand.region_position(id)
+		out[id] = continent.land.region_center(id) if continent else ContinentLand.region_position(id)
 	return out
 
 
@@ -58,14 +57,14 @@ func build(near := Vector3.ZERO) -> void:
 	built.emit()
 
 
-func build_now() -> void:
+func build_now(near := Vector3.ZERO) -> void:
 	if ready_islands >= LAYOUT.size():
 		return
 	for id: String in LAYOUT:
 		_build_region(id)
 	ready_islands = LAYOUT.size()
 	# The ground arrives by itself: ground_ready() waits for it.
-	_start_ground(Vector3.ZERO)
+	_start_ground(near)
 	built.emit()
 
 
@@ -74,8 +73,20 @@ func ground_ready() -> void:
 		await get_tree().process_frame
 
 
+## Waits until the streamer has built everything it wants round you (more
+## than ground_ready(): the far meshes too). For screenshots and tests.
+func settle(limit_seconds := 120.0) -> void:
+	await ground_ready()
+	var end := Time.get_ticks_msec() + int(limit_seconds * 1000.0)
+	while is_inside_tree() and not continent.streamer.is_complete() and Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+
+
+## The ground comes up where `near` is, and only then follows the player (who
+## stands somewhere else until the world places them).
 func _start_ground(near: Vector3) -> void:
 	await continent.start(to_global(near))
+	continent.target = player
 	_ground_ok = true
 
 

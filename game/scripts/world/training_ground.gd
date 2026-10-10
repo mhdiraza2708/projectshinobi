@@ -1340,10 +1340,19 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				if parts.size() > 2:
 					var xz := parts[2].split(",")
 					at = Vector2(float(xz[0]), float(xz[1]))
-				Game.set_record("world", "position", Archipelago.offset_of(parts[1]) + Vector3(at.x, 0.0, at.y))
+				Game.set_record("world", "position_continent" if OpenWorld.uses_continent() else "position",
+					OpenWorld.region_offset(parts[1]) + Vector3(at.x, 0.0, at.y))
 			await start_world()
+			if world.archipelago is ContinentWorld:
+				await (world.archipelago as ContinentWorld).settle()
 			if _user_args().has("look"):
-				var to := world.archipelago.to_global(Archipelago.offset_of(_user_args()["look"])) - player.global_position
+				# --look=<island> or --look=<island>:x,z (a point on it).
+				var spec := str(_user_args()["look"]).split(":")
+				var aim := OpenWorld.region_offset(spec[0])
+				if spec.size() > 1:
+					var xz := spec[1].split(",")
+					aim += Vector3(float(xz[0]), 0.0, float(xz[1]))
+				var to := world.archipelago.to_global(aim) - player.global_position
 				player.rotation.y = atan2(-to.x, -to.z)
 				player.camera_rig.yaw = player.rotation.y
 				player.camera_rig.snap()

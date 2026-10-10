@@ -110,8 +110,9 @@ func build(near := Vector3.ZERO) -> void:
 	built.emit()
 
 
-## Builds them all at once (tests, screenshots).
-func build_now() -> void:
+## Builds them all at once (tests, screenshots). `_near` is where the ground
+## should be ready (a ContinentWorld's; the islands have their own).
+func build_now(_near := Vector3.ZERO) -> void:
 	if ready_islands >= LAYOUT.size():
 		return
 	for id: String in LAYOUT:

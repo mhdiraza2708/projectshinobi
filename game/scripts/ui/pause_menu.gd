@@ -497,6 +497,10 @@ func _build_accessibility() -> Control:
 	list.add_child(_option_row("Stick deadzone", _slider(&"stick_deadzone", 0.05, 0.5, 0.05, "%.2f")))
 	list.add_child(_option_row("Controller vibration", _toggle(&"vibration")))
 
+	list.add_child(_section("World"))
+	list.add_child(_option_row("Open world (applies next time you enter it)", _choice(&"world_layout", ["islands", "continent"],
+		["Sea of islands", "Continent (beta)"])))
+
 	list.add_child(_section("Display"))
 	list.add_child(_option_row("Screen shake", _slider(&"screen_shake", 0.0, 1.0, 0.1, "%.0f%%", 100.0)))
 	list.add_child(_option_row("UI scale", _slider(&"ui_scale", 0.75, 1.5, 0.05, "%.2f×")))

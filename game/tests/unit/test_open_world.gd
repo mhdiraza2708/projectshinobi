@@ -66,6 +66,13 @@ func _stand_at(at: Vector3) -> void:
 	await physics_frames(3)
 
 
+func test_a_new_game_starts_on_the_ground_at_emberwood() -> void:
+	await _load()
+	var pad := world.archipelago.to_global(world.archipelago.offset("emberwood"))
+	assert_near(player.global_position.y, pad.y, 1.0, "standing on the home clearing, not below it or in the sea")
+	assert_eq(world.archipelago.island_near(player.global_position), "emberwood")
+
+
 func test_the_quest_data_is_valid_and_its_places_are_dry_land() -> void:
 	assert_eq(Quests.errors, [] as Array[String])
 	assert_true(Quests.all().size() >= 8, "a handful of side quests")
@@ -135,9 +142,11 @@ func test_island_music_holds_a_little_way_past_the_shore() -> void:
 	await _load()
 	# Distances from the coast: the name card shows within 18 m; the music keeps
 	# going until SHORE_HOLD further out, and only returns inside the 18.
-	var coast := float(Island.PRESETS["emberwood"]["coast"])
+	# (On the continent a region's edge is its radius, and the home pad's own height is the ground.)
+	var coast := ContinentLand.REGION_RADIUS if OpenWorld.uses_continent() else float(Island.PRESETS["emberwood"]["coast"])
+	var home := world.archipelago.offset("emberwood")
 	var out_to := func(metres: float) -> Vector3:
-		return world.archipelago.to_global(Vector3(coast + metres, Archipelago.SEA_LEVEL + 1.0, 0.0))
+		return world.archipelago.to_global(home + Vector3(coast + metres, 1.0, 0.0))
 	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD * 0.5))
 	assert_eq(Music.current, &"calm", "past the name card's reach the island's music holds")
 	await _stand_at(out_to.call(18.0 + OpenWorld.SHORE_HOLD + 6.0))
@@ -308,12 +317,16 @@ func test_the_map_charts_the_islands_and_travel_needs_a_visit() -> void:
 	await _load()
 	var tex := WorldMap.chart(world.archipelago)
 	var img := tex.get_image()
-	var b := WorldMap.bounds()
+	var continent := OpenWorld.uses_continent()
+	var b := WorldMap.bounds(continent)
+	var per_pixel := WorldMap.CONTINENT_METRES_PER_PIXEL if continent else WorldMap.METRES_PER_PIXEL
+	var layout := world.archipelago.layout()
 	for id: String in Archipelago.LAYOUT:
-		var c: Vector2 = (Archipelago.LAYOUT[id] - b.position) / WorldMap.METRES_PER_PIXEL
+		var c: Vector2 = (layout[id] - b.position) / per_pixel
 		assert_true(img.get_pixelv(Vector2i(c)).a > 0.5, "%s is drawn on the chart" % id)
-	assert_true(img.get_pixelv(Vector2i(((Vector2(220, -90)) - b.position) / WorldMap.METRES_PER_PIXEL)).a < 0.1,
-		"open sea is left as paper")
+	# Open sea is left as paper: the islands' gap, or the continent's far corner.
+	var sea := Vector2(-1840, 1840) if continent else Vector2(220, -90)
+	assert_true(img.get_pixelv(Vector2i((sea - b.position) / per_pixel)).a < 0.1, "open sea is left as paper")
 	assert_true(world.discovered("emberwood"))
 	assert_false(world.discovered("autumn_wood"))
 	assert_false(await world.fast_travel("autumn_wood"), "not before you've been there")
@@ -334,7 +347,23 @@ func test_the_map_charts_the_islands_and_travel_needs_a_visit() -> void:
 func test_continuing_at_sea_announces_no_island() -> void:
 	# Until the world puts you back where you were you stand at the origin,
 	# on Emberwood: nothing may be announced (or found) from there.
-	Game.set_record("world", "position", Archipelago.offset_of("autumn_wood") + Vector3(-130, 0, 50))
+	if OpenWorld.uses_continent():
+		# Dry land as far from every region as there is.
+		var land := ContinentLand.new()
+		var best := Vector2.ZERO
+		var far := 0.0
+		for z in range(-1600, 1700, 100):
+			for x in range(-1600, 1700, 100):
+				if land.height_at(x, z) < 6.0:
+					continue
+				var d := float(land.nearest_region(x, z)["distance"])
+				if d > far:
+					far = d
+					best = Vector2(x, z)
+		assert_true(far > ContinentLand.REGION_RADIUS + 60.0, "there are wilds (%.0f m from any region)" % far)
+		Game.set_record("world", "position_continent", Vector3(best.x, land.height_at(best.x, best.y), best.y))
+	else:
+		Game.set_record("world", "position", Archipelago.offset_of("autumn_wood") + Vector3(-130, 0, 50))
 	await _load()
 	await physics_frames(3)
 	assert_eq(world.archipelago.island_near(player.global_position), "", "you're back out at sea")

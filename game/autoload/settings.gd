@@ -26,6 +26,9 @@ const DEFAULTS := {
 	&"camera_style": "shoulder",
 	# Which shoulder the over-the-shoulder camera looks past: "right" or "left".
 	&"camera_side": "right",
+	# Where the open world is: "islands" (a sea of six islands) or "continent"
+	# (one streamed landmass, still being built). Read when the world is entered.
+	&"world_layout": "islands",
 	&"stick_deadzone": 0.2,
 	&"vibration": true,
 	&"screen_shake": 1.0,

@@ -48,6 +48,9 @@ var player: Player
 var hud: Hud
 var story: Story
 var archipelago: Archipelago
+## "islands" (the sea of islands) or "continent" (ContinentWorld); chosen in
+## _ready from the setting unless the owner has set it first.
+var layout := ""
 var tracker: QuestTracker
 var dialogue: DialogueBox
 ## A chapter or quest fight in progress (free roam pauses its quests).
@@ -119,9 +122,34 @@ func _process(delta: float) -> void:
 		get_parent().transition_time(now, DAWNING)
 
 
+## Whether the world is the continent: the "World" setting, or --world=continent
+## (or --world=islands) on the command line.
+static func uses_continent() -> bool:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--world="):
+			return arg.trim_prefix("--world=") == "continent"
+	return str(Settings.get_value(&"world_layout")) == "continent"
+
+
+static var _land: ContinentLand
+
+
+## Where a region stands in the chosen layout's space, before the world is
+## built (demos set a saved position with it).
+static func region_offset(id: String) -> Vector3:
+	if not uses_continent():
+		return Archipelago.offset_of(id)
+	if _land == null:
+		_land = ContinentLand.new()
+	var c := _land.region_center(id)
+	return Vector3(c.x, _land.pad_height(id), c.y)
+
+
 func _ready() -> void:
 	name = "OpenWorld"
-	archipelago = Archipelago.new()
+	if layout == "":
+		layout = "continent" if uses_continent() else "islands"
+	archipelago = ContinentWorld.new() if layout == "continent" else Archipelago.new()
 	archipelago.player = player
 	get_parent().add_child.call_deferred(archipelago)
 	tracker = QuestTracker.new()
@@ -137,12 +165,12 @@ func _ready() -> void:
 func start(instant := false) -> void:
 	if not archipelago.is_inside_tree():
 		await get_tree().process_frame
-	var saved: Variant = Game.record("world", "position", null)
-	var at: Vector3 = saved if saved is Vector3 else Archipelago.offset_of("emberwood") + Vector3(START.x, 0.0, START.y)
+	var at := saved_position()
 	if instant:
-		archipelago.build_now()
+		archipelago.build_now(at)
 	else:
 		await archipelago.build(at)
+	await archipelago.ground_ready()
 	if not is_inside_tree():
 		return
 	var ground := archipelago.to_global(at)
@@ -153,10 +181,23 @@ func start(instant := false) -> void:
 	refresh()
 
 
+## Where the slot last left you in this layout's space (the home clearing in
+## a new game). Each layout keeps its own: a place on the islands means
+## nothing on the continent.
+func saved_position() -> Vector3:
+	var saved: Variant = Game.record("world", position_key(), null)
+	if saved is Vector3:
+		return saved
+	return archipelago.offset("emberwood") + Vector3(START.x, 0.0, START.y)
+
+
+func position_key() -> String:
+	return "position_continent" if layout == "continent" else "position"
+
+
 ## Back where you last stood safely (fell off the world).
 func respawn() -> void:
-	var saved: Variant = Game.record("world", "position", null)
-	var at: Vector3 = saved if saved is Vector3 else Archipelago.offset_of("emberwood") + Vector3(START.x, 0.0, START.y)
+	var at := saved_position()
 	player.global_position = archipelago.to_global(at) + Vector3.UP * 0.5
 	player.velocity = Vector3.ZERO
 
@@ -410,7 +451,7 @@ func _physics_process(delta: float) -> void:
 ## Your place in the world, kept with the slot.
 func save_position() -> void:
 	if player and archipelago.is_inside_tree():
-		Game.set_record("world", "position", archipelago.to_local(player.global_position))
+		Game.set_record("world", position_key(), archipelago.to_local(player.global_position))
 	Game.set_record("world", "clock", clock)
 
 

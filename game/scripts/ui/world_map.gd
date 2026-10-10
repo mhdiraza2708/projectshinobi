@@ -1,8 +1,8 @@
 class_name WorldMap
 extends Control
-## The archipelago as an ink-wash chart (the pause menu's Map tab): every
-## island drawn from its real ground, named once you've been there (a "?"
-## until then), with you, the story's pillar of light, people who have
+## The world as an ink-wash chart (the pause menu's Map tab): the islands (or
+## the continent) drawn from their real ground, named once you've been there
+## (a "?" until then), with you, the story's pillar of light, people who have
 ## something for you and the tracked objective marked on it.
 
 ## Metres per pixel of the chart's image.
@@ -11,12 +11,17 @@ const METRES_PER_PIXEL := 4.0
 const MARGIN := 110.0
 ## More below: names are written under the islands, Emberwood's included.
 const LABEL_ROOM := 110.0
+## The continent's chart: its land, from edge to edge, at its own scale.
+const CONTINENT_BOUNDS := Rect2(-1860.0, -2020.0, 3740.0, 3880.0)
+const CONTINENT_METRES_PER_PIXEL := 10.0
 
 var world: OpenWorld
 
 static var _image_cache: Dictionary = {}
 var _texture: Texture2D
 var _bounds := Rect2()
+var _layout: Dictionary = {}
+var _continent := false
 
 
 func _init() -> void:
@@ -26,8 +31,10 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-## The chart's extent in archipelago metres (x, z).
-static func bounds() -> Rect2:
+## The chart's extent in the world's metres (x, z).
+static func bounds(continent := false) -> Rect2:
+	if continent:
+		return CONTINENT_BOUNDS
 	var r := Rect2()
 	var first := true
 	for id: String in Archipelago.LAYOUT:
@@ -42,7 +49,9 @@ static func bounds() -> Rect2:
 
 func bind(w: OpenWorld) -> void:
 	world = w
-	_bounds = bounds()
+	_continent = world.archipelago is ContinentWorld
+	_layout = world.archipelago.layout()
+	_bounds = bounds(_continent)
 	_texture = chart(world.archipelago)
 	queue_redraw()
 
@@ -53,6 +62,10 @@ static func chart(arch: Archipelago) -> Texture2D:
 	var key := arch.get_instance_id()
 	if _image_cache.has(key):
 		return _image_cache[key]
+	if arch is ContinentWorld:
+		var tex := _chart_continent(arch as ContinentWorld)
+		_image_cache[key] = tex
+		return tex
 	var b := bounds()
 	var w := int(b.size.x / METRES_PER_PIXEL)
 	var h := int(b.size.y / METRES_PER_PIXEL)
@@ -89,6 +102,54 @@ static func chart(arch: Archipelago) -> Texture2D:
 	return tex
 
 
+## The continent from its terrain function: land darkening with height, an
+## ink line along the shore, rivers in blue ink and roads in brown.
+static func _chart_continent(world: ContinentWorld) -> Texture2D:
+	var land := world.continent.land
+	var b := CONTINENT_BOUNDS
+	var step := CONTINENT_METRES_PER_PIXEL
+	var w := int(b.size.x / step)
+	var h := int(b.size.y / step)
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var low := Color("c9b98c")
+	var high := Color("5f523f")
+	var snow := Color("e9ecec")
+	var coast := Color(UiKit.INK, 0.85)
+	var sea := ContinentLand.SEA_LEVEL
+	for py in h:
+		for px in w:
+			var above := land.height_at(b.position.x + (px + 0.5) * step, b.position.y + (py + 0.5) * step) - sea
+			if above < 0.2:
+				continue
+			var t := clampf(above / 260.0, 0.0, 1.0)
+			var col := low.lerp(high, sqrt(t))
+			if above > 230.0:
+				col = col.lerp(snow, clampf((above - 230.0) / 60.0, 0.0, 1.0))
+			if above < 2.5:
+				col = col.lerp(coast, 0.75)
+			img.set_pixel(px, py, col)
+	_trace(img, land.rivers, Color("4f7f95", 0.9), b, step)
+	_trace(img, land.roads, Color("7a4f33", 0.9), b, step)
+	return ImageTexture.create_from_image(img)
+
+
+## Draws every path of `paths` onto the chart image.
+static func _trace(img: Image, paths: ContinentPaths, color: Color, b: Rect2, step: float) -> void:
+	for path: Dictionary in paths.paths:
+		var pts: PackedVector2Array = path["points"]
+		for i in range(pts.size() - 1):
+			var a := pts[i]
+			var c := pts[i + 1]
+			var n := maxi(int(a.distance_to(c) / (step * 0.5)), 1)
+			for k in n + 1:
+				var q := a.lerp(c, float(k) / n)
+				var px := int((q.x - b.position.x) / step)
+				var py := int((q.y - b.position.y) / step)
+				if px >= 0 and py >= 0 and px < img.get_width() and py < img.get_height():
+					img.set_pixel(px, py, color)
+
+
 ## A point in the archipelago (metres, x and z) on the chart.
 func to_chart(p: Vector2) -> Vector2:
 	var scale := minf(size.x / _bounds.size.x, size.y / _bounds.size.y)
@@ -118,8 +179,10 @@ func _draw() -> void:
 	draw_rect(Rect2(top_left, bottom_right - top_left), Color(UiKit.INK, 0.6), false, 2.0)
 	var bold := UiKit.font(&"bold")
 	var brush := UiKit.font(&"brush")
-	for id: String in Archipelago.LAYOUT:
-		var at := to_chart(Archipelago.LAYOUT[id]) + Vector2(0, 46)
+	for id: String in _layout:
+		var at := to_chart(_layout[id]) + Vector2(0, 16 if _continent else 46)
+		if _continent:
+			draw_circle(to_chart(_layout[id]), 4.0, Color(UiKit.INK, 0.8))
 		if world.discovered(id):
 			var label := Island.display_name(id)
 			var kanji: String = OpenWorld.ISLAND_KANJI.get(id, "")
@@ -160,7 +223,7 @@ func _draw() -> void:
 
 
 func _island_point(id: String, local: Vector2) -> Vector2:
-	return to_chart(Archipelago.LAYOUT.get(id, Vector2.ZERO) + local)
+	return to_chart(_layout.get(id, Vector2.ZERO) + local)
 
 
 static func _flat(v: Vector3) -> Vector2:
