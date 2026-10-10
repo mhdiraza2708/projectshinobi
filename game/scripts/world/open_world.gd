@@ -564,6 +564,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 		e.title_override = str(info.get("name", "Duelist"))
 		e.kanji_override = str(info.get("kanji", ""))
 		e.health_override = float(foe.get("health", 0.0))
+		e.tier = _story_tier()
 		e.style_override = info.get("style", {})
 		e.model_path = CharacterModel.resolve_roster(str(info.get("model", "")))
 		e.target = player
@@ -581,6 +582,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 			_end_fight(true))
 		return
 	_fight = TrialDirector.new()
+	_fight.tier = _story_tier()
 	_fight.name = "QuestFight"
 	_fight.record_id = ""
 	_fight.announce = true
@@ -603,6 +605,17 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	_fight.finished.connect(func(won: bool, _s: float, _r: bool) -> void: _end_fight(won))
 	Music.play(battle)
 	_fight.start(player)
+
+
+## How hard the world's fighters are: the furthest story part you have
+## cleared a chapter of (EnemyTier), so side fights keep pace with the saga.
+func _story_tier() -> int:
+	var part := 1
+	if story:
+		for c: Dictionary in story.chapters:
+			if Game.chapter_done(c["id"]):
+				part = maxi(part, int(c["part"]))
+	return EnemyTier.of_part(part)
 
 
 func _end_fight(won: bool) -> void:

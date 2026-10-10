@@ -105,6 +105,26 @@ The Nue is a spirit from Japanese folklore (public domain). All story content is
   40 m across, centred on `[0, 0]`, and an invisible wall about 38 m out.
   Keep characters within 15 m of the centre.
 
+## Difficulty: the world grows harder
+
+Fighters keep pace with the player, who grows through the skill trees all
+the way. A fighter's **tier** is its chapter's `part` minus one
+(`scripts/enemies/enemy_tier.gd`), so nothing needs adding to a mission:
+part 1's enemies are exactly their rank's table, and each part after makes
+every fighter
+
+- tougher: +14% health, +8% poise and +6% harder to interrupt per part;
+- stronger and faster: +9% damage and +3% run speed per part;
+- sharper: 5% quicker to think, seal, throw and run in, 6% quicker between
+  jutsu, a little more dodging and guarding, and 15% more reach for strong
+  jutsu per part.
+
+By part 6 that is about 70% more health and 45% more damage than part 1. A
+boss's written `health` is multiplied the same way. The tell before a blow
+shrinks by only 3% a part, so it stays readable. Practice clones (the
+`drill` of a task) and Trials mode are not scaled. Open-world quest fights
+use the furthest part you have cleared a chapter of.
+
 ## Islands
 
 Each island is built when the chapter starts, from a preset in

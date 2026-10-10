@@ -329,6 +329,7 @@ func _show_task() -> void:
 
 func _start_fight(b: Dictionary) -> void:
 	fight = TrialDirector.new()
+	fight.tier = _tier()
 	fight.name = "StoryFight"
 	fight.waves = b["waves"]
 	fight.record_id = ""
@@ -344,6 +345,12 @@ func _start_fight(b: Dictionary) -> void:
 	hud.set_objective(b["text"])
 	Sfx.play(&"wave_start")
 	fight.start(player)
+
+
+## How far into the story this chapter's fighters are (EnemyTier): its part,
+## so the world grows harder as the player's skill trees grow.
+func _tier() -> int:
+	return EnemyTier.of_part(int(chapter.get("part", 1)))
 
 
 ## A practice clone for a task; replaced if it falls before the task is done.
@@ -421,6 +428,7 @@ func _process(delta: float) -> void:
 		var e := EnemyShinobi.new()
 		e.rank = pair[0]
 		e.element = pair[1]
+		e.tier = _tier()
 		e.target = player
 		e.position = _spawn_point(_survive_spawned % 3, 3)
 		_survive_spawned += 1
@@ -458,6 +466,7 @@ func _start_boss(b: Dictionary) -> void:
 		npcs.erase(b["who"])
 	boss = EnemyShinobi.new()
 	boss.name = "Boss_" + b["who"]
+	boss.tier = _tier()
 	boss.rank = b["rank"]
 	boss.element = b["element"]
 	boss.title_override = info["name"]
@@ -491,6 +500,7 @@ func _on_boss_phase(phase: Dictionary, who: String) -> void:
 		var e := EnemyShinobi.new()
 		e.rank = summons[i][0]
 		e.element = summons[i][1]
+		e.tier = _tier()
 		e.target = player
 		var angle := TAU * float(i + 1) / float(summons.size() + 1)
 		e.position = boss.global_position + Vector3(cos(angle), 0, sin(angle)) * 3.0 + Vector3.UP * 0.2

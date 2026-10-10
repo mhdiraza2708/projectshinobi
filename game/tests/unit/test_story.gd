@@ -220,7 +220,8 @@ func test_boss_changes_nature_summons_and_speaks() -> void:
 	var boss: EnemyShinobi = scene.story_director.boss
 	assert_true(boss != null and boss.is_boss())
 	assert_true(scene.hud.boss_shown(), "boss bar")
-	assert_near(boss.stats.max_health, 340.0)
+	# Written health, grown by the chapter's part (this one is part 2).
+	assert_near(boss.stats.max_health, 340.0 * EnemyTier.health_mult(1), 0.01)
 	assert_eq(boss.element, Element.FIRE)
 	await physics_frames(ceili(EnemyShinobi.SPAWN_TIME * 60.0) + 5)
 	boss.take_hit(boss.stats.max_health * 0.25, Element.NONE, player)

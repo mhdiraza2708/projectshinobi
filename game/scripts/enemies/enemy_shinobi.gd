@@ -136,6 +136,9 @@ var lifetime := 0.0
 var damage_scale := 1.0
 ## Body scale for oversized bosses.
 var size := 1.0
+## How far into the story this fighter is (see EnemyTier): 0 is a rank's
+## plain table. Set before it is added to the scene.
+var tier := 0
 ## A glowing aura in this colour (alpha 0 = none), for possessed bosses.
 var aura_color := Color(0, 0, 0, 0)
 var state := State.SPAWNING
@@ -192,6 +195,10 @@ var _life_left := 0.0
 
 func _ready() -> void:
 	_r = RANKS.get(rank, RANKS[&"genin"]).duplicate()
+	# Practice clones stay as gentle as ever; everyone else keeps pace with
+	# the story.
+	var story_tier := 0 if drill else tier
+	EnemyTier.apply(_r, story_tier)
 	if drill:
 		_r["seal_time"] = 0.6
 		_r["power"] = 0.25
@@ -223,7 +230,7 @@ func _ready() -> void:
 
 	stats = Stats.new()
 	stats.name = "Stats"
-	stats.max_health = health_override if health_override > 0.0 else float(_r["health"])
+	stats.max_health = health_override * EnemyTier.health_mult(story_tier) if health_override > 0.0 else float(_r["health"])
 	stats.chakra_regen = 8.0
 	stats.affinity = element
 	add_child(stats)

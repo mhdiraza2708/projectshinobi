@@ -32,6 +32,8 @@ const ARENA_RADIUS := 19.0
 var player: Player
 ## The waves to run (tests and story fights use their own lists).
 var waves: Array = WAVES
+## How far into the story its fighters are (see EnemyTier); Trials stay 0.
+var tier := 0
 ## Where the completion time is recorded ("" = not recorded).
 var record_id := TRIAL_ID
 ## Announce each wave with its sound (story fights do their own intro).
@@ -92,6 +94,7 @@ func _spawn(rank: StringName, element: int, index: int, count: int) -> EnemyShin
 	var e := EnemyShinobi.new()
 	e.rank = rank
 	e.element = element
+	e.tier = tier
 	e.target = player
 	e.position = spawn_point(index, count)
 	e.rotation.y = atan2(-(player.global_position.x - e.position.x), -(player.global_position.z - e.position.z))
