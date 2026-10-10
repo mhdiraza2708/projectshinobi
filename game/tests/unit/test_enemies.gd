@@ -49,7 +49,8 @@ func test_enemy_is_a_styled_lockable_fighter() -> void:
 	assert_eq(e.stats.affinity, Element.WIND)
 	assert_near(e.stats.max_health, EnemyShinobi.RANKS[&"genin"]["health"])
 	assert_true(e.display_name().contains("Wind Genin"))
-	assert_true(e.model.gear.attachments().size() > 0, "clone gear fitted")
+	assert_true(e.model.loaded_path in EnemyShinobi.rival_models(Element.WIND), "in the wind rival's own design")
+	assert_true(e.model.gear.attachments().is_empty(), "with no gear over it")
 	assert_false(e.jutsu_list.is_empty(), "has jutsu")
 	for j in e.jutsu_list:
 		assert_eq(j.element, Element.WIND)
@@ -74,7 +75,7 @@ func test_fire_genin_wear_the_masked_raider_and_jonin_the_rogue_elite() -> void:
 	assert_eq(jonin.model.loaded_path, EnemyShinobi.RIVAL_DIR.path_join("jonin_rogue_elite.glb"),
 		"a jonin of any nature wears the rogue elite")
 	assert_true(jonin.model.gear.has_sword(), "with a katana at the hip")
-	for nature in [Element.LIGHTNING, Element.EARTH, Element.WATER]:
+	for nature in [Element.LIGHTNING, Element.EARTH, Element.WATER, Element.WIND]:
 		assert_false(EnemyShinobi.rival_models(nature).is_empty(), "%s has its rival" % Element.NAMES[nature])
 
 
