@@ -29,6 +29,9 @@ const DEFAULTS := {
 	# Where the open world is: "islands" (a sea of six islands) or "continent"
 	# (one streamed landmass, still being built). Read when the world is entered.
 	&"world_layout": "islands",
+	# How hard the fighters are on top of the story's own climb: "normal",
+	# "hard" (+2 tiers) or "nightmare" (+4). See EnemyTier.
+	&"difficulty": "normal",
 	&"stick_deadzone": 0.2,
 	&"vibration": true,
 	&"screen_shake": 1.0,

@@ -498,6 +498,8 @@ func _build_accessibility() -> Control:
 	list.add_child(_option_row("Controller vibration", _toggle(&"vibration")))
 
 	list.add_child(_section("World"))
+	list.add_child(_option_row("Difficulty (fighters, from their next fight)", _choice(&"difficulty", ["normal", "hard", "nightmare"],
+		["Normal", "Hard  (+2 tiers)", "Nightmare  (+4 tiers)"])))
 	list.add_child(_option_row("Open world (applies next time you enter it)", _choice(&"world_layout", ["islands", "continent"],
 		["Sea of islands", "Continent (beta)"])))
 
@@ -735,6 +737,7 @@ func _refresh_quests() -> void:
 	var c := Quests.main_chapter(world.story)
 	if c.is_empty():
 		_quest_list.add_child(_quest_row("完", "The story is told", "Every chapter is cleared.", Quests.MAIN, tracked))
+		_quest_list.add_child(_new_game_plus_row())
 	else:
 		var part := world.story.part(c["part"])
 		_quest_list.add_child(_quest_row(str(part.get("kanji", "章")),
@@ -760,10 +763,52 @@ func _refresh_quests() -> void:
 					line = "+%d XP" % int(q.get("xp", 0))
 			_quest_list.add_child(_quest_row(str(q["kanji"]), str(q["name"]), line,
 				q["id"] if group[0] == Quests.ACTIVE else "", tracked))
+	_add_deeds(world)
 	var hint := _hint_label()
 	hint.text = "Press %s beside someone to talk. Run on the sea between islands; hold %s on open water to sprint faster." % [
 		InputDevice.glyph(&"interact"), InputDevice.glyph(&"evade")]
 	_quest_list.add_child(hint)
+
+
+## Begin the saga again with what you have learned. It asks twice: it wipes
+## the story, the quests and the world (skills, level and looks stay).
+func _new_game_plus_row() -> Control:
+	var box := VBoxContainer.new()
+	var round_text := "round %d" % (Game.ng_plus() + 2)
+	var b := _button("Begin New Game+  (%s, fighters %d tiers tougher)" % [round_text, EnemyTier.PER_ROUND], func() -> void: pass)
+	var armed := {"on": false}
+	b.pressed.connect(func() -> void:
+		if not armed["on"]:
+			armed["on"] = true
+			b.text = "Really begin? Story, quests and the world start over; skills stay."
+			return
+		Game.begin_new_game_plus()
+		close()
+		Game.start_world())
+	box.add_child(b)
+	return box
+
+
+## What you have done across the continent (and the saga's round).
+func _add_deeds(world: OpenWorld) -> void:
+	_quest_list.add_child(_section("Deeds"))
+	var lines: Array[String] = []
+	if Game.ng_plus() > 0:
+		lines.append("New Game+  ·  round %d" % (Game.ng_plus() + 1))
+	var difficulty := str(Settings.get_value(&"difficulty"))
+	if difficulty != "normal":
+		lines.append("Difficulty  ·  %s" % difficulty.capitalize())
+	if world.sites != null:
+		var plan := world.sites.plan
+		lines.append("Raiders' camps cleared  ·  %d / %d" % [world.sites.done_count("camp"), plan.of_kind("camp").size()])
+		lines.append("Wanted shinobi finished  ·  %d / %d" % [world.sites.done_count("lair"), plan.of_kind("lair").size()])
+		lines.append("Relics taken  ·  %d / %d" % [world.sites.done_count("ruin"), plan.of_kind("ruin").size()])
+		lines.append("Shrines attuned  ·  %d / %d" % [world.sites.done_count("shrine"), plan.of_kind("shrine").size()])
+		lines.append("Contracts fulfilled  ·  %d" % int(Game.record("world", "contracts_done", 0)))
+	lines.append("Side quests done  ·  %d / %d" % [Quests.with_status(Quests.DONE).size(), Quests.all().size()])
+	for line in lines:
+		var label := UiKit.label(line, 18, UiKit.INK_SOFT, &"bold")
+		_quest_list.add_child(label)
 
 
 # --- Map tab -------------------------------------------------------------------

@@ -8,8 +8,15 @@ extends RefCounted
 ## through the skill trees, so what stands against them has to keep up.
 ## Bosses scale the same way: their written health is multiplied.
 
-## The last tier: part 6.
-const MAX := 5
+## The last tier of the story: part 6.
+const STORY_MAX := 5
+## The most a fighter can be: the story's last tier plus a hard difficulty and
+## New Game+ on top.
+const MAX := 9
+## Tiers each difficulty adds on top of the story's.
+const DIFFICULTY := {"normal": 0, "hard": 2, "nightmare": 4}
+## Tiers each New Game+ round adds.
+const PER_ROUND := 3
 # Each is the gain per tier, so part 6 is five times these.
 const HEALTH := 0.14
 const POWER := 0.09
@@ -23,6 +30,8 @@ const JUTSU_RATE := 0.06
 ## The tell before a blow or a kunai shrinks the least: it has to stay
 ## readable.
 const TELL := 0.03
+## No tell shrinks below this (seconds), however high the tier.
+const MIN_TELL := 0.3
 const DODGE := 0.02
 const GUARD := 0.025
 const MAX_DODGE := 0.7
@@ -31,9 +40,15 @@ const MAX_GUARD := 0.6
 const JUTSU_COST := 0.15
 
 
-## The tier of a story part (1 = the first).
+## The tier of a story part (1 = the first), plus what the difficulty and
+## New Game+ add.
 static func of_part(part: int) -> int:
-	return clampi(part - 1, 0, MAX)
+	return clampi(clampi(part - 1, 0, STORY_MAX) + bonus(), 0, MAX)
+
+
+## The tiers added by the difficulty setting and by New Game+ rounds.
+static func bonus() -> int:
+	return int(DIFFICULTY.get(str(Settings.get_value(&"difficulty")), 0)) + PER_ROUND * Game.ng_plus()
 
 
 ## What a tier multiplies a written health by.
@@ -58,8 +73,14 @@ static func apply(r: Dictionary, tier: int) -> void:
 	r["engage"] = (r["engage"] as Vector2) * quick
 	r["kunai_cd"] = (r["kunai_cd"] as Vector2) * quick
 	r["jutsu_cd"] = (r["jutsu_cd"] as Vector2) * (1.0 - JUTSU_RATE * t)
-	r["windup"] = float(r["windup"]) * (1.0 - TELL * t)
-	r["aim"] = float(r["aim"]) * (1.0 - TELL * t)
+	r["windup"] = _tell(float(r["windup"]), t)
+	r["aim"] = _tell(float(r["aim"]), t)
 	r["dodge"] = minf(MAX_DODGE, float(r["dodge"]) + DODGE * t)
 	r["guard"] = minf(MAX_GUARD, float(r["guard"]) + GUARD * t)
 	r["max_cost"] = float(r["max_cost"]) * (1.0 + JUTSU_COST * t)
+
+
+## A tell shortened by `t` tiers, but never below MIN_TELL (or below itself
+## when it started shorter).
+static func _tell(base: float, t: float) -> float:
+	return maxf(minf(base, MIN_TELL), base * (1.0 - TELL * t))

@@ -164,6 +164,22 @@ func start_story(chapter_id: String) -> void:
 	restart(Mode.STORY)
 
 
+## How many times the saga has been begun again (New Game+).
+func ng_plus() -> int:
+	return int(record("meta", "ng_plus", 0))
+
+
+## The saga again with everything you have learned: the story, quests, the
+## world and its places start over; skills, level and looks stay; fighters
+## are EnemyTier.PER_ROUND tiers tougher for each round.
+func begin_new_game_plus() -> void:
+	for section: String in ["story", "quests", "world", "sites"]:
+		if _records.has_section(section):
+			_records.erase_section(section)
+	_records.set_value("meta", "ng_plus", ng_plus() + 1)
+	save_records()
+
+
 func chapter_done(chapter_id: String) -> bool:
 	return bool(_records.get_value("story", chapter_id, false))
 

@@ -125,6 +125,24 @@ shrinks by only 3% a part, so it stays readable. Practice clones (the
 `drill` of a task) and Trials mode are not scaled. Open-world quest fights
 use the furthest part you have cleared a chapter of.
 
+**Difficulty and New Game+.** On top of the story's climb, the Difficulty
+setting (pause menu, Accessibility tab) adds tiers: Hard +2, Nightmare +4.
+When every chapter is cleared the Quests tab offers **New Game+**: the story,
+quests, world and its places start over, skills, level and looks stay, and
+every round adds three more tiers (the ceiling is tier 9). The tell before a
+blow never drops below 0.3 s. Boss signature attacks (quakes, a running
+shockwave ring, blinking strike chains; `scripts/enemies/boss_specials.gd`)
+are written on the boss beat as `"specials"` and scale the same way:
+
+```json
+"specials": [{"kind": "ring", "every": 13, "below": 0.85, "damage": 16},
+             {"kind": "chain", "every": 16, "below": 0.45, "count": 3, "damage": 16}]
+```
+
+`kind` is `quake`, `ring` or `chain`; `every` the seconds between uses;
+`below` the health share under which it starts; `count`, `radius`, `damage`
+and `delay` (the warning) have defaults per kind.
+
 ## Islands
 
 Each island is built when the chapter starts, from a preset in
