@@ -8,11 +8,13 @@ extends SubViewport
 
 const ENSO := preload("res://assets/shaders/skill_enso.gdshader")
 
-## Per tree: the stance, and where the camera sits and looks.
+## Per tree: the stance, and where the camera sits and looks, for a character
+## FRAMED_FOR metres tall (the shots scale to whoever is on the stage). The
+## Dojutsu shot is measured from the model's own eyes instead (_eye_shot).
 const SHOTS := {
 	"body": {"pose": HumanoidPoser.Pose.GUARD, "cam": Vector3(0.0, 1.05, 3.5), "look": Vector3(0.0, 0.95, 0.0), "fov": 34.0},
 	"chakra": {"pose": HumanoidPoser.Pose.CHARGE, "cam": Vector3(0.35, 0.95, 3.4), "look": Vector3(0.0, 0.9, 0.0), "fov": 36.0},
-	"mind": {"pose": HumanoidPoser.Pose.WEAVE, "cam": Vector3(-0.3, 1.2, 3.0), "look": Vector3(0.0, 1.05, 0.0), "fov": 34.0},
+	"mind": {"pose": HumanoidPoser.Pose.WEAVE, "cam": Vector3(-0.3, 1.1, 3.3), "look": Vector3(0.0, 0.95, 0.0), "fov": 34.0},
 	"kenjutsu": {"pose": HumanoidPoser.Pose.LOCOMOTION, "cam": Vector3(0.7, 0.85, 3.1), "look": Vector3(0.0, 1.0, 0.0), "fov": 38.0},
 	"eye": {"pose": HumanoidPoser.Pose.LOCOMOTION, "cam": Vector3(0.0, 1.5, 1.15), "look": Vector3(0.0, 1.47, 0.0), "fov": 30.0},
 }
@@ -20,6 +22,25 @@ const SHOTS := {
 ## stand left of centre, beside the tree.
 const H_OFFSET := 0.95
 const EYE_H_OFFSET := 0.28
+## The height the shots were framed for.
+const FRAMED_FOR := 1.6
+## The Dojutsu frame is this many heads tall, with the eyes at its centre.
+const EYE_FRAME_HEADS := 2.2
+## How much of a bowed or raised head's pitch the Dojutsu camera follows (a
+## camera at eye level only sees the hair of a bowed head, one that follows
+## it all the way looks up from under the chin), and the most it moves
+## (radians).
+const EYE_PITCH_SHARE := 0.7
+const EYE_MAX_PITCH := 0.45
+## The key and rim lights are strong enough to pick out a body and wash out a
+## pale face seen close up (a bowed head catches both); the close-up takes
+## gentler ones and a little more fill.
+const RIM_ENERGY := 9.0
+const FILL_ENERGY := 0.35
+const EYE_RIM_ENERGY := 1.6
+const EYE_FILL_ENERGY := 0.45
+const KEY_ENERGY := 1.1
+const EYE_KEY_ENERGY := 0.6
 
 var model: CharacterModel
 var camera: Camera3D
@@ -27,6 +48,13 @@ var tree_id := "body"
 
 var _enso: MeshInstance3D
 var _rim: SpotLight3D
+var _key: DirectionalLight3D
+var _fill: OmniLight3D
+## A glow of the dojutsu's colour at the eyes of a model with no irises to
+## draw it on.
+var _eye_glow: OmniLight3D
+## The model's height over FRAMED_FOR.
+var _k := 1.0
 var _embers: CPUParticles3D
 var _floor_ring: MeshInstance3D
 var _move: Tween
@@ -64,25 +92,25 @@ func _ready() -> void:
 	we.environment = env
 	add_child(we)
 
-	var key := DirectionalLight3D.new()
-	key.rotation = Vector3(deg_to_rad(-28.0), deg_to_rad(28.0), 0.0)
-	key.light_energy = 1.1
-	key.light_color = Color("f3e6d4")
-	key.shadow_enabled = true
-	add_child(key)
+	_key = DirectionalLight3D.new()
+	_key.rotation = Vector3(deg_to_rad(-28.0), deg_to_rad(28.0), 0.0)
+	_key.light_energy = KEY_ENERGY
+	_key.light_color = Color("f3e6d4")
+	_key.shadow_enabled = true
+	add_child(_key)
 	_rim = SpotLight3D.new()
 	_rim.position = Vector3(0.0, 2.6, -2.2)
 	_rim.spot_range = 7.0
 	_rim.spot_angle = 50.0
-	_rim.light_energy = 9.0
+	_rim.light_energy = RIM_ENERGY
 	add_child(_rim)
 	_rim.look_at(Vector3(0.0, 1.0, 0.0))
-	var fill := OmniLight3D.new()
-	fill.position = Vector3(1.6, 1.4, 2.2)
-	fill.omni_range = 6.0
-	fill.light_energy = 0.35
-	fill.light_color = Color("9fb3d9")
-	add_child(fill)
+	_fill = OmniLight3D.new()
+	_fill.position = Vector3(1.6, 1.4, 2.2)
+	_fill.omni_range = 6.0
+	_fill.light_energy = FILL_ENERGY
+	_fill.light_color = Color("9fb3d9")
+	add_child(_fill)
 
 	var floor_mesh := CylinderMesh.new()
 	floor_mesh.top_radius = 6.0
@@ -135,6 +163,7 @@ func _ready() -> void:
 	model.use_profile = true
 	model.model_loaded.connect(func() -> void:
 		_eye = null
+		_k = _scale()
 		_pose(false))
 	add_child(model)
 	model.rotation.y = PI + deg_to_rad(12.0)
@@ -177,8 +206,12 @@ func show_tree(id: String, animate := true) -> void:
 			energy *= 0.4
 		mat.set_shader_parameter(&"energy", energy)
 	_rim.light_color = c.lightened(0.15)
+	_rim.light_energy = EYE_RIM_ENERGY if id == "eye" else RIM_ENERGY
+	_fill.light_energy = EYE_FILL_ENERGY if id == "eye" else FILL_ENERGY
+	_key.light_energy = EYE_KEY_ENERGY if id == "eye" else KEY_ENERGY
 	_embers.color = c.lightened(0.35)
-	var shot: Dictionary = SHOTS.get(id, SHOTS["body"])
+	_k = _scale()
+	var shot := _shot(id)
 	var offset := EYE_H_OFFSET if id == "eye" else H_OFFSET
 	if _move and _move.is_valid():
 		_move.kill()
@@ -196,6 +229,47 @@ func show_tree(id: String, animate := true) -> void:
 	_pose(animate)
 
 
+## The model's height over the height the shots were framed for.
+func _scale() -> float:
+	if model == null or model.instance == null:
+		return 1.0
+	var height := model.measure_height()
+	return height / FRAMED_FOR if height > 0.5 else 1.0
+
+
+## Where the camera sits and looks for a tree: the framed shot scaled to the
+## model, and for the Dojutsu close-up measured from where the model's eyes
+## are now (so it follows an idle's bowed head).
+func _shot(id: String) -> Dictionary:
+	var shot: Dictionary = (SHOTS.get(id, SHOTS["body"]) as Dictionary).duplicate()
+	shot["cam"] = (shot["cam"] as Vector3) * _k
+	shot["look"] = (shot["look"] as Vector3) * _k
+	if id == "eye" and model and model.instance:
+		var eyes := EyeArtMode.eye_point_of(model)
+		if eyes != Vector3.INF:
+			var head := EyeArtMode.head_height_of(model)
+			var dist := head * EYE_FRAME_HEADS * 0.5 / tan(deg_to_rad(float(shot["fov"]) * 0.5))
+			shot["look"] = eyes
+			shot["cam"] = eyes + _face_direction() * dist
+	return shot
+
+
+## The way the model's face points, as a unit vector toward the viewer: the
+## body's yaw, and the head's own pitch (limited).
+func _face_direction() -> Vector3:
+	var toward := -model.global_basis.z
+	toward.y = 0.0
+	toward = toward.normalized()
+	var skel := model.skeleton
+	var head := skel.find_bone(&"Head") if skel else -1
+	if head < 0 or model.poser == null:
+		return toward
+	var rest := skel.get_bone_global_rest(head).basis
+	var posed := skel.get_bone_global_pose(head).basis
+	var face := (skel.global_basis * (posed * rest.inverse() * model.poser.forward_in_skeleton())).normalized()
+	var pitch := clampf(asin(clampf(face.y, -1.0, 1.0)) * EYE_PITCH_SHARE, -EYE_MAX_PITCH, EYE_MAX_PITCH)
+	return Vector3(toward.x * cos(pitch), sin(pitch), toward.z * cos(pitch))
+
 
 func _frame(k: float, shot: Dictionary) -> void:
 	var to := Transform3D(Basis.IDENTITY, shot["cam"]).looking_at(shot["look"])
@@ -210,7 +284,8 @@ func _pose(_animate: bool) -> void:
 	model.animator.speed_ratio = 0.0
 	if tree_id == "mind" or tree_id == "chakra":
 		model.animator.seal_flick()
-	# The Eye tree opens your eye art in the irises.
+	# The Eye tree opens your eye art in the irises; a model without irises
+	# (nothing to draw it on) gets a glow of its colour at the eyes instead.
 	var art := Perks.active_eye_art()
 	if tree_id == "eye" and not art.is_empty():
 		if _eye == null:
@@ -218,19 +293,45 @@ func _pose(_animate: bool) -> void:
 		if _eye:
 			_eye.set_shader_parameter(&"intensity", 1.0)
 			_eye.set_shader_parameter(&"awakened", 1.0 if EyeArtMode.awakening_unlocked() else 0.0)
-	elif _eye:
-		EyePattern.detach(model)
-		_eye = null
+		else:
+			_set_eye_glow(Color(str(art["color"])))
+	else:
+		if _eye:
+			EyePattern.detach(model)
+			_eye = null
+		_set_eye_glow(Color.TRANSPARENT)
+
+
+## A soft light of the dojutsu's colour in front of the eyes (none for a
+## transparent colour).
+func _set_eye_glow(c: Color) -> void:
+	if c.a <= 0.0:
+		if is_instance_valid(_eye_glow):
+			_eye_glow.queue_free()
+		_eye_glow = null
+		return
+	if _eye_glow == null:
+		_eye_glow = OmniLight3D.new()
+		_eye_glow.name = "EyeGlow"
+		_eye_glow.omni_range = 0.8
+		_eye_glow.light_energy = 0.4
+		_eye_glow.shadow_enabled = false
+		add_child(_eye_glow)
+	_eye_glow.light_color = c.lightened(0.2)
 
 
 func _process(delta: float) -> void:
 	_time += delta
 	# A slow breath of camera movement, so the stage feels alive.
 	if (_move == null or not _move.is_valid()) and camera:
-		var shot: Dictionary = SHOTS.get(tree_id, SHOTS["body"])
-		var sway := Vector3(sin(_time * 0.35) * 0.06, sin(_time * 0.5) * 0.02, 0.0)
+		var shot := _shot(tree_id)
+		var sway := Vector3(sin(_time * 0.35) * 0.06, sin(_time * 0.5) * 0.02, 0.0) * _k
 		camera.position = (shot["cam"] as Vector3) + sway
 		camera.look_at(shot["look"])
+	if is_instance_valid(_eye_glow) and model and model.instance:
+		var eyes := EyeArtMode.eye_point_of(model)
+		if eyes != Vector3.INF:
+			_eye_glow.global_position = eyes + _face_direction() * 0.3
 	if model:
 		model.rotation.y = PI + deg_to_rad(12.0 + sin(_time * 0.25) * 4.0)
 		if tree_id == "kenjutsu":
@@ -247,7 +348,7 @@ func _swing() -> void:
 		model.animator.strike(_cut)
 	var facing := model.global_basis.z
 	facing.y = 0.0
-	var origin := Transform3D(Basis.looking_at(-facing.normalized(), Vector3.UP), model.global_position + Vector3.UP * 1.1)
+	var origin := Transform3D(Basis.looking_at(-facing.normalized(), Vector3.UP), model.global_position + Vector3.UP * 1.1 * _k)
 	var c := Color(str(SkillTrees.tree("kenjutsu").get("color", "#8fa7bf"))).lightened(0.3)
 	Vfx.slash(self, origin, c, 2.0, [0.7, -0.7, 1.35][_cut])
 	if _cut == 2:

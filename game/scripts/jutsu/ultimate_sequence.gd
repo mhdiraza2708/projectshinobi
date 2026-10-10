@@ -12,6 +12,10 @@ signal finished
 const CLOSE_TIME := 1.45
 ## Field of view of both shots.
 const FOV := 48.0
+## The close-up's distances were framed for a shinobi this tall, whose eyes
+## were this high.
+const CLOSE_FRAMED_FOR := 1.6
+const CLOSE_FRAMED_EYE := 1.38
 ## Grace after the sequence before the player can be hurt again.
 const AFTER_IFRAMES := 0.8
 ## Seconds Pause must be held to skip (the same as a story cutscene).
@@ -132,9 +136,6 @@ func _close_up() -> void:
 	player.add_child(_aura)
 	var fwd := _forward()
 	var right := fwd.cross(Vector3.UP).normalized()
-	var eye := player.global_position + Vector3.UP * 1.38
-	var start := eye + fwd * 1.6 + right * 0.4 - Vector3.UP * 0.32
-	var end := eye + fwd * 1.15 + right * 0.28 - Vector3.UP * 0.22
 	_show_card()
 	if ult["style"] == "shades":
 		_summon_shades()
@@ -143,7 +144,13 @@ func _close_up() -> void:
 	var seal := 0
 	while t < CLOSE_TIME and not _skipping:
 		var k := smoothstep(0.0, 1.0, t / CLOSE_TIME)
-		_cam_base = Transform3D(Basis.IDENTITY, start.lerp(end, k)).looking_at(eye - Vector3.UP * 0.05, Vector3.UP)
+		# Between the eyes wherever this model's head is now, not at a
+		# fixed height: shinobi differ in height and carry the head differently.
+		var eye := _eye_point()
+		var size := _body_scale()
+		var start := eye + (fwd * 1.6 + right * 0.4) * size - Vector3.UP * 0.32 * size
+		var end := eye + (fwd * 1.15 + right * 0.28) * size - Vector3.UP * 0.22 * size
+		_cam_base = Transform3D(Basis.IDENTITY, start.lerp(end, k)).looking_at(eye - Vector3.UP * 0.05 * size, Vector3.UP)
 		if t >= next_seal:
 			next_seal = t + 0.17
 			if player.animator:
@@ -535,6 +542,17 @@ func _pick_target() -> Vector3:
 	if t != null:
 		return t.global_position
 	return player.global_position + _forward() * 8.0
+
+
+## Between the player's eyes in world space (measured from their model).
+func _eye_point() -> Vector3:
+	return player.eye_mode.eye_point() if player.eye_mode else player.global_position + Vector3.UP * CLOSE_FRAMED_EYE
+
+
+## The player's height over the height the close-up was framed for.
+func _body_scale() -> float:
+	var height := player.model.measure_height() if player.model and player.model.instance else 0.0
+	return height / CLOSE_FRAMED_FOR if height > 0.5 else 1.0
 
 
 func _forward() -> Vector3:

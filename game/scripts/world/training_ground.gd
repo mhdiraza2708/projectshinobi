@@ -1536,6 +1536,15 @@ func _pose_shots(path: String, view: String, front: Camera3D) -> void:
 func _demo_skill_stages(path: String) -> void:
 	hud.visible = false
 	player.visible = false
+	# --headband=none|cloth|hachigane and --art=<eye art id> dress the
+	# shinobi first.
+	if _user_args().has("headband"):
+		Profile.set_value(&"headband", str(_user_args()["headband"]))
+	if _user_args().has("art"):
+		for clan in Perks.clans():
+			if (clan["eye_arts"] as Array).has(_user_args()["art"]):
+				Profile.set_value(&"clan", clan["id"])
+		Profile.set_value(&"eye_art", str(_user_args()["art"]))
 	var stage := SkillStage.new()
 	stage.size = get_viewport().get_visible_rect().size
 	stage.render_target_update_mode = SubViewport.UPDATE_ALWAYS
