@@ -79,11 +79,14 @@ static func build(land: ContinentLand, rect: Rect2) -> Dictionary:
 	var verts := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
-	var custom := PackedByteArray()
+	# The region palette multiplier and snow ride in UV and UV2 (see terrain.gdshader).
+	var uv := PackedVector2Array()
+	var uv2 := PackedVector2Array()
 	verts.resize(count)
 	normals.resize(count)
 	colors.resize(count)
-	custom.resize(count * 4)
+	uv.resize(count)
+	uv2.resize(count)
 	var heights := PackedFloat32Array()
 	heights.resize(n * n)
 	var half := rect.size.x * 0.5
@@ -102,11 +105,8 @@ static func build(land: ContinentLand, rect: Rect2) -> Dictionary:
 			heights[v] = h
 			land.paint(x, z, h, nrm.y, paint)
 			colors[v] = Color(paint[0], paint[1], paint[2], paint[3])
-			var c := v * 4
-			custom[c] = int(paint[4] * 255.0)
-			custom[c + 1] = int(paint[5] * 255.0)
-			custom[c + 2] = int(paint[6] * 255.0)
-			custom[c + 3] = int(paint[7] * 255.0)
+			uv[v] = Vector2(paint[4], paint[5])
+			uv2[v] = Vector2(paint[6], paint[7])
 	var depth := SKIRT_BASE + SKIRT_PER_STEP * step
 	var edges := _edge_cells()
 	for e in 4:
@@ -116,17 +116,17 @@ static func build(land: ContinentLand, rect: Rect2) -> Dictionary:
 			verts[low] = verts[top] - Vector3(0.0, depth, 0.0)
 			normals[low] = normals[top]
 			colors[low] = colors[top]
-			for b in 4:
-				custom[low * 4 + b] = custom[top * 4 + b]
+			uv[low] = uv[top]
+			uv2[low] = uv2[top]
 
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
-	arrays[Mesh.ARRAY_CUSTOM0] = custom
+	arrays[Mesh.ARRAY_TEX_UV] = uv
+	arrays[Mesh.ARRAY_TEX_UV2] = uv2
 	arrays[Mesh.ARRAY_INDEX] = indices()
 	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays, [], {},
-		Mesh.ARRAY_CUSTOM_RGBA8_UNORM << Mesh.ARRAY_FORMAT_CUSTOM0_SHIFT)
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return {"mesh": mesh, "heights": heights, "ms": (Time.get_ticks_usec() - t0) / 1000.0}

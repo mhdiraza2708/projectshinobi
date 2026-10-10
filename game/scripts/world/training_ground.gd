@@ -1311,6 +1311,85 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		"chapter_card":
 			start_story("ch3_vault")
 			await _frames(12)
+		"continent_aerial":
+			# The whole continent from high above: regions, roads, rivers,
+			# mountains and coast. --demo=continent_aerial
+			hud.visible = false
+			player.visible = false
+			for node_name in ["Ground", "Scenery"]:
+				var old := get_node_or_null(node_name)
+				if old:
+					remove_child(old)
+					old.queue_free()
+			set_time_of_day("day")
+			($WorldEnvironment as WorldEnvironment).environment.fog_density = 0.0004
+			var land := Continent.new()
+			add_child(land)
+			var eye := Node3D.new()
+			eye.position = Vector3(0.0, 1500.0, -200.0)
+			add_child(eye)
+			land.target = eye
+			land.streamer.view_distance = 6000.0
+			land.streamer.split_scale = 0.55
+			land.streamer.begin(eye.position)
+			var waited := 0
+			while not land.streamer.is_complete() and waited < 3000:
+				await get_tree().process_frame
+				waited += 1
+			var cam := Camera3D.new()
+			add_child(cam)
+			cam.far = 7000.0
+			cam.position = Vector3(260.0, 1750.0, 3300.0)
+			cam.look_at(Vector3(0.0, 0.0, -250.0))
+			cam.current = true
+			await _frames(20)
+		_ when demo.begins_with("continent"):
+			# The continent on foot: --demo=continent[:<region id>|<x>,<z>]
+			# stands you at a region (Emberwood by default) or a point, facing
+			# the way into the land, once the ground round you is built.
+			hud.visible = false
+			for node_name in ["Ground", "Scenery"]:
+				var old := get_node_or_null(node_name)
+				if old:
+					remove_child(old)
+					old.queue_free()
+			for dummy in find_children("*", "TrainingDummy", true, false):
+				dummy.queue_free()
+			var spec := demo.trim_prefix("continent").trim_prefix(":")
+			var land := Continent.new()
+			add_child(land)
+			var at := ContinentLand.region_position("emberwood") + Vector2(0.0, 30.0)
+			if Archipelago.LAYOUT.has(spec):
+				at = ContinentLand.region_position(spec) + Vector2(0.0, 30.0)
+			elif spec.contains(","):
+				var xz := spec.split(",")
+				at = Vector2(float(xz[0]), float(xz[1]))
+			player.set_physics_process(false)
+			player.global_position = Vector3(at.x, land.height_at(at.x, at.y) + 0.2, at.y)
+			player.velocity = Vector3.ZERO
+			land.target = player
+			set_time_of_day("day")
+			player.camera_rig.camera.far = 3500.0
+			await land.start(player.global_position)
+			var loading := 0
+			while not land.streamer.is_complete() and loading < 3000:
+				await get_tree().process_frame
+				loading += 1
+			# Face the heart of the continent, the camera behind and a little above.
+			var heading := Vector2.ZERO - at
+			if Archipelago.LAYOUT.has(spec) or spec == "":
+				var home := spec if spec != "" else "emberwood"
+				heading = (land.land.region_center("autumn_wood" if home == "emberwood" else "emberwood") - ContinentLand.region_position(home))
+			player.rotation.y = atan2(-heading.x, -heading.y)
+			player.global_position.y = land.height_at(at.x, at.y) + 0.1
+			var rig := player.camera_rig
+			rig.begin_showcase(float(_user_args().get("yaw", "0.0")))
+			rig.spring.spring_length = 7.5
+			rig.follow_height = 1.5
+			rig.pitch = deg_to_rad(-9.0)
+			rig.yaw = player.rotation.y
+			rig.snap()
+			await _frames(30)
 		_ when demo.begins_with("island:"):
 			# An island from the air: --demo=island:old_dam
 			hud.visible = false

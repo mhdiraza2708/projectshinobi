@@ -72,7 +72,7 @@ static func make_material() -> ShaderMaterial:
 		palette[layer] = base[layer]
 	var mat := TerrainMaterial.make({}, palette)
 	mat.set_shader_parameter(&"water_level", SEA_LEVEL)
-	mat.set_shader_parameter(&"custom_tint", ContinentLand.TINT_RANGE)
+	mat.set_shader_parameter(&"biome_tint", ContinentLand.TINT_RANGE)
 	return mat
 
 

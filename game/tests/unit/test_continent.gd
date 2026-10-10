@@ -313,6 +313,77 @@ func test_a_player_walks_across_the_land_without_falling_through() -> void:
 	walker.free()
 
 
+## Resident memory of the process, in MB (Linux: /proc), else the engine's own count.
+func _memory_mb() -> float:
+	for line in FileAccess.get_file_as_string("/proc/self/status").split("\n"):
+		if line.begins_with("VmRSS:"):
+			return float(line.split(" ", false)[1]) / 1024.0
+	return OS.get_static_memory_usage() / 1048576.0
+
+
+func test_streaming_costs_are_measured_and_small() -> void:
+	_make()
+	var land := continent.land
+	var player := Node3D.new()
+	root.add_child(player)
+	var from := land.region_center("autumn_wood")
+	var to := land.region_center("frozen_road")
+	var heading := (to - from).normalized()
+	player.position = Vector3(from.x, land.height_at(from.x, from.y), from.y)
+	continent.target = player
+	var memory_before := _memory_mb()
+	var t_start := Time.get_ticks_usec()
+	await continent.start(player.position)
+	var start_ms := (Time.get_ticks_usec() - t_start) / 1000.0
+	await _until_complete()
+	var loaded_ms := (Time.get_ticks_usec() - t_start) / 1000.0
+	var at_rest := continent.stats()
+	# Run (15 m/s) for ten seconds and watch the main thread.
+	var frames := PackedFloat32Array()
+	var last := Time.get_ticks_usec()
+	var end := Time.get_ticks_msec() + 10000
+	while Time.get_ticks_msec() < end:
+		await root.get_tree().process_frame
+		var now := Time.get_ticks_usec()
+		frames.append((now - last) / 1000.0)
+		last = now
+		var step := heading * 15.0 * frames[frames.size() - 1] / 1000.0
+		player.position += Vector3(step.x, 0.0, step.y)
+		player.position.y = land.height_at(player.position.x, player.position.z)
+	var sorted := frames.duplicate()
+	sorted.sort()
+	var avg := 0.0
+	for f in frames:
+		avg += f
+	avg /= frames.size()
+	var streamer := continent.streamer
+	var adds := streamer.add_ms.duplicate()
+	adds.sort()
+	var add_avg := 0.0
+	for a in adds:
+		add_avg += a
+	add_avg /= maxf(adds.size(), 1.0)
+	var per_level := []
+	for level: int in streamer.build_ms:
+		var times: Array = streamer.build_ms[level]
+		var mean := 0.0
+		for t: float in times:
+			mean += t
+		per_level.append("L%d %.0f ms (%d)" % [level, mean / times.size(), times.size()])
+	per_level.sort()
+	print("  streaming: first ground solid after %.0f ms, everything wanted after %.0f ms" % [start_ms, loaded_ms])
+	print("  at rest: ", at_rest)
+	print("  worker build per level (mean, chunks): ", ", ".join(per_level))
+	print("  main thread while running 15 m/s for 10 s: %d frames, frame avg %.1f ms, p95 %.1f, max %.1f" % [frames.size(), avg,
+		sorted[int(sorted.size() * 0.95)], sorted[sorted.size() - 1]])
+	print("  adding a chunk to the scene: mean %.2f ms, max %.2f ms over %d chunks; %d built, %d freed" % [add_avg, adds[adds.size() - 1],
+		adds.size(), streamer.built_total, streamer.freed_total])
+	print("  memory: %.0f MB before, %.0f MB after (process resident)" % [memory_before, _memory_mb()])
+	assert_true(add_avg < 8.0, "adding a chunk is cheap on the main thread (%.2f ms)" % add_avg)
+	assert_true(streamer.built_total > 10 and streamer.freed_total > 5, "chunks came and went while running")
+	player.free()
+
+
 func test_chunk_build_time_stays_in_budget() -> void:
 	var land := ContinentLand.new()
 	ContinentScatter.warm()
