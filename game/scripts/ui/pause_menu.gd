@@ -787,7 +787,13 @@ func _refresh_map() -> void:
 		_travel = VBoxContainer.new()
 		_travel.add_theme_constant_override(&"separation", 8)
 		_travel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_map_box.add_child(_travel)
+		# The continent adds a shrine to the list as each is attuned to, so it scrolls.
+		var scroll := ScrollContainer.new()
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		scroll.custom_minimum_size = Vector2(430, 540)
+		scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		scroll.add_child(_travel)
+		_map_box.add_child(scroll)
 	_map.bind(world)
 	for c in _travel.get_children():
 		_travel.remove_child(c)
@@ -803,10 +809,21 @@ func _refresh_map() -> void:
 		b.disabled = not known or not can
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		_travel.add_child(b)
+	if world.sites != null:
+		var shrines := world.sites.found_sites("shrine").filter(func(s: Dictionary) -> bool: return world.sites.is_done(s["id"]))
+		if not shrines.is_empty():
+			_travel.add_child(_section("Shrines"))
+		for s: Dictionary in shrines:
+			var b := _button("%s  %s" % [SiteActivities.KANJI["shrine"], s["name"]], func() -> void:
+				close()
+				world.fast_travel(s["id"]))
+			b.disabled = not can
+			b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			_travel.add_child(b)
 	var hint := _hint_label()
-	hint.text = "Set foot on an island to travel back to it from here." if can \
+	hint.text = "Set foot on %s to travel back to it from here." % ("a region" if world.sites != null else "an island") if can \
 		else "No travelling during a fight or a chapter."
-	hint.custom_minimum_size.x = 420
+	hint.custom_minimum_size.x = 400
 	_travel.add_child(hint)
 
 

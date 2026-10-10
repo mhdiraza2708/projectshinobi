@@ -191,6 +191,7 @@ func _draw() -> void:
 			draw_string(bold, at + Vector2(-w * 0.5, 18), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, UiKit.INK)
 		else:
 			draw_string(bold, at + Vector2(-5, 6), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(UiKit.INK, 0.5))
+	_draw_sites()
 	# People with something for you.
 	for who: String in world.wanted_people():
 		var place: Dictionary = world.wanted_people()[who]
@@ -220,6 +221,33 @@ func _draw() -> void:
 	var arrow := PackedVector2Array([mp + dir * 12.0, mp + dir.rotated(2.5) * 8.0, mp + dir.rotated(-2.5) * 8.0])
 	draw_colored_polygon(arrow, UiKit.CRIMSON)
 	draw_polyline(PackedVector2Array([arrow[0], arrow[1], arrow[2], arrow[0]]), UiKit.INK, 2.0, true)
+
+
+## The places of interest you have found (continent only): a tent for a
+## camp, a ringed dot for a shrine, a square for a village, a cross for a
+## ruin, faded once done; a contract's camp is ringed in gold.
+func _draw_sites() -> void:
+	if world.sites == null:
+		return
+	var contract := world.activities.contract() if world.activities != null else ""
+	for s: Dictionary in world.sites.found_sites():
+		var p := to_chart(s["at"])
+		var done := world.sites.is_done(s["id"])
+		var a := 0.4 if done else 0.95
+		match str(s["kind"]):
+			"camp":
+				var col := Color(UiKit.CRIMSON, a)
+				draw_colored_polygon(PackedVector2Array([p + Vector2(0, -5), p + Vector2(5, 4), p + Vector2(-5, 4)]), col)
+			"shrine":
+				draw_arc(p, 4.5, 0.0, TAU, 14, Color("2f7f95", a), 2.0)
+				draw_circle(p, 1.6, Color("2f7f95", a))
+			"village":
+				draw_rect(Rect2(p - Vector2(4, 4), Vector2(8, 8)), Color("8a5a2b", a))
+			"ruin":
+				draw_line(p + Vector2(-4, -4), p + Vector2(4, 4), Color(UiKit.INK, a), 2.0)
+				draw_line(p + Vector2(-4, 4), p + Vector2(4, -4), Color(UiKit.INK, a), 2.0)
+		if str(s["id"]) == contract:
+			draw_arc(p, 9.0, 0.0, TAU, 20, Color("e0a82e"), 3.0)
 
 
 func _island_point(id: String, local: Vector2) -> Vector2:

@@ -53,6 +53,10 @@ var archipelago: Archipelago
 var layout := ""
 var tracker: QuestTracker
 var dialogue: DialogueBox
+## The continent's places of interest and what there is to do at them (null
+## on the islands).
+var sites: WorldSites
+var activities: SiteActivities
 ## A chapter or quest fight in progress (free roam pauses its quests).
 var busy := false
 ## Nothing is checked (islands, water, pickups) until start() has put you
@@ -71,6 +75,7 @@ var _music_island := ""
 var _fights := 0                   # quest fights begun (they take turns at the battle themes)
 var _save_left := SAVE_EVERY
 var _ripple_left := 0.0
+var _respawning := false
 ## Seconds into the day (saved with the slot).
 var clock := START_CLOCK * DAY_LENGTH
 
@@ -145,6 +150,18 @@ static func region_offset(id: String) -> Vector3:
 	return Vector3(c.x, _land.pad_height(id), c.y)
 
 
+## A planned site of a kind, by number (demos stand you beside it): its
+## x, y, z on the continent.
+static func demo_site(kind: String, index := 0) -> Vector3:
+	if _land == null:
+		_land = ContinentLand.new()
+	var list := _land.plan_sites().of_kind(kind)
+	if list.is_empty():
+		return Vector3.ZERO
+	var s: Dictionary = list[mini(index, list.size() - 1)]
+	return Vector3(s["at"].x, s["y"], s["at"].y)
+
+
 func _ready() -> void:
 	name = "OpenWorld"
 	if layout == "":
@@ -173,12 +190,30 @@ func start(instant := false) -> void:
 	await archipelago.ground_ready()
 	if not is_inside_tree():
 		return
+	_make_sites()
 	var ground := archipelago.to_global(at)
 	ground.y = Combat.ground_height(player.get_world_3d(), ground + Vector3.UP * 30.0, ground.y)
 	player.global_position = ground + Vector3.UP * 0.2
 	player.velocity = Vector3.ZERO
 	placed = true
 	refresh()
+
+
+func _make_sites() -> void:
+	if not archipelago is ContinentWorld or sites != null:
+		return
+	sites = WorldSites.new()
+	sites.world = archipelago as ContinentWorld
+	sites.player = player
+	archipelago.add_child(sites)
+	activities = SiteActivities.new()
+	activities.world = self
+	activities.sites = sites
+	add_child(activities)
+	sites.discovered.connect(activities.on_found)
+	sites.site_built.connect(func(node: SiteNode) -> void:
+		if get_parent().has_method(&"light_lanterns"):
+			get_parent().light_lanterns(node.lanterns))
 
 
 ## Where the slot last left you in this layout's space (the home clearing in
@@ -197,9 +232,26 @@ func position_key() -> String:
 
 ## Back where you last stood safely (fell off the world).
 func respawn() -> void:
-	var at := saved_position()
-	player.global_position = archipelago.to_global(at) + Vector3.UP * 0.5
+	if _respawning:
+		return
+	_respawning = true
+	await _put_player_at(archipelago.to_global(saved_position()), 0.5)
+	_respawning = false
+
+
+## Stands the player at a place in world space, once there is ground under it
+## (the continent streams it in when they arrive from far away).
+func _put_player_at(at: Vector3, lift := 0.3) -> void:
+	player.set_physics_process(false)
 	player.velocity = Vector3.ZERO
+	player.global_position = at + Vector3.UP * lift
+	await archipelago.settle_ground(at)
+	if not is_instance_valid(player):
+		return
+	var ground := Combat.ground_height(player.get_world_3d(), at + Vector3.UP * 30.0, at.y)
+	player.global_position = Vector3(at.x, ground + lift, at.z)
+	player.velocity = Vector3.ZERO
+	player.set_physics_process(true)
 
 
 ## Rebuilds the people, pickups and the story pillar from the quests' state.
@@ -437,6 +489,8 @@ func _physics_process(delta: float) -> void:
 	_water_run(delta)
 	_check_pickups()
 	_check_fights()
+	if activities != null and _fight == null and not is_instance_valid(_duelist):
+		activities.check()
 	_find_interact()
 	if not _interact.is_empty() and player.input_enabled and Input.is_action_just_pressed(&"interact"):
 		_use_interact()
@@ -525,6 +579,11 @@ func _find_interact() -> void:
 				best = d
 				_interact = {"kind": "talk", "id": who, "node": npc}
 				prompt = "Talk to %s" % str(story.characters.get(who, {}).get("name", who))
+	if _interact.is_empty() and activities != null:
+		var here := activities.interact_for(player.global_position)
+		if not here.is_empty():
+			_interact = here
+			prompt = str(here["prompt"])
 	tracker.set_prompt(prompt)
 	player.can_interact = not _interact.is_empty()
 
@@ -536,6 +595,9 @@ func _use_interact() -> void:
 	tracker.set_prompt("")
 	if kind == "chapter":
 		chapter_requested.emit(id)
+		return
+	if kind == "shrine" or kind == "board":
+		activities.use(kind, id)
 		return
 	await talk_to(id)
 
@@ -640,12 +702,22 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	_fight.waves = waves
 	archipelago.add_child(_fight)
 	_fight.wave_started.connect(func(index: int, total: int, _e: int) -> void:
-		Quests.set_progress(_fight_quest, index)
+		if not _fight_quest.begins_with(SiteActivities.PREFIX):
+			Quests.set_progress(_fight_quest, index)
 		hud.show_banner("%s  ·  wave %d / %d" % [q["name"], index + 1, total], &"cast")
 		tracker.refresh())
 	_fight.finished.connect(func(won: bool, _s: float, _r: bool) -> void: _end_fight(won))
 	Music.play(battle)
 	_fight.start(player)
+
+
+## A fight begun by something other than a quest of the log (a camp).
+func start_fight(q: Dictionary, spot: Vector3) -> void:
+	_start_fight(q, spot)
+
+
+func story_tier() -> int:
+	return _story_tier()
 
 
 ## How hard the world's fighters are: the furthest story part you have
@@ -668,7 +740,9 @@ func _end_fight(won: bool) -> void:
 	_fight_quest = ""
 	busy = false
 	update_music()
-	if won:
+	if won and id.begins_with(SiteActivities.PREFIX):
+		activities.finish_camp(id)
+	elif won:
 		_finish_quest(id, Quests.quest(id).get("outro", []))
 	else:
 		refresh()
@@ -745,7 +819,13 @@ func can_travel() -> bool:
 ## Travels to an island you've been to: the seal flares, a white flash, and
 ## you stand by its clearing.
 func fast_travel(id: String) -> bool:
-	if not discovered(id) or not can_travel():
+	var to_site := sites != null and id.begins_with("site_")
+	if to_site:
+		if not sites.is_done(id):
+			return false
+	elif not discovered(id):
+		return false
+	if not can_travel():
 		return false
 	busy = true
 	player.input_enabled = false
@@ -754,9 +834,12 @@ func fast_travel(id: String) -> bool:
 		await scene._teleport_out()
 	if not is_inside_tree():
 		return false
-	var at := archipelago.on_island(id, TRAVEL_POINT)
-	player.global_position = at + Vector3.UP * 0.3
-	player.velocity = Vector3.ZERO
+	var at: Vector3
+	if to_site:
+		at = sites.build_site(id).spot("interact")
+	else:
+		at = archipelago.on_island(id, TRAVEL_POINT)
+	await _put_player_at(at)
 	save_position()
 	if scene.has_method(&"_teleport_in"):
 		await scene._teleport_in()

@@ -108,6 +108,8 @@ static func _try_spot(land: ContinentLand, mix_table: Dictionary, x: float, z: f
 	for lake in land.lakes:
 		if Vector2(x, z).distance_to(lake["at"]) < float(lake["radius"]) + 4.0:
 			return
+	if land.sites != null and land.sites.blocked(x, z):
+		return
 	var scale_range: Vector2 = SCALES[model]
 	var list: PackedFloat32Array = out.get(model, PackedFloat32Array())
 	list.append_array([x, h - 0.08, z, _unit(key, 6) * TAU, lerpf(scale_range.x, scale_range.y, _unit(key, 7))])

@@ -529,6 +529,21 @@ func update_lanterns() -> void:
 	_glow_lanterns(lit)
 
 
+## Lights lanterns that appear after the time was set (a place of interest
+## built as you arrive at dusk).
+func light_lanterns(nodes: Array[Node3D]) -> void:
+	if not TIMES[_mood]["lanterns"]:
+		return
+	for node in nodes:
+		var light := OmniLight3D.new()
+		light.light_color = Color(1.0, 0.68, 0.36)
+		light.light_energy = 3.2
+		light.omni_range = 9.0
+		light.position = Vector3(0, 1.3, 0)
+		node.add_child(light)
+		lantern_lights.append(light)
+
+
 const LANTERN_GLOW := 5.0
 const LANTERN_GLOW_DAY := 0.4
 
@@ -631,6 +646,8 @@ func lanterns() -> Array[Node3D]:
 			all.append_array(isl.lanterns)
 		if world.archipelago.islets:
 			all.append_array(world.archipelago.islets.lanterns)
+		if world.sites:
+			all.append_array(world.sites.lanterns())
 		return all
 	var out: Array[Node3D] = []
 	var scenery := get_node_or_null("Scenery")
@@ -1342,10 +1359,26 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 					at = Vector2(float(xz[0]), float(xz[1]))
 				Game.set_record("world", "position_continent" if OpenWorld.uses_continent() else "position",
 					OpenWorld.region_offset(parts[1]) + Vector3(at.x, 0.0, at.y))
+			var site_at := Vector3.ZERO
+			if _user_args().has("site"):
+				# --site=camp|shrine|village|ruin[:n] stands you 24 m from one, facing it.
+				var spec := str(_user_args()["site"]).split(":")
+				site_at = OpenWorld.demo_site(spec[0], int(spec[1]) if spec.size() > 1 else 0)
+				Game.set_record("world", "position_continent", site_at + Vector3(0.0, 0.0, 24.0))
 			await start_world()
 			if world.archipelago is ContinentWorld:
+				if _user_args().has("site"):
+					world.sites.update()
+					for i in 8:
+						await get_tree().process_frame
+						world.sites.update()
 				await (world.archipelago as ContinentWorld).settle()
-			if _user_args().has("look"):
+			if site_at != Vector3.ZERO:
+				var face := world.archipelago.to_global(site_at) - player.global_position
+				player.rotation.y = atan2(-face.x, -face.z)
+				player.camera_rig.yaw = player.rotation.y
+				player.camera_rig.snap()
+			elif _user_args().has("look"):
 				# --look=<island> or --look=<island>:x,z (a point on it).
 				var spec := str(_user_args()["look"]).split(":")
 				var aim := OpenWorld.region_offset(spec[0])

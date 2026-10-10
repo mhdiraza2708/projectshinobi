@@ -53,6 +53,7 @@ func _build() -> void:
 	if _built:
 		return
 	_built = true
+	land.plan_sites()
 	material = make_material()
 	streamer = ContinentStreamer.new()
 	streamer.setup(land, material)

@@ -84,6 +84,10 @@ func settle(limit_seconds := 120.0) -> void:
 
 ## The ground comes up where `near` is, and only then follows the player (who
 ## stands somewhere else until the world places them).
+func settle_ground(point: Vector3) -> void:
+	await continent.start(point)
+
+
 func _start_ground(near: Vector3) -> void:
 	await continent.start(to_global(near))
 	continent.target = player

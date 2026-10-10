@@ -151,6 +151,12 @@ func ground_ready() -> void:
 	pass
 
 
+## Waits until there is ground to stand on at `point` (world space), after
+## someone is moved there from far away. The islands are always built.
+func settle_ground(_point: Vector3) -> void:
+	pass
+
+
 ## Where an island's origin (its clearing) sits in the archipelago. A summit
 ## is lifted so its own sea level meets the shared one.
 static func offset_of(id: String) -> Vector3:

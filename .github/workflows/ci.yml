@@ -43,6 +43,13 @@ jobs:
       - name: Run tests
         run: ~/godot/godot --headless --path game res://tests/test_runner.tscn
 
+      # The open world runs on two layouts (the sea of islands and the
+      # continent): the suite above uses the default, these the other one.
+      - name: Open world on the continent
+        run: |
+          ~/godot/godot --headless --path game res://tests/test_runner.tscn -- --world=continent --filter=open_world
+          ~/godot/godot --headless --path game res://tests/test_runner.tscn -- --world=continent --filter=new_game
+
       # Screenshots are for looking at, not a gate: the runner renders on the
       # CPU, so each gets a time limit and a slow one never blocks the build.
       - name: Screenshots

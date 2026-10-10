@@ -90,6 +90,8 @@ var rivers: ContinentPaths
 var lakes: Array[Dictionary] = []
 ## Road links as pairs of region ids.
 var road_links: Array[PackedStringArray] = []
+## The places of interest (see plan_sites); the scatter keeps clear of them.
+var sites: ContinentSites
 
 var _rx := PackedFloat32Array()
 var _rz := PackedFloat32Array()
@@ -127,6 +129,14 @@ func _init() -> void:
 	_build_rivers()
 	_build_roads()
 	_router = null
+
+
+## Plans the places of interest (once). Call on the main thread before the
+## scatter runs, which reads them from worker threads.
+func plan_sites() -> ContinentSites:
+	if sites == null:
+		sites = ContinentSites.new(self)
+	return sites
 
 
 func _make_noise(offset: int, freq: float, octaves: int, fractal := FastNoiseLite.FRACTAL_FBM) -> FastNoiseLite:
