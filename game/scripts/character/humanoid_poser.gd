@@ -490,12 +490,14 @@ func _sword_hold(p: Dictionary) -> void:
 		p["use_arm_R"] = p["use_arms"]
 		return
 	# The arm hangs all but straight (reach just short of full, so the elbow
-	# only softens), a little out from the hip. The fingers run inward and down
-	# along it (the palm faces forward, the knuckles back), so the wrist bends
-	# only a little.
-	var arm := Vector3(0.2, -0.97, -0.06)
-	var blade := Vector3(0.5, -0.84, -0.18)
-	var edge := Vector3(-0.8, -0.6, 0.15)
+	# only softens), the hand out past the flare of the jacket. The blade
+	# angles down, out and a little ahead, and the edge is taken from the arm
+	# itself, so the hand carries on along the forearm as far as the blade
+	# allows: with the grip's slant the wrist turns under 30 degrees toward the
+	# little finger, the way a real hand lets a sword hang.
+	var arm := Vector3(0.28, -0.95, -0.1)
+	var blade := Vector3(0.62, -0.7, -0.36)
+	var edge := arm
 	if pose == Pose.GUARD:
 		# A blade block: held level across in front of the head.
 		arm = Vector3(0.12, 0.3, -0.58)
@@ -522,9 +524,19 @@ func _sword_hold(p: Dictionary) -> void:
 func _sword_key(p: Dictionary, arm: Vector3, blade: Vector3, edge: Vector3, twist: float) -> void:
 	var b := blade.normalized()
 	var e := edge - b * edge.dot(b)
+	if e.length_squared() < 1e-6:
+		e = Vector3.DOWN - b * b.y
+		if e.length_squared() < 1e-6:
+			e = Vector3.FORWARD
+	e = e.normalized()
+	p["blade_R"] = b
+	p["edge_R"] = e
+	# The grip lies slanted across the palm (CharacterGear.GRIP_SLANT), so the
+	# hand's thumb side and fingers are the blade and edge turned back by it.
+	var slant := CharacterGear.GRIP_SLANT
 	p["arm_R"] = arm
-	p["thumb_R"] = b
-	p["hand_R"] = e.normalized() if e.length_squared() > 1e-6 else Vector3.DOWN
+	p["thumb_R"] = b * cos(slant) - e * sin(slant)
+	p["hand_R"] = b * sin(slant) + e * cos(slant)
 	p["pole_R"] = Vector3(1.0, -0.6, 0.4)
 	p["curl_R"] = 1.5
 	p["wrap_R"] = 1.0

@@ -349,7 +349,29 @@ func test_a_standing_swordsman_lets_the_sword_arm_hang_nearly_straight_with_the_
 	var arm: Vector3 = poser._cur["arm_R"]
 	assert_true(arm.length() > 0.95, "the reach is all but full: the elbow barely bends (%.2f)" % arm.length())
 	assert_true(arm.y < -0.9 and absf(arm.x) < 0.35, "it hangs at the side, not out in front (%s)" % arm)
-	var blade: Vector3 = poser._cur["thumb_R"]
-	assert_true(blade.y < -0.7, "the blade points down")
+	var blade: Vector3 = poser._cur["blade_R"]
+	assert_true(blade.y < -0.6, "the blade points down")
 	assert_true(blade.x > 0.3, "and away from the leg")
-	assert_true(blade.angle_to(Vector3.DOWN) < deg_to_rad(45.0), "no more than 45 degrees off vertical (%.0f)" % rad_to_deg(blade.angle_to(Vector3.DOWN)))
+	assert_true(blade.angle_to(Vector3.DOWN) < deg_to_rad(50.0), "no more than 50 degrees off vertical (%.0f)" % rad_to_deg(blade.angle_to(Vector3.DOWN)))
+	# The hand carries on along the forearm: a real wrist turns toward the
+	# little finger by 30 to 40 degrees at most.
+	var fingers: Vector3 = poser._cur["hand_R"]
+	var bend := rad_to_deg(fingers.angle_to(arm))
+	assert_true(bend < 32.0, "the wrist bends only a little (%.0f degrees)" % bend)
+
+
+func test_the_hand_holds_the_grip_slanted_across_the_palm_and_the_sword_lands_where_it_was_asked() -> void:
+	var poser := HumanoidPoser.new()
+	var p := {"twist": 0.0, "use_arms": true}
+	var blade := Vector3(0.62, -0.7, -0.36).normalized()
+	poser._sword_key(p, Vector3(0.28, -0.95, -0.1), blade, Vector3(0.0, -1.0, 0.0), 0.0)
+	var thumb: Vector3 = p["thumb_R"]
+	var fingers: Vector3 = p["hand_R"]
+	assert_near(thumb.dot(fingers), 0.0, 1e-4, "the hand's thumb side and fingers stay square")
+	# The gear fits the sword by the same slant, so the hand's frame turned
+	# forward again is exactly the blade and edge asked for.
+	var s := CharacterGear.GRIP_SLANT
+	var back := thumb * cos(s) + fingers * sin(s)
+	assert_true(back.distance_to(blade) < 1e-4, "the blade points where it was asked (%s)" % back)
+	assert_true(blade.angle_to(thumb) > deg_to_rad(20.0), "and leans off the thumb side toward the fingertips")
+	poser.free()

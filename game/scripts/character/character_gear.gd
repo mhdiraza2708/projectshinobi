@@ -361,6 +361,13 @@ const HILT_SURFACES := [1, 2, Vector2i(0, 1)]
 ## Model units (hilt up, +Y): the guard's face and the middle of the grip.
 const GUARD_Y := 0.157
 const GRIP_Y := 0.235
+## How far the grip lies slanted across the palm (radians, 35 degrees): a
+## sword's grip runs diagonally from the heel of the hand to the root of the
+## forefinger, so the blade leans toward the fingertips instead of standing
+## square out of the thumb side. That is what lets the wrist stay nearly
+## straight with the blade pointing down along the arm. HumanoidPoser turns
+## the hand to match.
+const GRIP_SLANT := 0.611
 ## The blade the scabbard hides, in model units below the guard.
 const BLADE_LENGTH := 0.6
 const BLADE_COLOR := Color("cdd3db")
@@ -452,10 +459,11 @@ func _grip_in_hand(scale: float) -> Transform3D:
 	var palm := Vector3.DOWN - fingers * Vector3.DOWN.dot(fingers)
 	palm = palm.normalized() if palm.length_squared() > 1e-6 else Vector3.DOWN
 	var grip := to_canon * hand + fingers * reach * 0.85 + palm * reach * 0.35
-	# Exactly the thumb side and the knuckles: the poser aims the hand by
-	# the same two directions (HumanoidPoser._aim_hand).
-	var blade_dir := thumb
-	var edge := fingers
+	# The thumb side and the knuckles, turned by the grip's slant toward the
+	# fingertips: the poser aims the hand by the same two directions, turned
+	# back (HumanoidPoser._sword_key).
+	var blade_dir := thumb * cos(GRIP_SLANT) + fingers * sin(GRIP_SLANT)
+	var edge := fingers * cos(GRIP_SLANT) - thumb * sin(GRIP_SLANT)
 	# Model: blade toward -Y, edge toward -X.
 	var y := -blade_dir
 	var x := -edge
