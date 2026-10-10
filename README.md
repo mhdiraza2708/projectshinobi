@@ -1,12 +1,12 @@
 # Project Shinobi
 
 <p align="center">
-  <a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@74a9ee0b1de8ca4807d849cbf60e81c6fb06189d/docs/media/shinobi_teaser.mp4"><img src="docs/media/teaser_preview.webp" width="720" alt="Teaser highlights: Emberwood from the air, weaving seals, mastering five natures, an eye art awakening in close-up, the Hearthfall ultimate, and the Project Shinobi title card"></a>
+  <a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@a64e01f234a69dc77695ea20ac532bb9c790bb56/docs/media/shinobi_trailer.mp4"><img src="docs/media/trailer_preview.webp" width="720" alt="Trailer highlights: the main character drawing their katana, weaving seals, mastering five natures, the dojutsu eyes snapping open, an ultimate, the fire spirit Nue, and the Project Shinobi title card"></a>
   <br>
-  <b><a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@74a9ee0b1de8ca4807d849cbf60e81c6fb06189d/docs/media/shinobi_teaser.mp4">▶ Watch the 50-second teaser (with sound)</a></b>
-  · <a href="docs/media/shinobi_teaser.mp4">download</a>
+  <b><a href="https://cdn.jsdelivr.net/gh/mhdiraza2708/projectshinobi@a64e01f234a69dc77695ea20ac532bb9c790bb56/docs/media/shinobi_trailer.mp4">▶ Watch the 60-second trailer (with sound)</a></b>
+  · <a href="docs/media/shinobi_trailer.mp4">download</a>
   <br>
-  <sub>Recorded in-engine. It predates the open world and the skill trees.</sub>
+  <sub>Recorded in-engine. It predates the over-the-shoulder camera and the rush jutsu.</sub>
 </p>
 
 A third-person shinobi action game built around **weaving hand seals to cast
