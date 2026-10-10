@@ -84,3 +84,14 @@ func test_shade_clones_are_the_main_character_too() -> void:
 	assert_false(clones.is_empty())
 	for c in clones:
 		assert_eq(c.model.loaded_path, CharacterModel.MAIN_MODEL)
+
+
+func test_the_drawn_sword_takes_the_cap_on_its_grip() -> void:
+	await _load()
+	var gear := player.model.gear
+	assert_true(gear.has_sword())
+	var scabbard := (gear.scabbard as MeshInstance3D).mesh.get_aabb()
+	var sword := (gear.sword as MeshInstance3D).mesh.get_aabb()
+	assert_true(scabbard.end.y <= CharacterGear.GUARD_Y + 0.01,
+		"nothing of the scabbard above the guard to be left at the hip (%.3f)" % scabbard.end.y)
+	assert_true(sword.end.y > CharacterGear.GRIP_Y + 0.1, "the grip ends in its cap (%.3f)" % sword.end.y)

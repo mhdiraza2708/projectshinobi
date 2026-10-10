@@ -174,6 +174,8 @@ func seal_flick() -> void:
 
 const CAST_TIME := 0.32
 const FLINCH_TIME := 0.26
+## How much of a wrist's twist its forearm takes (see _share_wrist_twist).
+const WRIST_TWIST_SHARE := 0.55
 
 ## A rush jutsu's right arm (see CharacterAnimator.rush_arm): 0 free, 1
 ## holding the technique out low at the side, palm up, 2 driving it forward.
@@ -315,6 +317,13 @@ func _target_params() -> Dictionary:
 	elif pose == Pose.WEAVE and clip_states.has(Pose.LOCOMOTION):
 		# Seal arms over the idle clip's stance.
 		p["use_legs"] = false
+	if airborne and pose == Pose.LOCOMOTION:
+		# In the air the body is posed, not clipped: legs tucked, arms out
+		# for balance. A jump clip is a standing leap, and played over a
+		# game's jump it reads as standing still in mid-air.
+		p["use_arms"] = true
+		p["use_legs"] = true
+		p["use_spine"] = true
 
 	if _throw_t > 0.0:
 		# Wind up behind the head, then whip forward (with the left hand
@@ -622,6 +631,10 @@ func _process_modification_with_delta(delta: float) -> void:
 		_aim_hand(pre, _frame * p["hand_" + side], _frame * p["thumb_" + side])
 		_curl_fingers(pre, p.get("curl_" + side, p["curl"]))
 
+	# Clip or pose alike: share each wrist's twist with its forearm.
+	for pre in ["Left", "Right"]:
+		_share_wrist_twist(pre, WRIST_TWIST_SHARE)
+
 
 func _rest(bone: StringName) -> Transform3D:
 	return _skel.get_bone_global_rest(_b[bone])
@@ -700,6 +713,39 @@ func _aim_hand(pre: String, fingers: Vector3, thumb: Vector3) -> void:
 	var angle := cur.signed_angle_to(want, axis)
 	t.basis = Basis(axis, angle) * t.basis
 	_skel.set_bone_global_pose(hand, t)
+
+
+## Turns the forearm with `share` of the hand's twist about it, the hand
+## staying exactly where it is. Rigs without forearm twist bones (Tripo's,
+## Mixamo's) otherwise wring the whole turn into the wrist, and a gauntlet
+## or cuff skinned there folds into slabs; a real forearm rolls with the
+## hand.
+func _share_wrist_twist(pre: String, share: float) -> void:
+	var lower_name := StringName(pre + "LowerArm")
+	var hand_name := StringName(pre + "Hand")
+	if not (_b.has(lower_name) and _b.has(hand_name)):
+		return
+	var lower: int = _b[lower_name]
+	var hand: int = _b[hand_name]
+	if _skel.get_bone_parent(hand) != lower:
+		return
+	var lt := _skel.get_bone_global_pose(lower)
+	var ht := _skel.get_bone_global_pose(hand)
+	var axis := ht.origin - lt.origin
+	if axis.length_squared() < 1e-8:
+		return
+	axis = axis.normalized()
+	# The hand's turn on the forearm since rest, then its twist about the
+	# forearm (swing-twist decomposition), as a signed angle.
+	var rest_hand := lt.basis.orthonormalized() * _skel.get_bone_rest(hand).basis.orthonormalized()
+	var turn := (ht.basis.orthonormalized() * rest_hand.inverse()).get_rotation_quaternion()
+	var along := Vector3(turn.x, turn.y, turn.z).dot(axis)
+	var angle := wrapf(2.0 * atan2(along, turn.w), -PI, PI)
+	if absf(angle) < 0.02:
+		return
+	lt.basis = Basis(axis, angle * share) * lt.basis
+	_skel.set_bone_global_pose(lower, lt)
+	_skel.set_bone_global_pose(hand, ht)
 
 
 ## Curls the four fingers toward the palm (0 = flat, ~1.3 = fist).

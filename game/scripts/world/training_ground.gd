@@ -1172,6 +1172,48 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.look_at(Vector3(0.0, 1.0, -3.0))
 			cam.current = true
 			await _frames(40)
+		_ when demo.begins_with("pose:"):
+			# The real player mid-action, close up: --demo=pose:jump or
+			# pose:hold (the sword drawn and held), --frames=<physics frames
+			# after it starts>, --side=<camera angle round them, radians>.
+			hud.visible = false
+			for old in find_children("*", "TrainingDummy", true, false):
+				old.free()
+			await _frames(10)
+			match demo.trim_prefix("pose:"):
+				"jump":
+					player._jump()
+				"hold":
+					player._strike()
+			for i in int(_user_args().get("frames", "10")):
+				await get_tree().physics_frame
+			get_tree().paused = true
+			var anim := player.animator
+			if _user_args().has("debug"):
+				print("POSE y=%.2f vy=%.2f floor=%s airborne=%s clip=%s pose=%d" % [player.global_position.y, player.velocity.y,
+					player.is_on_floor(), anim.airborne if anim else false,
+					anim.clips.current_animation if anim and anim.clips else "", anim.pose if anim else -1])
+			# --hide=<node name>: hides that part of the player (finding strays).
+			var hide_name := str(_user_args().get("hide", ""))
+			if hide_name != "":
+				for n in player.find_children(hide_name, "Node3D", true, false):
+					(n as Node3D).visible = false
+			var cam := Camera3D.new()
+			add_child(cam)
+			var side := float(_user_args().get("side", "0.6"))
+			var face := -player.global_basis.z
+			var round := face.rotated(Vector3.UP, side)
+			var chest := player.global_position + Vector3.UP * 1.1
+			# --aim=RightHand (any bone) frames that bone instead of the chest.
+			var bone_name := str(_user_args().get("aim", ""))
+			var skel := player.model.skeleton
+			if bone_name != "" and skel and skel.find_bone(bone_name) >= 0:
+				chest = skel.global_transform * skel.get_bone_global_pose(skel.find_bone(bone_name)).origin
+			cam.global_position = chest + round * float(_user_args().get("dist", "1.9")) + Vector3.UP * 0.15
+			cam.look_at(chest)
+			cam.fov = 45.0
+			cam.current = true
+			await _frames(3)
 		_ when demo.begins_with("rush:"):
 			# A rush jutsu from the gameplay camera, locked on to a dummy:
 			# --demo=rush:cyclone_core (--frames=<physics frames after the cast>).

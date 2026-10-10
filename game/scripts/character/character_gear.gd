@@ -347,10 +347,14 @@ func clear() -> void:
 
 # --- The ninjato -----------------------------------------------------------------
 
-## Surfaces of the ninjato model (art/blender/build_assets.py): the lacquered
-## scabbard, the steel guard, the wrapped grip, the leather cord.
-const SCABBARD_SURFACES := [0, 3]
-const HILT_SURFACES := [1, 2]
+## Surfaces of the ninjato model (art/blender/build_assets.py): the black
+## lacquer, the steel guard, the wrapped grip, the leather cord. The lacquer
+## is both the scabbard and the cap on the end of the grip, so it is split at
+## the guard: Vector2i(surface, -1) is its part below the guard, (surface, 1)
+## the part above. Left whole, the cap stayed at the hip when the sword was
+## drawn, a black block hanging in the air.
+const SCABBARD_SURFACES := [Vector2i(0, -1), 3]
+const HILT_SURFACES := [1, 2, Vector2i(0, 1)]
 ## Model units (hilt up, +Y): the guard's face and the middle of the grip.
 const GUARD_Y := 0.157
 const GRIP_Y := 0.29
@@ -470,10 +474,14 @@ func _part(surfaces: Array) -> MeshInstance3D:
 		var mesh := (source.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
 		source.free()
 		part = ArrayMesh.new()
-		for i: int in surfaces:
+		for entry: Variant in surfaces:
+			var i: int = entry.x if entry is Vector2i else entry
 			if i >= mesh.get_surface_count():
 				continue
-			part.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh.surface_get_arrays(i))
+			var arrays := mesh.surface_get_arrays(i)
+			if entry is Vector2i:
+				arrays = _split_at_guard(arrays, (entry as Vector2i).y)
+			part.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 			part.surface_set_material(part.get_surface_count() - 1, mesh.surface_get_material(i))
 		var shaded := MeshInstance3D.new()
 		shaded.mesh = part
@@ -488,6 +496,35 @@ func _part(surfaces: Array) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	mi.mesh = part
 	return mi
+
+
+## The triangles of a surface below the guard (`side` -1) or above it (1),
+## rebuilt from just their own vertices (so the part's bounds are its own).
+static func _split_at_guard(arrays: Array, side: int) -> Array:
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: Variant = arrays[Mesh.ARRAY_NORMAL]
+	var uvs: Variant = arrays[Mesh.ARRAY_TEX_UV]
+	var index: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+	if index.is_empty():
+		for v in verts.size():
+			index.append(v)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for t in range(0, index.size() - 2, 3):
+		var y := (verts[index[t]].y + verts[index[t + 1]].y + verts[index[t + 2]].y) / 3.0
+		if (y > GUARD_Y) != (side > 0):
+			continue
+		for k in 3:
+			var v := index[t + k]
+			if normals != null:
+				st.set_normal((normals as PackedVector3Array)[v])
+			if uvs != null:
+				st.set_uv((uvs as PackedVector2Array)[v])
+			st.add_vertex(verts[v])
+	st.index()
+	if normals == null:
+		st.generate_normals()
+	return st.commit_to_arrays()
 
 
 ## A slightly curved single-edged blade with a ridged back, from the guard

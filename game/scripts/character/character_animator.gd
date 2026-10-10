@@ -259,7 +259,9 @@ func _process(delta: float) -> void:
 		return
 	clips.speed_scale = _speed_for(want)
 	if clips.current_animation != want:
-		clips.play(want, BLEND_TIME)
+		# The first clip snaps in: blending from no clip is blending out of the
+		# rest pose, a T-pose held for a fifth of a second as anyone appears.
+		clips.play(want, BLEND_TIME if clips.current_animation != &"" else 0.0)
 
 
 func _update_sword(delta: float) -> void:
