@@ -70,6 +70,9 @@ var _cut := 0
 var _draw_t := 0.0
 var _sheathe_t := 0.0
 var _ready_for_pose := false
+## Screenshots: the moves' clocks stand still, so a cut or a draw can be
+## caught at one moment however slowly the frames come.
+var hold_timers := false
 
 
 ## Call once after the skeleton is in the tree. Returns false if the rig
@@ -617,14 +620,15 @@ func _process_modification_with_delta(delta: float) -> void:
 	if not _ready_for_pose:
 		return
 	_time += delta
+	var spent := 0.0 if hold_timers else delta
 	_strike_t = maxf(0.0, _strike_t - delta)
-	_throw_t = maxf(0.0, _throw_t - delta)
+	_throw_t = maxf(0.0, _throw_t - spent)
 	_flick_t = maxf(0.0, _flick_t - delta)
 	_cast_t = maxf(0.0, _cast_t - delta)
 	_flinch_t = maxf(0.0, _flinch_t - delta)
-	_cut_t = maxf(0.0, _cut_t - delta)
-	_draw_t = maxf(0.0, _draw_t - delta)
-	_sheathe_t = maxf(0.0, _sheathe_t - delta)
+	_cut_t = maxf(0.0, _cut_t - spent)
+	_draw_t = maxf(0.0, _draw_t - spent)
+	_sheathe_t = maxf(0.0, _sheathe_t - spent)
 	if speed_ratio > 0.05 and not airborne:
 		_phase += delta * lerpf(6.0, 12.5, clampf(speed_ratio, 0.0, 1.6) / 1.6)
 

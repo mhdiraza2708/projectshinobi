@@ -1163,6 +1163,7 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 					var a := models[i].animator
 					var poser := a.poser
 					a.set_process(false)
+					poser.hold_timers = true
 					var st := states[i].split("@")
 					var t := float(st[1]) if st.size() > 1 else 0.0
 					poser.hilt = a.gear.hilt_grip
@@ -1186,7 +1187,7 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 						_:
 							a.gear.set_drawn(true)
 							poser._cut = int(st[0].trim_prefix("cut"))
-							poser._cut_t = HumanoidPoser.CUT_TIME * (1.0 - t)
+							poser._cut_t = HumanoidPoser.cut_time(poser._cut) * (1.0 - t)
 					poser.sword_drawn = a.gear.is_drawn()
 			get_tree().process_frame.connect(pose_all)
 			await _frames(24)
