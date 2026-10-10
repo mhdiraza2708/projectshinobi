@@ -1,6 +1,6 @@
 class_name TrailerDirector
 extends Node
-## The 50-second teaser, played with the game's own systems: a fixed cut
+## The 60-second trailer, played with the game's own systems: a fixed cut
 ## list timed to the trailer's music (art/trailer/make_trailer_audio.py, 120
 ## BPM, so every cut lands on a two-second bar line). Recorded with Godot's
 ## movie writer, then scored by art/trailer/mix_trailer.py:
@@ -8,11 +8,12 @@ extends Node
 ##   godot --path game --write-movie OUT.avi --fixed-fps 30 --resolution 1280x720 \
 ##       -- --screenshot=LAST.png --demo=trailer
 ##
-## Everything on screen is the real game: islands, skies, characters, jutsu,
-## the eye art awakening and an ultimate. The director only moves a camera,
+## Everything on screen is the real game: islands, skies, the main
+## character and the masked rivals, the katana, jutsu, Shade Clones, the
+## dojutsu cut-in and awakening, an ultimate and the Nue. The director only moves a camera,
 ## stages who stands where and presses the buttons.
 
-const LENGTH := 50.0
+const LENGTH := 60.0
 ## 2.39:1 letterbox on a 16:9 frame.
 const BAR_FRACTION := 0.128
 
@@ -20,6 +21,10 @@ var stage: Node3D
 var player: Player
 var cam: Camera3D
 var t := 0.0
+
+## When the eye opens: its lids part (EyeSequence.CUT_AT + the middle of
+## LIDS_OPEN) on the music's awakening hit at 36 s.
+const EYE_OPEN_AT := 35.05
 
 var _overlay: CanvasLayer
 var _fade: ColorRect
@@ -41,10 +46,11 @@ func play() -> void:
 	await _opening()
 	await _island_dawn()
 	await _shore()
+	await _blade()
 	await _weave()
 	await _five_natures()
 	await _rival()
-	await _iwao()
+	await _jonin()
 	await _kagerou()
 	await _awakening()
 	await _ultimate()
@@ -177,9 +183,11 @@ func _character(who: String, element: int, at: Vector3, rank := &"jonin", hunt :
 	return e
 
 
-func _foe(at: Vector3, element: int, hunt := false) -> EnemyShinobi:
+## A rank-and-file fighter: genin and chunin wear their nature's masked
+## rival, jonin the rogue elite.
+func _foe(at: Vector3, element: int, hunt := false, rank := &"genin") -> EnemyShinobi:
 	var e := EnemyShinobi.new()
-	e.rank = &"genin"
+	e.rank = rank
 	e.element = element
 	e.hunt = hunt
 	e.target = player
@@ -255,19 +263,49 @@ func _shore() -> void:
 		_look(Vector3(x, water + 1.6, coast + 20.0), Vector3(0, water + 5.0, 0)))
 
 
-## 10-14 s: hands weaving, then a bolt of chakra leaves them.
+## 10-14 s: the drop. The katana leaves the scabbard and two masked raiders
+## fall to it.
+func _blade() -> void:
+	var raiders: Array[EnemyShinobi] = [_foe(_ground(-1.0, -3.4), Element.FIRE), _foe(_ground(1.6, -4.2), Element.FIRE)]
+	_place_player(_ground(0, 0), raiders[0].global_position)
+	_caption("DRAW THE BLADE", 13.7)
+	# [when, who, what]
+	var acts := [[0.1, 0, "dash"], [0.45, 0, "strike"], [0.8, 0, "strike"], [1.15, 0, "strike"],
+		[1.75, 1, "dash"], [2.1, 1, "strike"], [2.45, 1, "strike"], [2.8, 1, "strike"]]
+	var done := 0
+	await _until(14.0, func(k: float) -> void:
+		var p := player.global_position
+		var who: EnemyShinobi = raiders[1 if k >= 1.6 else 0]
+		var a := who.global_position if is_instance_valid(who) else p + Vector3(0, 0, -3)
+		var dir := Vector3(a.x - p.x, 0.0, a.z - p.z).normalized()
+		var side := dir.cross(Vector3.UP).normalized()
+		_look(p - dir * 1.4 + side * 2.4 + Vector3.UP * 1.25, (p + a) * 0.5 + Vector3.UP * 1.0)
+		if done < acts.size() and k >= float(acts[done][0]):
+			var target: EnemyShinobi = raiders[int(acts[done][1])]
+			if is_instance_valid(target):
+				_place_player(p, target.global_position)
+				player.lock_target = target
+			match str(acts[done][2]):
+				"dash": player._start_dash()
+				"strike": player._strike()
+			done += 1)
+	player.lock_target = null
+
+
+## 14-18 s: hands weaving, then a bolt of chakra leaves them.
 func _weave() -> void:
+	_clear_cast()
 	var at := _ground(0, 0)
 	var dummy := _foe(_ground(0, -11), Element.WIND)
 	_place_player(at, dummy.global_position)
 	player.scripted_pose = HumanoidPoser.Pose.WEAVE
-	_caption("WEAVE THE SEALS", 13.7)
+	_caption("WEAVE THE SEALS", 17.7)
 	var fwd := -player.global_basis.z
 	var right := fwd.cross(Vector3.UP).normalized()
 	var next_seal := 0.0
 	var seal := 0
 	var released := false
-	await _until(14.0, func(k: float) -> void:
+	await _until(18.0, func(k: float) -> void:
 		var chest := player.global_position + Vector3.UP * 1.15
 		_look(chest + fwd * lerpf(1.5, 1.1, k / 4.0) + right * 0.55 - Vector3.UP * 0.1, chest)
 		if k < 2.2 and k >= next_seal:
@@ -283,17 +321,18 @@ func _weave() -> void:
 			_cast_now(&"chakra_bolt", dummy))
 
 
-## 14-18 s: fire, water, wind and lightning in quick succession.
+## 18-22 s: fire, water, wind and lightning in quick succession, at the
+## storm caller, the stone warden and the tide-runner.
 func _five_natures() -> void:
 	_clear_cast()
 	var targets: Array[EnemyShinobi] = []
 	for i in 3:
-		targets.append(_foe(_ground(-6.0 + i * 6.0, -14.0), [Element.WIND, Element.EARTH, Element.WATER][i]))
+		targets.append(_foe(_ground(-6.0 + i * 6.0, -14.0), [Element.LIGHTNING, Element.EARTH, Element.WATER][i]))
 	_place_player(_ground(0, 0), _ground(0, -14))
-	_caption("MASTER FIVE NATURES", 17.7)
+	_caption("MASTER FIVE NATURES", 21.7)
 	var casts := [[0.3, &"ember_volley", 0], [1.3, &"tide_lance", 1], [2.2, &"crescent_cutter", 2], [3.1, &"thunder_needle", 1]]
 	var done := 0
-	await _until(18.0, func(k: float) -> void:
+	await _until(22.0, func(k: float) -> void:
 		var p := player.global_position
 		_look(p + Vector3(7.5 - k * 0.6, 2.4, 3.5), p + Vector3(0, 1.2, -6.0))
 		if done < casts.size() and k >= float(casts[done][0]):
@@ -302,7 +341,7 @@ func _five_natures() -> void:
 			done += 1)
 
 
-## 18-22 s: Asahi's lightning against your strikes.
+## 22-26 s: Asahi's lightning against your strikes.
 func _rival() -> void:
 	_clear_cast()
 	var asahi := _character("asahi", Element.LIGHTNING, _ground(0, -5.5), &"jonin", true)
@@ -310,7 +349,7 @@ func _rival() -> void:
 	player.lock_target = asahi
 	var acts := [[0.4, "dash"], [0.9, "strike"], [1.2, "strike"], [1.5, "strike"], [2.4, "kunai"], [3.0, "dash"], [3.4, "strike"]]
 	var done := 0
-	await _until(22.0, func(k: float) -> void:
+	await _until(26.0, func(k: float) -> void:
 		var p := player.global_position
 		var a := asahi.global_position if is_instance_valid(asahi) else p + Vector3(0, 0, -5)
 		var away := Vector3(p.x - a.x, 0.0, p.z - a.z).normalized()
@@ -326,32 +365,27 @@ func _rival() -> void:
 			done += 1)
 
 
-## 22-26 s: the Ashen Pass at dusk. Iwao raises the earth.
-func _iwao() -> void:
+## 26-30 s: two rogue elites, and the player splits into Shade Clones.
+func _jonin() -> void:
 	_clear_cast()
 	player.lock_target = null
-	stage.use_island("ashen_pass")
-	stage.set_time_of_day("dusk")
-	var iwao := _character("iwao", Element.EARTH, _ground(0, -8), &"jonin", false, 1.1)
-	_place_player(_ground(0, 2), iwao.global_position)
-	var did := [false, false]
-	await _until(26.0, func(k: float) -> void:
-		if not is_instance_valid(iwao):
-			return
-		var at := iwao.global_position
-		var to_player := (player.global_position - at).normalized()
-		iwao.rotation.y = atan2(-to_player.x, -to_player.z)
-		var side := to_player.cross(Vector3.UP).normalized()
-		_look(at + to_player * lerpf(4.2, 3.0, k / 4.0) + side * 1.4 + Vector3.UP * 0.5, at + Vector3.UP * 1.6)
-		if k >= 1.4 and not did[0]:
-			did[0] = true
-			iwao.caster.cast(JutsuRegistry.get_jutsu(&"quake_stomp"), player, true)
-		if k >= 2.9 and not did[1]:
-			did[1] = true
-			iwao.caster.cast(JutsuRegistry.get_jutsu(&"granite_skin"), iwao, true))
+	var elites: Array[EnemyShinobi] = [_foe(_ground(-2.2, -7.0), Element.FIRE, true, &"jonin"),
+		_foe(_ground(2.4, -7.6), Element.LIGHTNING, true, &"jonin")]
+	_place_player(_ground(0, 0), _ground(0, -7))
+	_caption("SPLIT YOUR SHADOW", 29.7)
+	var summoned := false
+	await _until(30.0, func(k: float) -> void:
+		var p := player.global_position
+		var a := deg_to_rad(-35.0 + k * 16.0)
+		_look(p + Vector3(sin(a) * 7.8, 3.2, cos(a) * 7.8), p + Vector3(0, 1.0, -3.6))
+		if k >= 0.35 and not summoned and is_instance_valid(elites[0]):
+			summoned = true
+			_cast_now(&"shade_clones", elites[0]))
+	for c in player.caster.clones():
+		c.leave()
 
 
-## 26-30 s: night. Kagerou waits in the firelight.
+## 30-34 s: night. Kagerou waits in the firelight.
 func _kagerou() -> void:
 	_clear_cast()
 	stage.set_time_of_day("night")
@@ -360,7 +394,7 @@ func _kagerou() -> void:
 	kage.add_child(aura)
 	_place_player(_ground(0, 3), kage.global_position)
 	var bloomed := false
-	await _until(30.0, func(k: float) -> void:
+	await _until(34.0, func(k: float) -> void:
 		if not is_instance_valid(kage):
 			return
 		var at := kage.global_position
@@ -373,53 +407,55 @@ func _kagerou() -> void:
 			kage.caster.cast(JutsuRegistry.get_jutsu(&"cinder_bloom"), kage, true))
 
 
-## 30-36 s: darkness, "Open your eyes", and the awakening.
+## 34-40 s: darkness, "Open your eyes", the push-in, the cut to the drawn
+## eyes snapping open on the music's hit (36 s), and the awakening.
 func _awakening() -> void:
 	_fade_to(1.0, 0.25)
-	await _until(30.6)
+	await _until(34.6)
 	_clear_cast()
 	stage.set_time_of_day("dusk")
 	_place_player(_ground(0, 0), _ground(0, -10))
 	player.stats.chakra = player.stats.max_chakra
-	await _until(31.5)
+	await _until(EYE_OPEN_AT)
 	_fade.color.a = 0.0
-	# The eye sequence takes the camera; it cuts to the eye on the music's hit.
+	# The eye sequence takes the camera: the push-in, the cut to black and
+	# the lids parting (EyeSequence.CUT_AT + LIDS_OPEN) land on the hit.
 	player.eye_mode.try_open()
-	await _until(35.0)
+	await _until(39.0)
 	cam.current = true
-	_caption("AWAKEN YOUR EYES", 36.0)
-	await _until(36.0, func(k: float) -> void:
+	_caption("AWAKEN YOUR EYES", 40.0)
+	await _until(40.0, func(k: float) -> void:
 		var eyes := player.eye_mode.eye_point()
 		var fwd := -player.global_basis.z
-		_look(eyes + fwd * lerpf(0.9, 0.7, k) + Vector3.UP * 0.02, eyes))
+		_look(eyes + fwd * lerpf(0.95, 0.75, k) + Vector3.UP * 0.02, eyes))
 
 
 var _nue: EnemyShinobi
 
 
-## 36-42 s: Hearthfall.
+## 40-46 s: Hearthfall.
 func _ultimate() -> void:
 	for i in 3:
 		_foe(_ground(-3.0 + i * 3.0, -9.0 - absf(i - 1) * 1.5), [Element.WIND, Element.EARTH, Element.WATER][i])
-	await _until(36.1)
+	await _until(40.1)
 	player.ult_charge = Ultimates.MAX_CHARGE
 	player.try_ultimate()
-	while UltimateSequence.active != null and t < 40.5:
+	while UltimateSequence.active != null and t < 44.5:
 		_tidy()
 		await get_tree().process_frame
 		t += get_process_delta_time()
 	cam.current = true
-	_caption("UNLEASH YOUR ULTIMATE", 42.0)
+	_caption("UNLEASH YOUR ULTIMATE", 46.0)
 	# The Nue waits out of shot until its moment (a fresh spawn T-poses).
-	_nue = _character("nue", Element.FIRE, _ground(24, 24), &"jonin", false, 1.8)
+	_nue = _character("nue", Element.FIRE, _ground(24, 24), &"jonin", false, 1.5)
 	var start := t
-	await _until(42.0, func(k: float) -> void:
+	await _until(46.0, func(k: float) -> void:
 		var p := player.global_position
-		var a := deg_to_rad(30.0 + (k + start - 39.0) * 18.0)
+		var a := deg_to_rad(30.0 + (k + start - 43.0) * 18.0)
 		_look(p + Vector3(cos(a) * 6.0, 2.2, sin(a) * 6.0), p + Vector3(0, 1.4, -2.0)))
 
 
-## 42-46 s: the Nue, then three quick cuts.
+## 46-54 s: the Nue, a kunai, a dash and a cut, then the night village.
 func _montage() -> void:
 	for n: Variant in _cast:
 		if is_instance_valid(n) and n != _nue:
@@ -429,38 +465,43 @@ func _montage() -> void:
 	var nue := _nue
 	nue.global_position = _ground(0, -7) + Vector3.UP * 0.2
 	nue.velocity = Vector3.ZERO
-	nue.add_child(Vfx.boss_aura(Color(0.55, 0.2, 0.75), 1.6))
+	nue.add_child(Vfx.boss_aura(Color(0.95, 0.4, 0.12), 1.5))
 	_place_player(_ground(0, 2), nue.global_position)
-	await _until(43.0, func(k: float) -> void:
+	await _until(48.4, func(k: float) -> void:
 		if not is_instance_valid(nue):
 			return
 		var at := nue.global_position
 		var dir := (player.global_position - at).normalized()
 		nue.rotation.y = atan2(-dir.x, -dir.z)
-		_look(at + dir * lerpf(5.0, 4.4, k) + Vector3.UP * 0.6, at + Vector3.UP * 2.9))
+		_look(at + dir * lerpf(5.4, 4.2, k / 2.4) + Vector3.UP * 0.5, at + Vector3.UP * 2.4))
 	# A kunai past the camera.
 	_place_player(player.global_position, nue.global_position)
 	player.lock_target = nue
 	player.throw_kunai()
-	await _until(44.0, func(k: float) -> void:
+	await _until(49.4, func(k: float) -> void:
 		var p := player.global_position
 		var fwd := -player.global_basis.z
 		_look(p - fwd * 1.6 + fwd.cross(Vector3.UP).normalized() * 0.6 + Vector3.UP * 1.6, p + fwd * 6.0 + Vector3.UP * 1.4))
-	# A dash and a strike.
+	# A dash and the katana.
 	player._start_dash()
-	await _until(45.0, func(k: float) -> void:
+	var cuts := 0
+	await _until(51.0, func(k: float) -> void:
 		var p := player.global_position
-		if k > 0.35:
+		if k > 0.3 + cuts * 0.35 and cuts < 3:
+			cuts += 1
 			player._strike()
 		_look(p + Vector3(3.2, 1.0, 1.0), p + Vector3.UP * 1.1))
-	# Shade Clones.
-	_cast_now(&"shade_clones", nue)
-	await _until(46.0, func(k: float) -> void:
-		var p := player.global_position
-		_look(p + Vector3(0.0, 3.4, 7.0 - k), p + Vector3(0, 1.0, -2.0)))
+	# The village at night: lanterns, and the light where the next mission waits.
+	_clear_cast()
+	player.lock_target = null
+	_place_player(_ground(0, 4), _ground(0, -10))
+	_caption("A WORLD TO EXPLORE", 53.8)
+	await _until(54.0, func(k: float) -> void:
+		var a := deg_to_rad(150.0 + k * 9.0)
+		_look(Vector3(cos(a) * 26.0, lerpf(6.0, 13.0, k / 3.0), sin(a) * 26.0), Vector3(0, 3.0, 0)))
 
 
-## 46-50 s: the title.
+## 54-60 s: the title.
 func _title_card() -> void:
 	_fade.color.a = 1.0
 	_text.modulate.a = 0.0
@@ -483,6 +524,6 @@ func _title_card() -> void:
 	_title.pivot_offset = get_viewport().get_visible_rect().size * 0.5
 	var tw := create_tween().set_parallel()
 	tw.tween_property(_title, "modulate:a", 1.0, 0.25)
-	tw.tween_property(_title, "scale", Vector2.ONE, 3.2).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_title, "scale", Vector2.ONE, 4.6).set_ease(Tween.EASE_OUT)
 	tw.chain().tween_property(_title, "modulate:a", 0.0, 0.7).set_delay(0.0)
 	await _until(LENGTH)

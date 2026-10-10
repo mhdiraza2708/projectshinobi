@@ -5,8 +5,9 @@
 TRAILER.avi is what Godot's movie writer recorded (see TrailerDirector):
 the picture plus the game's sound effects. DIR is what
 make_trailer_audio.py wrote (music.wav, vo_<n>.wav, cues.json). The music
-dips under each voice line, everything is levelled to -14 LUFS (where
-streaming sites play trailers), and the result is an H.264/AAC mp4.
+and the game's sound both dip well under each voice line so every word
+carries, everything is levelled to -14 LUFS (where streaming sites play
+trailers), and the result is an H.264/AAC mp4.
 
 Needs ffmpeg (on PATH, or pip install imageio-ffmpeg).
 """
@@ -52,13 +53,15 @@ def main() -> int:
 		vo_labels.append(f"[vo{i}]")
 	n = len(vo_labels)
 	chains.append(f"{''.join(vo_labels)}amix=inputs={n}:normalize=0,atrim=0:{length},volume=1.6[vo]")
-	chains.append("[vo]asplit=2[vo_mix][vo_key]")
+	chains.append("[vo]asplit=3[vo_mix][vo_key][vo_key2]")
 	chains.append(f"[1:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{length}[music]")
-	# The music steps back while someone speaks.
-	chains.append("[music][vo_key]sidechaincompress=threshold=0.03:ratio=6:attack=15:release=350:makeup=1[ducked]")
+	# The music steps well back while someone speaks.
+	chains.append("[music][vo_key]sidechaincompress=threshold=0.02:ratio=9:attack=10:release=420:makeup=1[ducked]")
 	skip = args.skip
 	chains.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo,atrim={skip}:{skip + length},asetpts=PTS-STARTPTS,"
-		f"volume={args.sfx_gain}[sfx]")
+		f"volume={args.sfx_gain}[sfx_raw]")
+	# So do the game's own sounds (a blast over a word would bury it).
+	chains.append("[sfx_raw][vo_key2]sidechaincompress=threshold=0.02:ratio=6:attack=10:release=320:makeup=1[sfx]")
 	chains.append("[ducked][sfx][vo_mix]amix=inputs=3:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[aout]")
 	chains.append(f"[0:v]trim={skip}:{skip + length},setpts=PTS-STARTPTS,fps={args.fps},format=yuv420p[vout]")
 	cmd = [ffmpeg(), "-y", *inputs, "-filter_complex", ";".join(chains), "-map", "[vout]", "-map", "[aout]",
