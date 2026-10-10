@@ -743,7 +743,7 @@ func _refresh_quests() -> void:
 		var part := world.story.part(c["part"])
 		_quest_list.add_child(_quest_row(str(part.get("kanji", "章")),
 			"第%s章 %s  ·  %s" % [Story.numeral(c["part"]), part.get("title", ""), world.mission_title(c)],
-			str(c["objective"]) if c["objective"] != "" else "The pillar of light on %s" % Island.display_name(str(c["island"])),
+			str(c["objective"]) if c["objective"] != "" else "The pillar of light %s %s" % [_on_or_in(world), Island.display_name(str(c["island"]))],
 			Quests.MAIN, tracked))
 	for group: Array in [[Quests.ACTIVE, "Taken on"], [Quests.AVAILABLE, "Someone is asking"], [Quests.DONE, "Done"]]:
 		var list := Quests.with_status(group[0])
@@ -759,7 +759,7 @@ func _refresh_quests() -> void:
 					if counter != "":
 						line += "  (%s)" % counter
 				Quests.AVAILABLE:
-					line = "%s, on %s" % [giver.get("name", "Someone"), Island.display_name(str(q["island"]))]
+					line = "%s, %s %s" % [giver.get("name", "Someone"), _on_or_in(world), Island.display_name(str(q["island"]))]
 				Quests.DONE:
 					line = "+%d XP" % int(q.get("xp", 0))
 			_quest_list.add_child(_quest_row(str(q["kanji"]), str(q["name"]), line,
@@ -940,3 +940,8 @@ func _refresh_jutsu() -> void:
 			InputDevice.glyph_for_device(&"quick_shift", Binding.Device.GAMEPAD), InputDevice.glyph(&"quick_page"),
 			InputDevice.glyph(&"preset_prev"), InputDevice.glyph(&"preset_next")]
 	_jutsu_panel.refresh()
+
+
+## "on" an island, "in" a region of the continent.
+static func _on_or_in(world: OpenWorld) -> String:
+	return "in" if world != null and world.sites != null else "on"

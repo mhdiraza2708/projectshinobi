@@ -479,7 +479,7 @@ func objective() -> Dictionary:
 			return {"title": "The story is told", "kanji": "完", "text": "Every chapter is cleared. Explore, and help who you can.", "at": null}
 		var part := story.part(c["part"])
 		var where := Island.display_name(str(c["island"]))
-		var text := str(c["objective"]) if c["objective"] != "" else "Go to the pillar of light on %s" % where
+		var text := str(c["objective"]) if c["objective"] != "" else "Go to the pillar of light %s %s" % ["in" if sites != null else "on", where]
 		return {"title": "%s  ·  %s" % [_chapter_name(part), mission_title(c)], "kanji": str(part.get("kanji", "章")),
 			"text": text, "at": _beacon.global_position if is_instance_valid(_beacon) else null}
 	var q := Quests.quest(id)
