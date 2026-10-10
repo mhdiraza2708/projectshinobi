@@ -88,7 +88,28 @@ NAMES = {
 	"Sensei": "sˈɛnsA",
 	"sensei": "sˈɛnsA",
 }
-NAME_RE = re.compile(r"\b(" + "|".join(sorted(NAMES, key=len, reverse=True)) + r")\b")
+# The shinobi words, which espeak reads as English: "shinobi" as
+# shin-OH-bye, "jutsu" as JUT-soo, "genin" with a soft g.
+TERMS = {
+	"shinobi": "ʃinˈObi",
+	"jutsu": "ʤˈuʦu",
+	"dojutsu": "dˈOʤuʦu",
+	"kenjutsu": "kˈɛnʤuʦu",
+	"ninjutsu": "nˈinʤuʦu",
+	"kunai": "kˈunI",
+	"genin": "ɡˈɛnin",
+	"chunin": "ʧˈunin",
+	"jonin": "ʤˈOnin",
+	"chakra": "ʧˈɑkɹə",
+	"ninjato": "ninʤˈɑtO",
+	"hachigane": "hɑʧiɡˈɑnɛ",
+	"torii": "tˈOɹii",
+}
+for _term, _ps in TERMS.items():
+	NAMES.setdefault(_term, _ps)
+	NAMES.setdefault(_term.capitalize(), _ps)
+# A name, and its possessive ("Kagerou's" is one word, not "Kagerou ess").
+NAME_RE = re.compile(r"\b(" + "|".join(sorted(NAMES, key=len, reverse=True)) + r")('s)?\b")
 
 # espeak-ng's American English phonemes -> the set Kokoro was trained on
 # (after the misaki G2P's espeak fallback). "^" ties diphthongs together.
@@ -201,13 +222,28 @@ class Speaker:
 		out = []
 		pos = 0
 		for m in NAME_RE.finditer(text):
-			out.append(self._g2p(text[pos:m.start()]))
-			out.append(NAMES[m.group(1)])
+			out.append(self._g2p_before_word(text[pos:m.start()]))
+			out.append(NAMES[m.group(1)] + ("z" if m.group(2) else ""))
 			pos = m.end()
 		out.append(self._g2p(text[pos:]))
 		ps = " ".join(p for p in out if p)
-		# Splicing can leave a space before punctuation ("hisˈɑmɛ ,").
-		return re.sub(r"\s+([,.!?;:…])", r"\1", ps)
+		# Splicing can leave a space before punctuation ("hisˈɑmɛ ,") or two
+		# spaces in a row.
+		ps = re.sub(r"\s+([,.!?;:…])", r"\1", ps)
+		return re.sub(r"\s{2,}", " ", ps)
+
+	def _g2p_before_word(self, text: str) -> str:
+		"""A stretch of the line that a name follows. espeak reads it with a
+		stand-in word after it, then that word is cut off: alone, a closing
+		"a" is read as the letter ("AY jonin" for "a jonin")."""
+		if not text.strip() or not re.search(r"\w\s*$", text):
+			return self._g2p(text)
+		if not hasattr(self, "_stand_in"):
+			self._stand_in = self._g2p("cat")
+		ps = self._g2p(text.rstrip() + " cat")
+		if ps.endswith(self._stand_in):
+			return ps[: -len(self._stand_in)].rstrip()
+		return self._g2p(text)
 
 	def style(self, voice: dict) -> np.ndarray:
 		"""A voice name, or a blend "a*0.6+b*0.4"."""
