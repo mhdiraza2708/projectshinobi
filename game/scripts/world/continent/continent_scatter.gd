@@ -33,8 +33,9 @@ const ROCK_DENSITY := 0.3
 ## Trees stop climbing the mountains between these heights.
 const TREE_LINE := Vector2(105.0, 185.0)
 ## Nothing grows this close to a region's centre, and it thickens to full by
-## the second distance.
-const CLEAR_RADIUS := Vector2(75.0, 170.0)
+## the second distance (inside it the region's own trees stand, Island
+## scatter, out to about 62 m).
+const CLEAR_RADIUS := Vector2(58.0, 140.0)
 ## Steepest ground a tree stands on (1 - normal y).
 const MAX_SLOPE := 0.34
 

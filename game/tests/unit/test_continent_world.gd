@@ -54,8 +54,19 @@ func test_every_region_keeps_its_authored_props() -> void:
 		for prop: Dictionary in props:
 			var node_name := String(prop["scene"]).capitalize().replace(" ", "")
 			assert_true(island.find_child(node_name, true, false) != null, "%s: %s" % [id, node_name])
-		# The continent supplies the ground, sea and trees.
-		assert_true(island.find_children("Scatter_*", "MultiMeshInstance3D", true, false).is_empty(), "%s adds no trees of its own" % id)
+		# The continent supplies the ground and sea; the region keeps its own
+		# trees and rocks round its yard (the land's grow further out), and
+		# none of them stand on a road or in a river.
+		var scatter := island.find_children("Scatter_*", "MultiMeshInstance3D", true, false)
+		assert_false(scatter.is_empty(), "%s has its own trees round its yard" % id)
+		# (Each tree and rock has a collider where it stands; the multimesh's
+		# own transforms read back as zero without a real renderer.)
+		var trunks := island.find_children("*", "CollisionShape3D", true, false).filter(func(n: CollisionShape3D) -> bool:
+			return n.shape is CylinderShape3D)
+		assert_true(trunks.size() > 10, "%s: its trees stand in the world (%d)" % [id, trunks.size()])
+		var on_road := trunks.filter(func(n: CollisionShape3D) -> bool:
+			return island.keep_clear.call(n.position.x, n.position.z)).size()
+		assert_eq(on_road, 0, "%s: nothing grows on its roads" % id)
 		assert_true(island.water_level < 0.0 or id == "five_winds", "%s sea level" % id)
 
 

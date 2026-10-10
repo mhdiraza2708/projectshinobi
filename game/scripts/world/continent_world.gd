@@ -117,6 +117,9 @@ func _build_region(id: String) -> void:
 		return continent.height_at(c.x + x, c.z + z) - c.y
 	island.surface_fn = func(p: Vector3) -> StringName:
 		return continent.surface_at(p)
+	island.keep_clear = func(x: float, z: float) -> bool:
+		var land := continent.land
+		return land.roads.query(c.x + x, c.z + z).x < 3.5 or land.rivers.query(c.x + x, c.z + z).x < 4.0
 	add_child(island)
 	island.build(id)
 	# The island's own sea level, in its own space.

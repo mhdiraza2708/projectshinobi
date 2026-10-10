@@ -177,6 +177,9 @@ var open_world := false
 ## horizon of its own, just its props and their colliders, standing on the
 ## ground `ground_at` (x, z) -> height gives, in this island's own space.
 var ground_at := Callable()
+## On the continent: (x, z) in this island's space -> true where nothing may
+## grow (the roads and rivers running through the region).
+var keep_clear := Callable()
 ## And, in that case, what the ground is made of at a world position (a Sfx
 ## surface name), for footsteps there.
 var surface_fn := Callable()
@@ -234,10 +237,12 @@ func build(island_id: String) -> void:
 	var avoid: Array[Vector2] = []
 	for prop: Dictionary in preset.get("props", []):
 		avoid.append(_place_prop(prop))
-	if overlay:
-		return
 	for s: Dictionary in preset.get("scatter", []):
 		_scatter(s, avoid)
+	if overlay:
+		# On the continent the region keeps its own trees and rocks round the
+		# yard (the land's own grow only further out); its grass is the land's.
+		return
 	if preset.get("tufts") != null:
 		_build_tufts(preset["tufts"])
 	if not open_world:
@@ -586,6 +591,8 @@ func _scatter(spec: Dictionary, avoid: Array[Vector2]) -> void:
 		if h < water_level + 0.5 or _slope(p.x, p.y) > 0.45:
 			continue
 		if not _paths.is_empty() and _path_distance(p) < 1.5:
+			continue
+		if keep_clear.is_valid() and keep_clear.call(p.x, p.y):
 			continue
 		if avoid.any(func(q: Vector2) -> bool: return q.distance_to(p) < 5.0):
 			continue
