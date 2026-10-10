@@ -140,13 +140,14 @@ func test_melee_combo_hurts_the_player() -> void:
 func test_left_alone_an_enemy_attacks() -> void:
 	await _load()
 	var e := _spawn(&"chunin", Element.LIGHTNING, player.global_position + Vector3(0, 0, -9))
-	var shots := 0
+	# A lambda's captured locals are copies: the count lives in an array.
+	var shots: Array[int] = [0]
 	scene.child_entered_tree.connect(func(n: Node) -> void:
 		if n is JutsuProjectile and n.caster == e:
-			shots += 1)
+			shots[0] += 1)
 	var before := player.stats.health
 	await physics_frames(420)
-	assert_true(shots > 0 or player.stats.health < before, "it threw, cast or struck within 7 s")
+	assert_true(shots[0] > 0 or player.stats.health < before, "it threw, cast or struck within 7 s")
 
 
 func test_defeat_vanishes_and_moves_lock_on() -> void:

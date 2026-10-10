@@ -272,7 +272,8 @@ func _blade() -> void:
 	# [when, who, what]
 	var acts := [[0.1, 0, "dash"], [0.45, 0, "strike"], [0.8, 0, "strike"], [1.15, 0, "strike"],
 		[1.75, 1, "dash"], [2.1, 1, "strike"], [2.45, 1, "strike"], [2.8, 1, "strike"]]
-	var done := 0
+	# Lambdas capture locals by value: shared counters live in a dictionary.
+	var st := {"done": 0}
 	await _until(14.0, func(k: float) -> void:
 		var p := player.global_position
 		var who: EnemyShinobi = raiders[1 if k >= 1.6 else 0]
@@ -282,6 +283,7 @@ func _blade() -> void:
 		# Behind and beside the shoulder: the whole shinobi left of frame,
 		# the raider ahead of them.
 		_look(p - dir * 3.0 + side * 2.2 + Vector3.UP * 1.5, p + dir * 1.6 + Vector3.UP * 1.0)
+		var done: int = st["done"]
 		if done < acts.size() and k >= float(acts[done][0]):
 			var target: EnemyShinobi = raiders[int(acts[done][1])]
 			if is_instance_valid(target):
@@ -290,7 +292,7 @@ func _blade() -> void:
 			match str(acts[done][2]):
 				"dash": player._start_dash()
 				"strike": player._strike()
-			done += 1)
+			st["done"] = done + 1)
 	player.lock_target = null
 
 
@@ -304,21 +306,19 @@ func _weave() -> void:
 	_caption("WEAVE THE SEALS", 17.7)
 	var fwd := -player.global_basis.z
 	var right := fwd.cross(Vector3.UP).normalized()
-	var next_seal := 0.0
-	var seal := 0
-	var released := false
+	var st := {"next_seal": 0.0, "seal": 0, "released": false}
 	await _until(18.0, func(k: float) -> void:
 		var chest := player.global_position + Vector3.UP * 1.15
 		_look(chest + fwd * lerpf(1.5, 1.1, k / 4.0) + right * 0.55 - Vector3.UP * 0.1, chest)
-		if k < 2.2 and k >= next_seal:
-			next_seal = k + 0.22
+		if k < 2.2 and k >= float(st["next_seal"]):
+			st["next_seal"] = k + 0.22
 			if player.animator:
 				player.animator.seal_flick()
-			Sfx.play(StringName("seal_%d" % (seal % 3 + 1)), -2.0, 0.05)
+			Sfx.play(StringName("seal_%d" % (int(st["seal"]) % 3 + 1)), -2.0, 0.05)
 			Vfx.sparks(stage, chest + fwd * 0.35, Color(0.62, 0.68, 0.95), 6, 3.0)
-			seal += 1
-		if k >= 2.3 and not released:
-			released = true
+			st["seal"] = int(st["seal"]) + 1
+		if k >= 2.3 and not st["released"]:
+			st["released"] = true
 			player.scripted_pose = -1
 			_cast_now(&"chakra_bolt", dummy))
 
@@ -333,14 +333,15 @@ func _five_natures() -> void:
 	_place_player(_ground(0, 0), _ground(0, -14))
 	_caption("MASTER FIVE NATURES", 21.7)
 	var casts := [[0.3, &"ember_volley", 0], [1.3, &"tide_lance", 1], [2.2, &"crescent_cutter", 2], [3.1, &"thunder_needle", 1]]
-	var done := 0
+	var st := {"done": 0}
 	await _until(22.0, func(k: float) -> void:
 		var p := player.global_position
 		_look(p + Vector3(7.5 - k * 0.6, 2.4, 3.5), p + Vector3(0, 1.2, -6.0))
+		var done: int = st["done"]
 		if done < casts.size() and k >= float(casts[done][0]):
 			var who: EnemyShinobi = targets[int(casts[done][2])]
 			_cast_now(casts[done][1], who if is_instance_valid(who) else null)
-			done += 1)
+			st["done"] = done + 1)
 
 
 ## 22-26 s: Asahi's lightning against your strikes.
@@ -350,7 +351,7 @@ func _rival() -> void:
 	_place_player(_ground(0, 0), asahi.global_position)
 	player.lock_target = asahi
 	var acts := [[0.4, "dash"], [0.9, "strike"], [1.2, "strike"], [1.5, "strike"], [2.4, "kunai"], [3.0, "dash"], [3.4, "strike"]]
-	var done := 0
+	var st := {"done": 0}
 	await _until(26.0, func(k: float) -> void:
 		var p := player.global_position
 		var a := asahi.global_position if is_instance_valid(asahi) else p + Vector3(0, 0, -5)
@@ -358,13 +359,14 @@ func _rival() -> void:
 		var side := away.cross(Vector3.UP).normalized()
 		# Over the player's shoulder, so Asahi stays in frame wherever she goes.
 		_look(p + away * (3.0 - k * 0.25) + side * 1.1 + Vector3.UP * 1.7, a + Vector3.UP * 1.1)
+		var done: int = st["done"]
 		if done < acts.size() and k >= float(acts[done][0]):
 			_place_player(p, a)
 			match str(acts[done][1]):
 				"dash": player._start_dash()
 				"strike": player._strike()
 				"kunai": player.throw_kunai()
-			done += 1)
+			st["done"] = done + 1)
 
 
 ## 26-30 s: two rogue elites, and the player splits into Shade Clones.
@@ -375,13 +377,13 @@ func _jonin() -> void:
 		_foe(_ground(2.4, -7.6), Element.LIGHTNING, true, &"jonin")]
 	_place_player(_ground(0, 0), _ground(0, -7))
 	_caption("SPLIT YOUR SHADOW", 29.7)
-	var summoned := false
+	var st := {"summoned": false}
 	await _until(30.0, func(k: float) -> void:
 		var p := player.global_position
 		var a := deg_to_rad(-35.0 + k * 16.0)
 		_look(p + Vector3(sin(a) * 7.8, 3.2, cos(a) * 7.8), p + Vector3(0, 1.0, -3.6))
-		if k >= 0.35 and not summoned and is_instance_valid(elites[0]):
-			summoned = true
+		if k >= 0.35 and not st["summoned"] and is_instance_valid(elites[0]):
+			st["summoned"] = true
 			_cast_now(&"shade_clones", elites[0]))
 	for c in player.caster.clones():
 		c.leave()
@@ -395,7 +397,7 @@ func _kagerou() -> void:
 	var aura := Vfx.boss_aura(Color(0.95, 0.35, 0.15), 1.0)
 	kage.add_child(aura)
 	_place_player(_ground(0, 3), kage.global_position)
-	var bloomed := false
+	var st := {"bloomed": false}
 	await _until(34.0, func(k: float) -> void:
 		if not is_instance_valid(kage):
 			return
@@ -404,8 +406,8 @@ func _kagerou() -> void:
 		kage.rotation.y = atan2(-dir.x, -dir.z)
 		var dist := lerpf(3.6, 1.7, smoothstep(0.0, 1.0, k / 4.0))
 		_look(at + dir * dist + Vector3.UP * lerpf(1.2, 1.55, k / 4.0), at + Vector3.UP * 1.5)
-		if k >= 2.4 and not bloomed:
-			bloomed = true
+		if k >= 2.4 and not st["bloomed"]:
+			st["bloomed"] = true
 			kage.caster.cast(JutsuRegistry.get_jutsu(&"cinder_bloom"), kage, true))
 
 
@@ -486,11 +488,12 @@ func _montage() -> void:
 		_look(p - fwd * 1.6 + fwd.cross(Vector3.UP).normalized() * 0.6 + Vector3.UP * 1.6, p + fwd * 6.0 + Vector3.UP * 1.4))
 	# A dash and the katana.
 	player._start_dash()
-	var cuts := 0
+	var st := {"cuts": 0}
 	await _until(51.0, func(k: float) -> void:
 		var p := player.global_position
+		var cuts: int = st["cuts"]
 		if k > 0.3 + cuts * 0.35 and cuts < 3:
-			cuts += 1
+			st["cuts"] = cuts + 1
 			player._strike()
 		_look(p + Vector3(3.2, 1.0, 1.0), p + Vector3.UP * 1.1))
 	# The village at night: lanterns, and the light where the next mission waits.

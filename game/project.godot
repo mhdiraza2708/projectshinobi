@@ -25,6 +25,10 @@ Music="*res://autoload/music.gd"
 Voice="*res://autoload/voice.gd"
 Game="*res://autoload/game.gd"
 
+[debug]
+
+gdscript/warnings/confusable_capture_reassignment=2
+
 [display]
 
 window/size/viewport_width=1920
