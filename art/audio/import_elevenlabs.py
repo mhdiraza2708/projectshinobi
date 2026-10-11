@@ -6,8 +6,10 @@ DIR holds one MP3 per line, named by the line's key (see make_voices.py):
 DIR/927032b15bda.mp3. Lines without a file keep whatever recording they had.
 Each clip goes through the same mastering as the Kokoro recordings (filter,
 trim, level, OGG), so the two sets sit together in the game. The character's
-voice in characters.json is not used here: that is the Kokoro speaker, and an
-ElevenLabs voice is picked in the ElevenLabs workspace.
+effect in characters.json (Nue's spirit) is applied; its Kokoro speaker and
+speed are not, since an ElevenLabs voice is picked in the ElevenLabs workspace.
+Characters recorded this way go in make_voices.RECORDED_ELSEWHERE so the
+Kokoro script leaves them alone.
 """
 
 from __future__ import annotations
@@ -44,17 +46,19 @@ def main() -> int:
 	if shutil.which("oggenc") is None:
 		sys.exit("oggenc not found: apt install vorbis-tools")
 
-	_, lines = mv.collect()
+	cast, lines = mv.collect()
 	mine = [l for l in lines if l.who == args.who]
 	if not mine:
 		sys.exit(f"no lines for '{args.who}' in the story")
+	# The character's effect (Nue's spirit) is applied as it is for Kokoro.
+	voice = cast[args.who]["voice"]
 	found = [l for l in mine if (args.dir / f"{l.key}.mp3").exists()]
 	missing = [l for l in mine if l not in found]
 	total = 0.0
 	with tempfile.TemporaryDirectory() as tmp:
 		for l in found:
 			x = decode(args.dir / f"{l.key}.mp3", mv.SAMPLE_RATE)
-			total += mv.finish(x, mv.SAMPLE_RATE, args.out / l.who / f"{l.key}.ogg", {}, Path(tmp))
+			total += mv.finish(x, mv.SAMPLE_RATE, args.out / l.who / f"{l.key}.ogg", voice, Path(tmp))
 	print(f"{args.who}: {len(found)}/{len(mine)} lines, {total / 60:.1f} minutes")
 	for l in missing:
 		print(f"  missing {l.key}  {l.spoken}")
