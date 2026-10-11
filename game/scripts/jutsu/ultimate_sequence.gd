@@ -20,6 +20,8 @@ const CLOSE_FRAMED_EYE := 1.38
 const AFTER_IFRAMES := 0.8
 ## Seconds Pause must be held to skip (the same as a story cutscene).
 const SKIP_HOLD := Cutscene.SKIP_HOLD
+## The Sfx loop key of the Leviathan Tide's roar.
+const WAVE_LOOP := &"ultimate_wave"
 
 ## The sequence playing now (the pause menu, cutscenes and the meter leave
 ## things alone while it runs).
@@ -60,6 +62,11 @@ static func begin(p: Player, u: Dictionary) -> UltimateSequence:
 
 func _init() -> void:
 	name = "UltimateSequence"
+
+
+# Torn down mid-wave (a scene change): the roar goes with it.
+func _exit_tree() -> void:
+	Sfx.stop_loop(WAVE_LOOP)
 
 
 func play() -> void:
@@ -201,6 +208,7 @@ func _wide_shot() -> void:
 
 
 func _finish() -> void:
+	Sfx.stop_loop(WAVE_LOOP)
 	if is_instance_valid(_aura):
 		_aura.queue_free()
 	for m: Variant in _shades:
@@ -420,7 +428,8 @@ func _wave() -> void:
 	wave.global_transform = Transform3D(Basis.looking_at(fwd, Vector3.UP), start)
 	wave.scale = Vector3(1.0, 0.15, 1.0)
 	Sfx.play(&"cast_water")
-	Sfx.play(&"wind_loop", -6.0)
+	# The roar of the water runs while it does, and stops when it breaks.
+	Sfx.start_loop(WAVE_LOOP, &"wind_loop", -6.0)
 	var t := 0.0
 	var run := 1.1
 	var next := 0.0
@@ -439,6 +448,7 @@ func _wave() -> void:
 		_look_follow(wave.global_position + Vector3.UP * 2.0, 0.25)
 		await get_tree().process_frame
 		t += get_process_delta_time()
+	Sfx.stop_loop(WAVE_LOOP)
 	wave.queue_free()
 	Vfx.area_blast(_world, _ground(target_point), Element.WATER, radius)
 	Vfx.shockwave(_world, _ground(target_point) + Vector3.UP * 0.2, Color(0.4, 0.7, 1.0), radius * 1.3, 0.6)

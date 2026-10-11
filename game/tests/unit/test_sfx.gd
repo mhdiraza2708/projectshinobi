@@ -102,7 +102,8 @@ func test_volume_settings_drive_the_buses() -> void:
 func test_many_sounds_at_once_reuse_the_pool() -> void:
 	await seconds(0.06)  # past the repeat guard for sounds earlier tests played
 	var before := Sfx.get_child_count()
-	var sounds := Sfx.sounds()
+	# Every one-shot (loops only play through start_loop).
+	var sounds := Sfx.sounds().filter(func(s: StringName) -> bool: return not Sfx.is_loop(s))
 	for i in sounds.size():
 		if i % 2 == 0:
 			Sfx.play(sounds[i])
@@ -146,6 +147,26 @@ func test_kunai_throw_and_hit_sounds() -> void:
 	assert_true(Sfx.history.has(&"kunai_throw"))
 	await physics_frames(40)
 	assert_true(Sfx.history.has(&"kunai_hit"), "hit sound (got %s)" % [Sfx.history])
+
+
+func test_loops_are_never_fired_and_forgotten() -> void:
+	assert_true(Sfx.is_loop(&"wind_loop") and Sfx.is_loop(&"charge_loop") and Sfx.is_loop(&"rain_loop"))
+	assert_false(Sfx.is_loop(&"explosion"))
+	# A one-shot loop would play until the game closes: only start_loop() may.
+	var one_shot := RegEx.create_from_string(r'Sfx\.(?:play|play_at|ui)\(&"(\w+)"')
+	for dir: String in SOURCE_DIRS:
+		for path in _script_files(dir):
+			for m in one_shot.search_all(FileAccess.get_file_as_string(path)):
+				assert_false(Sfx.is_loop(StringName(m.get_string(1))),
+					"%s plays the loop '%s' as a one-shot" % [path.get_file(), m.get_string(1)])
+	# And if one slips through, Sfx refuses it.
+	Sfx.play(&"wind_loop")
+	Sfx.play_at(&"rain_loop", Vector3.ZERO)
+	assert_false(Sfx.history.has(&"wind_loop") or Sfx.history.has(&"rain_loop"), "loops refused as one-shots")
+	for p: Node in Sfx.get_children():
+		var stream: AudioStream = p.get(&"stream")
+		assert_false(p.get(&"playing") and (stream == Sfx._streams.get(&"wind_loop") or stream == Sfx._streams.get(&"rain_loop")),
+			"no pooled player is left looping")
 
 
 func test_charge_hum_loops_while_charging() -> void:

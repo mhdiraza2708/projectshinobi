@@ -7,6 +7,8 @@ extends Node
 ##   Sfx.play_at(&"impact", hit_position)   # positional, for the world
 ##   Sfx.footstep(&"grass", foot_position)  # a step on a kind of ground
 ##   Sfx.start_loop(&"charge", &"charge_loop") / Sfx.stop_loop(&"charge")
+## A loop (a sound imported looping, like wind_loop) only plays through
+## start_loop(): played as a one-shot nothing would ever stop it.
 ## A sound with several takes (strike_hit_v1.wav, strike_hit_v2.wav...) is
 ## played by its plain name (&"strike_hit"); a different take is picked each
 ## time, so frequent sounds don't repeat themselves.
@@ -54,6 +56,8 @@ var _last_take: Dictionary = {}
 var _pool_2d: Array[AudioStreamPlayer] = []
 var _pool_3d: Array[AudioStreamPlayer3D] = []
 var _loops: Dictionary = {}
+## Sounds imported looping: name -> true.
+var _looping: Dictionary = {}
 var _last_msec: Dictionary = {}
 var _last_ui_msec := -100000
 ## Sounds in the world stay silent while this is on (VfxWarmup setting off
@@ -75,6 +79,10 @@ func _ready() -> void:
 			(_takes[base] as Array).append(load(DIR + file))
 		else:
 			_streams[StringName(file.get_basename())] = load(DIR + file)
+	for sound: StringName in sounds():
+		var first: AudioStream = _streams[sound] if _streams.has(sound) else (_takes[sound] as Array)[0]
+		if first is AudioStreamWAV and (first as AudioStreamWAV).loop_mode != AudioStreamWAV.LOOP_DISABLED:
+			_looping[sound] = true
 	_add_limiter()
 	for bus: StringName in [BUS_SFX, BUS_UI, BUS_MUSIC, BUS_VOICE]:
 		if AudioServer.get_bus_index(bus) < 0:
@@ -108,6 +116,11 @@ func _ready() -> void:
 
 func has_sound(sound: StringName) -> bool:
 	return _streams.has(sound) or _takes.has(sound)
+
+
+## Whether `sound` loops (only start_loop() plays it).
+func is_loop(sound: StringName) -> bool:
+	return _looping.has(sound)
 
 
 ## Every sound name (a sound with several takes counts once).
@@ -203,6 +216,9 @@ func stop_all_loops() -> void:
 func _accept(sound: StringName) -> bool:
 	if not has_sound(sound):
 		push_warning("Sfx: no sound named '%s' in %s" % [sound, DIR])
+		return false
+	if _looping.has(sound):
+		push_warning("Sfx: '%s' loops and would never stop; play it with start_loop()" % sound)
 		return false
 	var now := Time.get_ticks_msec()
 	if now - int(_last_msec.get(sound, -100000)) < MIN_REPEAT_MSEC:

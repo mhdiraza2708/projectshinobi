@@ -150,6 +150,46 @@ func test_the_cyclone_lifts_its_targets() -> void:
 	assert_near(foe.global_position.y, ground_y, 0.3, "and set down again")
 
 
+func test_the_tides_roar_stops_when_the_wave_breaks() -> void:
+	await physics_frames(3)
+	Profile.set_value(&"affinity", Element.WATER)
+	Profile.set_value(&"ultimate", "leviathan_tide")
+	var foe := _foe(player.global_position + Vector3(0.5, 0.1, -6.5), &"jonin")
+	await _ready_foes()
+	# Played out, then cut short by a skip in the middle of the wave.
+	for skip_mid_wave in [false, true]:
+		player.ult_charge = Ultimates.MAX_CHARGE
+		assert_true(player.try_ultimate(), "the tide starts")
+		var seq := UltimateSequence.active
+		var roared := false
+		while UltimateSequence.active == seq:
+			if Sfx.is_looping(UltimateSequence.WAVE_LOOP):
+				roared = true
+				if skip_mid_wave:
+					seq.skip()
+			await physics_frames(1)
+		assert_true(roared, "the water roars as it runs")
+		assert_false(Sfx.is_looping(UltimateSequence.WAVE_LOOP), "and stops when it breaks")
+		# Past the loop's fade-out.
+		await seconds(0.4)
+		assert_eq(_loops_sounding(), 0, "nothing loops on after the tide (skipped: %s)" % skip_mid_wave)
+		player.stats.is_invulnerable = false
+	if is_instance_valid(foe):
+		foe.queue_free()
+
+
+## Sfx players playing a looping sound that no start_loop() key owns.
+func _loops_sounding() -> int:
+	var owned: Array = Sfx._loops.values()
+	var count := 0
+	for p: Node in Sfx.get_children():
+		var stream: AudioStream = p.get(&"stream")
+		if stream is AudioStreamWAV and (stream as AudioStreamWAV).loop_mode != AudioStreamWAV.LOOP_DISABLED \
+				and p.get(&"playing") and not owned.has(p):
+			count += 1
+	return count
+
+
 func test_holding_pause_skips_to_the_blow() -> void:
 	await physics_frames(3)
 	var foe := _foe(player.global_position + Vector3(0, 0.1, -6), &"jonin")
