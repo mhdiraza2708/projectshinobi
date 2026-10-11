@@ -57,7 +57,7 @@ NATURES = ["fire", "wind", "lightning", "earth", "water"]
 PLAYER = "player"
 # Characters recorded with another voice service (see import_elevenlabs.py):
 # this script leaves their recordings alone.
-RECORDED_ELSEWHERE = {"asahi", "hisame"}
+RECORDED_ELSEWHERE = {"asahi", "hisame", "kagerou", "nue"}
 # Must match StoryDirector.ALLY_RETREAT_LINE.
 ALLY_RETREAT_LINE = "I'm hurt... Finish it without me!"
 # Pace by mood (multiplies the character's speed). Kokoro has no emotion
