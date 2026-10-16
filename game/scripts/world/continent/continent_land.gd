@@ -27,9 +27,14 @@ const PAD_FALLOFF := 90.0
 const MIN_PAD_HEIGHT := 2.5
 ## region_at() names a region within this many metres of its centre.
 const REGION_RADIUS := 380.0
-## The ground takes on a region's colours between these distances.
+## A region's own colours (and trees) are full strength within BIOME_INNER
+## and fade out by BIOME_REACH, so the wilds between regions take on the look
+## of the nearer one; where two reach, the nearer wins (BIOME_SHARPNESS: the
+## higher, the cleaner the line between them). Its snow keeps to BIOME_OUTER.
 const BIOME_INNER := 200.0
 const BIOME_OUTER := 650.0
+const BIOME_REACH := 1300.0
+const BIOME_SHARPNESS := 3.0
 ## The packed-earth yard at a region's centre (radius, metres).
 const YARD := 22.0
 ## How much of a region's ground is snow, however low.
@@ -369,6 +374,7 @@ func paint(x: float, z: float, h: float, ny: float, out: PackedFloat32Array) -> 
 	var wsum := 0.0
 	var wmax := 0.0
 	var snow_acc := 0.0
+	var snow_w := 0.0
 	var wd := dirt
 	var wg := 1.0 - dirt
 	var ws := sand
@@ -395,19 +401,22 @@ func paint(x: float, z: float, h: float, ny: float, out: PackedFloat32Array) -> 
 				wd += (wg + ws) * walk
 				wg *= 1.0 - walk
 				ws *= 1.0 - walk
-		var w := 1.0 - smoothstep(BIOME_INNER, BIOME_OUTER, d)
-		if w > 0.0:
+		var reach := 1.0 - smoothstep(BIOME_INNER, BIOME_REACH, d)
+		if reach > 0.0:
+			var w := pow(reach, BIOME_SHARPNESS)
 			var b := i * 4
 			regional += (_ratio[b] * wg + _ratio[b + 1] * wd + _ratio[b + 2] * wr + _ratio[b + 3] * ws) * w
 			wsum += w
-			wmax = maxf(wmax, w)
-			snow_acc += _snow[i] * w
-	var w_default := 1.0 - wmax
+			wmax = maxf(wmax, reach)
+			var near := 1.0 - smoothstep(BIOME_INNER, BIOME_OUTER, d)
+			snow_acc += _snow[i] * near
+			snow_w += near
+	var w_default := pow(1.0 - wmax, BIOME_SHARPNESS)
 	var total := wsum + w_default
 	var mul := (regional + Color(1, 1, 1, 0) * w_default) / total
 	var forest := forest_at(x, z)
 	var shade := 1.0 - 0.2 * forest * wg
-	var snow := maxf(smoothstep(SNOW_LINE, SNOW_LINE + 70.0, h + n * 20.0), snow_acc / total)
+	var snow := maxf(smoothstep(SNOW_LINE, SNOW_LINE + 70.0, h + n * 20.0), snow_acc / maxf(snow_w, 1.0))
 	snow *= (1.0 - 0.6 * smoothstep(0.45, 0.75, slope)) * (1.0 - wd * 0.85) * (1.0 - ws)
 	out[0] = wg
 	out[1] = wd
