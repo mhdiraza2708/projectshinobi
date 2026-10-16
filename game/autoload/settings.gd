@@ -35,6 +35,8 @@ const DEFAULTS := {
 	# Short films as a boss or an ambush begins and as a boss falls (hold Pause
 	# to skip one).
 	&"fight_cutscenes": true,
+	# Weaving by hand, the camera comes round and in to show the hand seals.
+	&"weave_camera": true,
 	&"stick_deadzone": 0.2,
 	&"vibration": true,
 	&"screen_shake": 1.0,

@@ -485,6 +485,7 @@ func _build_accessibility() -> Control:
 	list.add_child(_option_row("Seal timing window", window))
 	list.add_child(_option_row("", no_limit))
 	list.add_child(_option_row("Seal hints while weaving", _toggle(&"seal_hints")))
+	list.add_child(_option_row("Camera comes in while weaving", _toggle(&"weave_camera")))
 	list.add_child(_option_row("Quick-cast weave speed (s/seal)", _slider(&"auto_weave_seal_time", 0.08, 0.4, 0.02, "%.2fs")))
 
 	list.add_child(_section("Camera and controller"))

@@ -417,6 +417,10 @@ func _enter(new_state: State) -> void:
 		_start_charge_fx()
 	state = new_state
 	_state_time = 0.0
+	if camera_rig:
+		# Weaving by hand, the camera comes in to see the seals (not for a
+		# quick-cast, whose seals are over in a moment).
+		camera_rig.weave_goal = new_state == State.WEAVING and bool(Settings.get_value(&"weave_camera"))
 	state_changed.emit(state)
 
 
