@@ -222,6 +222,12 @@ func seal_flick() -> void:
 		poser.seal_flick()
 
 
+## The hands form hand seal `seal` (0-11) and hold it until the next one.
+func seal(seal_index: int) -> void:
+	if poser:
+		poser.set_seal(seal_index)
+
+
 func _can_act(clip: StringName, poses: Array = [HumanoidPoser.Pose.LOCOMOTION]) -> bool:
 	return clips != null and has_clip(clip) and speed_ratio < MOVING and not airborne \
 		and pose in poses and _action != &"death"

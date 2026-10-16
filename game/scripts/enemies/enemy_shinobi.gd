@@ -829,7 +829,7 @@ func _weaving(delta: float) -> void:
 		_seal_label.text = shown
 		Sfx.play_at(StringName("seal_%d" % (Seal.bank_of(seal) + 1)), global_position + Vector3.UP)
 		if model.animator:
-			model.animator.seal_flick()
+			model.animator.seal(seal)
 		_seal_timer = _r["seal_time"]
 		return
 	if _target_ok():

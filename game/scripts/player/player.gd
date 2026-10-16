@@ -946,7 +946,7 @@ func _perfect_guard() -> void:
 func _on_seal_added(seal: int, _sequence: Array[int]) -> void:
 	Sfx.play(StringName("seal_%d" % (Seal.bank_of(seal) + 1)), 0.0, 0.03)
 	if animator:
-		animator.seal_flick()
+		animator.seal(seal)
 	InputDevice.rumble(0.12, 0.0, 0.04)
 
 

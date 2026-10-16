@@ -161,7 +161,7 @@ func _close_up() -> void:
 		if t >= next_seal:
 			next_seal = t + 0.17
 			if player.animator:
-				player.animator.seal_flick()
+				player.animator.seal(seal % Seal.COUNT)
 			Sfx.play(StringName("seal_%d" % (seal % 3 + 1)), -2.0, 0.05)
 			seal += 1
 			Vfx.sparks(_world, player.global_position + Vector3.UP * 1.1 + fwd * 0.35, color, 6, 3.0)
