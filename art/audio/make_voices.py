@@ -55,6 +55,9 @@ STORY_DIR = REPO_ROOT / "game" / "data" / "story"
 DEFAULT_OUT = REPO_ROOT / "game" / "assets" / "audio" / "voice"
 NATURES = ["fire", "wind", "lightning", "earth", "water"]
 PLAYER = "player"
+# Characters recorded with another voice service (see import_elevenlabs.py):
+# this script leaves their recordings alone.
+RECORDED_ELSEWHERE = {"asahi", "hisame", "kagerou", "nue", "tsumugi", "iwao", "tobi", "chiyo", "renji", "mikage", "sumi", "shirou", "kurogane"}
 # Must match StoryDirector.ALLY_RETREAT_LINE.
 ALLY_RETREAT_LINE = "I'm hurt... Finish it without me!"
 # Pace by mood (multiplies the character's speed). Kokoro has no emotion
@@ -347,7 +350,8 @@ def main() -> int:
 		sys.exit("oggenc not found: apt install vorbis-tools")
 
 	total = 0.0
-	todo = [l for l in lines if not (args.missing and (args.out / l.who / f"{l.key}.ogg").exists())]
+	todo = [l for l in lines if l.who not in RECORDED_ELSEWHERE
+		and not (args.missing and (args.out / l.who / f"{l.key}.ogg").exists())]
 	with tempfile.TemporaryDirectory() as tmp:
 		for i, l in enumerate(todo):
 			voice = cast[l.who]["voice"]

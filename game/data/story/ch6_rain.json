@@ -36,7 +36,7 @@
 		]},
 		{"do": "boss", "music": "duel", "who": "tsumugi", "rank": "chunin", "health": 210,
 			"taunt": "Keep up, or go home.",
-			"specials": [{"kind": "chain", "every": 13, "below": 0.85, "count": 3, "damage": 14}],
+			"specials": [{"kind": "sweep", "every": 14, "below": 1, "damage": 15, "duration": 3.0, "radius": 10}, {"kind": "chain", "every": 13, "below": 0.6, "count": 3, "damage": 14}],
 			"phases": [
 				{"at": 0.5, "say": "Wind clone! Let's see you handle two of me.", "summon": [["genin", "wind"]]}
 			]},

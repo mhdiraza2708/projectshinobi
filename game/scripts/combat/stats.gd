@@ -128,6 +128,12 @@ func add_modifier(stat: StringName, magnitude: float, duration: float) -> void:
 	modifier_changed.emit(stat, _modifiers[stat]["magnitude"], _modifiers[stat]["time"])
 
 
+## Ends a timed modifier early.
+func clear_modifier(stat: StringName) -> void:
+	if _modifiers.erase(stat):
+		modifier_changed.emit(stat, 0.0, 0.0)
+
+
 func modifier(stat: StringName) -> float:
 	return _modifiers[stat]["magnitude"] if _modifiers.has(stat) else 0.0
 

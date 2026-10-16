@@ -143,6 +143,88 @@ func test_a_special_waits_for_its_health_threshold() -> void:
 	assert_true(player.stats.health < before, "below the threshold it does")
 
 
+func test_a_sweeping_blade_catches_the_grounded_and_a_jump_clears_it() -> void:
+	await _load()
+	player.set_physics_process(false)
+	var before := player.stats.health
+	# The boss turns once, quickly, with a blade long enough to reach the player.
+	specials._run(_spec("sweep", {"delay": 0.2, "duration": 1.2, "radius": 20.0}))
+	await _until_spent()
+	assert_true(player.stats.health < before, "the blade catches you on the ground")
+	player.stats.health = player.stats.max_health
+	before = player.stats.health
+	specials._run(_spec("sweep", {"delay": 0.2, "duration": 1.2, "radius": 20.0}))
+	await physics_frames(5)
+	player.global_position.y += 4.0
+	await _until_spent()
+	assert_eq(player.stats.health, before, "high above it, the blade passes under you")
+
+
+func test_a_pull_drags_you_in_and_bursts_where_you_ended_up() -> void:
+	await _load()
+	player.set_physics_process(false)
+	var start := player.global_position.distance_to(boss.global_position)
+	var before := player.stats.health
+	specials._run(_spec("pull", {"delay": 0.1, "duration": 1.0, "strength": 8.0, "radius": 6.0}))
+	await _until_spent()
+	assert_true(player.global_position.distance_to(boss.global_position) < start - 3.0, "you were pulled toward it")
+	assert_true(player.stats.health < before, "and the burst caught you")
+
+
+func test_a_pull_misses_whoever_gets_away() -> void:
+	await _load()
+	player.set_physics_process(false)
+	player.global_position = boss.global_position + Vector3(0, 0, 40)
+	var before := player.stats.health
+	specials._run(_spec("pull", {"delay": 0.1, "duration": 0.8, "range": 22.0, "radius": 5.0}))
+	await _until_spent()
+	assert_eq(player.stats.health, before, "out of its reach, nothing pulls you and nothing bursts on you")
+
+
+func test_a_ward_turns_blows_aside_until_enough_land_to_break_it() -> void:
+	await _load()
+	var full := boss.stats.max_health
+	specials._run(_spec("ward", {"delay": 0.1, "duration": 20.0, "reduction": 0.9, "force": 60.0}))
+	await physics_frames(20)
+	var dealt := boss.stats.take_damage(20.0, Element.NONE)
+	assert_true(dealt < 4.0, "inside the ward a 20 point blow does %.1f" % dealt)
+	assert_true(boss.stats.modifier(&"damage_reduction") > 0.5, "the ward is up")
+	# Enough raw force breaks it.
+	boss.stats.take_damage(40.0, Element.NONE)
+	boss.stats.take_damage(40.0, Element.NONE)
+	await _until_spent()
+	assert_eq(boss.stats.modifier(&"damage_reduction"), 0.0, "once broken the boss is hurt in full again")
+	assert_true(boss.stats.health > full - 40.0, "the blows that broke it cost the boss little")
+	assert_eq(boss.state, EnemyShinobi.State.STAGGERED, "and breaking it leaves the boss reeling")
+
+
+func test_a_ward_fades_by_itself() -> void:
+	await _load()
+	specials._run(_spec("ward", {"delay": 0.05, "duration": 0.5, "force": 9999.0}))
+	await _until_spent()
+	assert_eq(boss.stats.modifier(&"damage_reduction"), 0.0, "an unbroken ward still ends")
+	assert_false(specials.is_busy())
+
+
+func test_a_call_brings_shinobi_to_the_bosss_side_and_they_leave_with_it() -> void:
+	await _load()
+	specials._run(_spec("call", {"delay": 0.1, "count": 2, "max": 3, "duration": 60.0}))
+	await _until_spent()
+	assert_eq(specials._calls.size(), 2, "two answered")
+	var calling := 0
+	for c in specials._calls:
+		if is_instance_valid(c) and c.element == boss.element and c.team == boss.team:
+			calling += 1
+	assert_eq(calling, 2, "of the boss's own nature and side")
+	# A second call only fills what room is left.
+	specials._run(_spec("call", {"delay": 0.1, "count": 2, "max": 3, "duration": 60.0}))
+	await _until_spent()
+	assert_eq(specials._calls.size(), 3, "never more than max at once")
+	boss.defeated.emit(boss)
+	await physics_frames(5)
+	assert_eq(specials._calls.size(), 0, "when the boss falls, the ones it called go too")
+
+
 func test_every_story_boss_and_every_bounty_has_signature_attacks() -> void:
 	var story := Story.load_all()
 	assert_true(story.errors.is_empty(), "\n".join(story.errors))
