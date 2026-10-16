@@ -17,7 +17,9 @@ extends RefCounted
 
 const COUNT := 12
 
-const HAND_LEN := 0.3
+## A hand, wrist to fingertip, is a little under half an arm long: wrists a
+## hand apart put the fingertips of one at the wrist of the other.
+const HAND_LEN := 0.45
 const CHEST := Vector3(0.0, -0.32, -0.5)
 
 ## index, middle, ring, little
@@ -61,9 +63,10 @@ static func _table() -> Array[Dictionary]:
 		{"wl": close + Vector3(-0.03, -0.12, -0.02), "wr": close + Vector3(0.03, -0.13, 0.03),
 			"fl": Vector3(1, 0.15, -0.35), "fr": Vector3(-0.05, 1, -0.15), "tl": Vector3(0, 1, 0.2), "tr": Vector3(0, 0, 1),
 			"finl": [1.0, 1.05, 1.1, 1.15], "finr": [0.0, 0.0, 1.4, 1.4], "wrapl": 0.5, "wrapr": 0.8, "spl": 0.0, "spr": -0.3},
-		# 1 Ox: two flat hands stacked, the right over the left, fingers together.
-		{"wl": close + Vector3(-0.02, -0.08, 0.0), "wr": close + Vector3(0.12, -0.02, 0.0),
-			"fl": Vector3(1, 0, -0.2), "fr": Vector3(-1, 0, -0.2), "tl": Vector3(0, 0, 1), "tr": Vector3(0, 0, 1),
+		# 1 Ox: two flat hands stacked, the right over the left, fingers together,
+		# tipped up so they show over the forearms.
+		{"wl": close + Vector3(-0.02, -0.03, -0.06), "wr": close + Vector3(0.12, 0.03, -0.06),
+			"fl": Vector3(1, 0.3, -0.25), "fr": Vector3(-1, 0.3, -0.25), "tl": Vector3(0, 0, 1), "tr": Vector3(0, 0, 1),
 			"finl": FLAT, "finr": FLAT, "wrapl": 0.3, "wrapr": 0.3, "spl": 0.0, "spr": 0.0},
 		# 2 Tiger: palms together, index and middle straight up and together, ring
 		# and little folded, thumbs over them.
@@ -74,29 +77,30 @@ static func _table() -> Array[Dictionary]:
 		{"wl": close + Vector3(-0.09, 0.04, 0.0), "wr": close + Vector3(0.09, 0.04, 0.0),
 			"fl": Vector3(-0.25, 0.9, -0.3), "fr": Vector3(0.25, 0.9, -0.3), "tl": Vector3(0.2, 0, 1), "tr": Vector3(-0.2, 0, 1),
 			"finl": [0.0, 0.0, 1.3, 1.3], "finr": [0.0, 0.0, 1.3, 1.3], "wrapl": 0.9, "wrapr": 0.9, "spl": 1.0, "spr": 1.0},
-		# 4 Dragon: a diamond window, the fingertips meeting above and the
-		# thumbs below.
-		{"wl": close + Vector3(-0.1, -0.06, 0.0), "wr": close + Vector3(0.1, -0.06, 0.0),
-			"fl": Vector3(0.28, 0.9, -0.3), "fr": Vector3(-0.28, 0.9, -0.3), "tl": Vector3(0.6, -0.7, -0.2), "tr": Vector3(-0.6, -0.7, -0.2),
-			"finl": [0.15, 0.25, 0.35, 0.45], "finr": [0.15, 0.25, 0.35, 0.45], "wrapl": -0.7, "wrapr": -0.7, "spl": -0.2, "spr": -0.2},
+		# 4 Dragon: two claws round a pearl, the left palm up below and the right
+		# palm down above, every finger hooked, thumbs out.
+		{"wl": close + Vector3(-0.2, -0.15, -0.1), "wr": close + Vector3(0.2, 0.18, -0.1),
+			"fl": Vector3(1, 0.35, -0.4), "fr": Vector3(-1, -0.2, -0.4), "tl": Vector3(0, 0, -1), "tr": Vector3(0, 0, 1),
+			"finl": [0.7, 0.8, 0.85, 0.9], "finr": [0.7, 0.8, 0.85, 0.9], "wrapl": -0.7, "wrapr": -0.7, "spl": 0.7, "spr": 0.7},
 		# 5 Snake: hands clasped with the fingers laced deep between each other,
 		# thumbs up.
 		{"wl": close + Vector3(-0.09, -0.1, 0.02), "wr": close + Vector3(0.09, -0.1, 0.02),
 			"fl": Vector3(1, 0.25, -0.35), "fr": Vector3(-1, 0.25, -0.35), "tl": Vector3(0, 1, 0), "tr": Vector3(0, 1, 0),
 			"finl": [0.85, 0.9, 0.95, 1.0], "finr": [0.85, 0.9, 0.95, 1.0], "wrapl": -0.9, "wrapr": -0.9, "spl": 0.4, "spr": 0.4},
-		# 6 Horse: palms together, only the index fingers straight up (a steeple),
-		# the rest folded, thumbs tucked.
-		{"wl": close + Vector3(-0.05, -0.04, 0.0), "wr": close + Vector3(0.05, -0.04, 0.0),
-			"fl": Vector3(0, 1, -0.15), "fr": Vector3(0, 1, -0.15), "tl": Vector3(0, 0, 1), "tr": Vector3(0, 0, 1),
-			"finl": [0.0, 1.4, 1.4, 1.4], "finr": [0.0, 1.4, 1.4, 1.4], "wrapl": 0.7, "wrapr": 0.7, "spl": 0.0, "spr": 0.0},
+		# 6 Horse: a triangle, palms out, the index fingers meeting at the top
+		# and the thumbs at the bottom, the other fingers folded.
+		{"wl": close + Vector3(-0.26, -0.06, -0.04), "wr": close + Vector3(0.26, -0.06, -0.04),
+			"fl": Vector3(0.5, 0.85, -0.1), "fr": Vector3(-0.5, 0.85, -0.1), "tl": Vector3(0.85, -0.5, 0), "tr": Vector3(-0.85, -0.5, 0),
+			"finl": [0.0, 1.4, 1.4, 1.4], "finr": [0.0, 1.4, 1.4, 1.4], "wrapl": -1.0, "wrapr": -1.0, "spl": 0.0, "spr": 0.0},
 		# 7 Ram: hands apart at the chest, palms facing, fingers straight and fanned wide.
 		{"wl": close + Vector3(-0.11, -0.02, 0.0), "wr": close + Vector3(0.11, -0.02, 0.0),
 			"fl": Vector3(0.1, 0.9, -0.45), "fr": Vector3(-0.1, 0.9, -0.45), "tl": Vector3(0.3, 0.2, -0.9), "tr": Vector3(-0.3, 0.2, -0.9),
 			"finl": [0.1, 0.05, 0.05, 0.1], "finr": [0.1, 0.05, 0.05, 0.1], "wrapl": -0.5, "wrapr": -0.5, "spl": 1.0, "spr": 1.0},
-		# 8 Monkey: the left palm up and flat, two fingers of the right hand pressed to it.
-		{"wl": close + Vector3(-0.12, -0.06, -0.1), "wr": close + Vector3(0.04, 0.12, -0.1),
-			"fl": Vector3(1, 0.05, -0.35), "fr": Vector3(-0.15, -0.9, -0.35), "tl": Vector3(0, 0, -1), "tr": Vector3(0, 0, 1),
-			"finl": FLAT, "finr": [0.0, 0.0, 1.4, 1.4], "wrapl": 0.0, "wrapr": 0.8, "spl": 0.0, "spr": 0.3},
+		# 8 Monkey: the left hand upright and flat like a wall, two fingers of
+		# the right hand pressed into its palm from the side.
+		{"wl": close + Vector3(-0.2, -0.12, -0.06), "wr": close + Vector3(0.3, 0.06, -0.06),
+			"fl": Vector3(0.05, 1, -0.2), "fr": Vector3(-1, 0.05, -0.2), "tl": Vector3(0.1, 0.2, 1), "tr": Vector3(0, 0, 1),
+			"finl": FLAT, "finr": [0.0, 0.0, 1.4, 1.4], "wrapl": 0.1, "wrapr": 0.8, "spl": 0.0, "spr": -0.3},
 		# 9 Bird: wrists crossed, thumbs hooked, hands flat and spread up and out
 		# like wings, palms out.
 		{"wl": close + Vector3(0.02, -0.02, 0.0), "wr": close + Vector3(-0.02, -0.02, 0.0),
