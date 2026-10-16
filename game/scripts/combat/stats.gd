@@ -36,6 +36,8 @@ var is_invulnerable := false
 ## health instead (once; cleared when used).
 var cheat_death := false
 var cheat_death_health := 0.3
+## Health never drops below this (a crowd that yields instead of falling).
+var min_health := 0.0
 ## Damage multiplier from guarding (1.0 = not guarding).
 var guard_multiplier := 1.0
 ## Seconds since damage was last taken.
@@ -87,7 +89,7 @@ func take_damage(amount: float, element: int = Element.NONE) -> float:
 		return 0.0
 	var mult := Element.multiplier(element, affinity)
 	var dealt := amount * mult * guard_multiplier * (1.0 - modifier(&"damage_reduction"))
-	health = maxf(0.0, health - dealt)
+	health = maxf(min_health, health - dealt)
 	if health <= 0.0 and cheat_death:
 		cheat_death = false
 		health = max_health * cheat_death_health

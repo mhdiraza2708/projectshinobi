@@ -16,6 +16,8 @@ signal defeated(enemy: EnemyShinobi)
 signal phase_reached(phase: Dictionary)
 ## A hit from `by` broke this fighter's weave.
 signal interrupted(by: Node)
+## A story escort reached the place it was walking to.
+signal escort_arrived
 
 enum State { SPAWNING, FIGHT, WEAVING, WINDUP, AIMING, GUARDING, DODGING, STAGGERED, DEFEATED }
 
@@ -48,6 +50,15 @@ const RANKS := {
 }
 
 const SPAWN_TIME := 0.9
+## An escorted ally fights what comes within ESCORT_ENGAGE (m), waits when the
+## leader is more than ESCORT_WAIT behind, and has arrived within ESCORT_ARRIVE.
+const ESCORT_ENGAGE := 9.0
+const ESCORT_WAIT := 14.0
+const ESCORT_ARRIVE := 1.8
+## Enemies size up an escorted ally as this much nearer than they are.
+const ESCORT_BAIT := 0.6
+## A non-lethal fighter yields below this share of its health.
+const YIELD_SHARE := 0.25
 ## When a spawning fighter shows through its smoke.
 const SPAWN_SHOW := 0.15
 const DODGE_SPEED := 15.0
@@ -117,6 +128,18 @@ var voice_id := ""
 var phases: Array = []
 ## Who to fight (normally the player).
 var target: Node3D
+## Story escort: an ally walks to this point (a Vector3) when nothing is near,
+## waiting whenever `escort_leader` (the player) falls too far behind, and
+## enemies go for them first.
+var escort_to: Variant = null
+var escort_leader: Node3D
+var _escort_arrived := false
+## A duel to the old rules: this fighter uses no jutsu.
+var blades_only := false
+## A crowd that yields instead of falling: below YIELD_SHARE of its health it
+## stops, gives up and leaves, and nothing can kill it.
+var nonlethal := false
+var _yielded := false
 ## Combat team (see Combat.same_team); also this node's group. &"player"
 ## makes an ally that fights the player's enemies.
 var team := &"enemies"
@@ -236,6 +259,8 @@ func _ready() -> void:
 	stats.max_health = health_override * EnemyTier.health_mult(story_tier) if health_override > 0.0 else float(_r["health"])
 	stats.chakra_regen = 8.0
 	stats.affinity = element
+	# A crowd that yields can't be killed, only beaten into giving up.
+	stats.min_health = 1.0 if nonlethal else 0.0
 	add_child(stats)
 	stats.health_changed.connect(func(_c: float, _m: float) -> void: _draw_bar())
 	stats.damaged.connect(_on_damaged)
@@ -404,6 +429,8 @@ func pick_target() -> Node3D:
 				or (n.has_method("is_defeated") and n.is_defeated()):
 			continue
 		var d := global_position.distance_to(n.global_position) * (0.75 if n is Player else 1.0)
+		if n is EnemyShinobi and (n as EnemyShinobi).escort_to is Vector3:
+			d *= ESCORT_BAIT
 		if d < best_d:
 			best_d = d
 			best = n
@@ -495,6 +522,25 @@ static func _ring_material(c: Color) -> StandardMaterial3D:
 
 func is_defeated() -> bool:
 	return state == State.DEFEATED
+
+
+## A non-lethal fighter beaten far enough gives up: reels, concedes and
+## goes, counting as beaten for whoever is keeping score but worth no XP.
+func _yield() -> void:
+	if _yielded or state == State.DEFEATED or not is_inside_tree():
+		return
+	_yielded = true
+	stats.is_invulnerable = true
+	hunt = false
+	target = null
+	_weave = null
+	_stagger(null)
+	_pop("YIELDS", Color(0.92, 0.94, 1.0), 44)
+	await get_tree().create_timer(0.9, false).timeout
+	if state == State.DEFEATED or not is_inside_tree():
+		return
+	defeated.emit(self)
+	leave()
 
 
 ## Leaves in a puff of smoke without counting as defeated (an ally
@@ -628,7 +674,32 @@ func _target_ok() -> bool:
 	return not (target.has_method("is_down") and target.is_down())
 
 
+## An escorted ally between fights: walk to the goal, or wait for the leader.
+## True when it spent the frame doing that (false: someone is close, fight).
+func _escort(delta: float) -> bool:
+	if not _target_ok() and hunt:
+		target = pick_target()
+	if _target_ok() and global_position.distance_to(target.global_position) < ESCORT_ENGAGE:
+		return false
+	var to := (escort_to as Vector3) - global_position
+	to.y = 0.0
+	if to.length() < ESCORT_ARRIVE:
+		_decelerate(delta)
+		if not _escort_arrived:
+			_escort_arrived = true
+			escort_arrived.emit()
+		return true
+	if is_instance_valid(escort_leader) and global_position.distance_to(escort_leader.global_position) > ESCORT_WAIT:
+		_decelerate(delta)
+		return true
+	_move(to.normalized() * float(_r["run"]) * 0.55, delta)
+	rotation.y = lerp_angle(rotation.y, atan2(-to.x, -to.z), 1.0 - exp(-8.0 * delta))
+	return true
+
+
 func _fight(delta: float) -> void:
+	if escort_to is Vector3 and _escort(delta):
+		return
 	if not _target_ok() and hunt:
 		target = pick_target()
 	if not _target_ok():
@@ -714,6 +785,8 @@ func _fight(delta: float) -> void:
 
 ## A jutsu that suits the distance and can be paid for, or null.
 func _pick_jutsu(dist: float) -> JutsuDefinition:
+	if blades_only:
+		return null
 	var usable: Array[JutsuDefinition] = []
 	for j in jutsu_list:
 		if caster.block_reason(j) != &"":
@@ -1038,6 +1111,8 @@ func _check_phases() -> void:
 
 func _on_damaged(amount: float, hit_element: int, multiplier: float) -> void:
 	_check_phases.call_deferred()
+	if nonlethal and not _yielded and stats.health <= stats.max_health * YIELD_SHARE:
+		_yield.call_deferred()
 	if model.animator and state != State.GUARDING and state != State.STAGGERED and not stats.is_dead():
 		model.animator.hit()
 	var text := str(roundi(amount))

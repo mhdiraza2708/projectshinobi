@@ -35,6 +35,18 @@ var drills: Array[EnemyShinobi] = []
 ## Seconds left in a "survive" beat (0 when none is running).
 var survive_left := 0.0
 
+## The character being walked to safety in an escort beat.
+var escortee: EnemyShinobi
+## The current escort / search beat, or {} when none is running.
+var _escort: Dictionary = {}
+var _escort_timer := 0.0
+var _escort_spawned := 0
+var _escort_marker: Node3D
+var _search: Dictionary = {}
+var _search_found: Array[bool] = []
+var _search_ambush: Array[EnemyShinobi] = []
+var _search_ping := 0.0
+
 var _checkpoint := 0
 var _task_hooks_ready := false
 ## who -> the ally beat that brought them, so a retry can bring them back.
@@ -94,6 +106,8 @@ func _stage_before(index: int) -> void:
 				add_npc(b["who"], b["at"], true)
 			"exit", "boss":
 				remove_npc(b["who"], false)
+			"escort":
+				add_npc(b["who"], b["to"], true)
 			"scene":
 				var quick := Cutscene.new(self)
 				quick.skipping = true
@@ -149,6 +163,14 @@ func _next() -> void:
 			_checkpoint = beat_index
 			_begin_play()
 			_start_fight(b)
+		"escort":
+			_checkpoint = beat_index
+			_begin_play()
+			_start_escort(b)
+		"search":
+			_checkpoint = beat_index
+			_begin_play()
+			_start_search(b)
 		"boss":
 			_checkpoint = beat_index
 			_begin_play()
@@ -169,7 +191,7 @@ func _next() -> void:
 ## banners and waits keep what's playing.
 func _score(kind: String, beat := {}) -> void:
 	match kind:
-		"fight", "survive":
+		"fight", "survive", "escort":
 			Music.play(Music.battle_for(int(chapter.get("number", 1)) - 1))
 		"boss":
 			var theme := str(beat.get("music", ""))
@@ -359,6 +381,7 @@ func _start_fight(b: Dictionary) -> void:
 	fight.ground_at = _ground_at()
 	fight.name = "StoryFight"
 	fight.waves = b["waves"]
+	fight.nonlethal = bool(b.get("nonlethal", false))
 	fight.record_id = ""
 	fight.announce = false
 	add_child(fight)
@@ -448,6 +471,8 @@ func _start_survive(b: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_escort(delta)
+	_tick_search(delta)
 	if survive_left <= 0.0 or not running or player.is_down():
 		return
 	survive_left -= delta
@@ -463,6 +488,7 @@ func _process(delta: float) -> void:
 		e.rank = pair[0]
 		e.element = pair[1]
 		e.tier = _tier()
+		e.nonlethal = bool(_survive.get("nonlethal", false))
 		e.target = player
 		e.position = _spawn_point(_survive_spawned % 3, 3)
 		_survive_spawned += 1
@@ -516,6 +542,9 @@ func _start_boss(b: Dictionary) -> void:
 	boss.aura_color = b["aura"]
 	boss.target = player
 	boss.position = pos
+	if b.get("rules", "") == "blades":
+		boss.blades_only = true
+		player.caster.blades_only = true
 	boss.defeated.connect(_on_boss_defeated)
 	boss.phase_reached.connect(_on_boss_phase.bind(b["who"]))
 	stage.add_child(boss)
@@ -535,7 +564,9 @@ func _start_boss(b: Dictionary) -> void:
 			return
 		boss.hold = false
 	hud.show_boss(boss, "%s %s" % [info["kanji"], info["name"]])
-	hud.set_objective("Defeat %s" % info["name"])
+	hud.set_objective("Defeat %s" % info["name"] + ("  ·  blades only" if b.get("rules", "") == "blades" else ""))
+	if b.get("rules", "") == "blades":
+		hud.show_banner("Blades only: no jutsu", &"cast")
 	Sfx.play(&"wave_start")
 	if b["taunt"] != "":
 		hud.say(info["name"], Story.format(b["taunt"]), Element.color(boss.element))
@@ -561,6 +592,7 @@ func _on_boss_phase(phase: Dictionary, who: String) -> void:
 
 func _on_boss_defeated(fallen: EnemyShinobi) -> void:
 	hud.hide_boss()
+	_end_rules()
 	# The boss's clones go with it.
 	for a in adds:
 		if is_instance_valid(a):
@@ -590,6 +622,7 @@ func _end_fight() -> void:
 
 
 func _exit_tree() -> void:
+	_end_rules()
 	# Never leave the game in slow motion.
 	if _slowed:
 		Engine.time_scale = 1.0
@@ -598,6 +631,12 @@ func _exit_tree() -> void:
 func _on_player_defeated() -> void:
 	if not running or beat_index != _checkpoint:
 		return
+	_lose_fight()
+
+
+## The fight is lost (the player fell, or the one they were guarding did).
+func _lose_fight() -> void:
+	_end_rules()
 	if fight:
 		fight.running = false
 	for e in stage.find_children("*", "EnemyShinobi", true, false):
@@ -616,6 +655,8 @@ func retry() -> void:
 	adds.clear()
 	boss = null
 	survive_left = 0.0
+	_clear_escort()
+	_clear_search()
 	hud.hide_boss()
 	_end_fight()
 	player.revive()
@@ -631,6 +672,233 @@ func retry() -> void:
 	player.global_position = Vector3(at.x, 0.1, at.y)
 	beat_index = _checkpoint - 1
 	_next()
+
+
+## Gives the player their jutsu back after a duel to the old rules.
+func _end_rules() -> void:
+	if is_instance_valid(player) and player.caster:
+		player.caster.blades_only = false
+
+
+# --- Escort ------------------------------------------------------------------------
+
+## A story character walks to the beat's goal; enemies go for them first.
+## They fall, and the fight is lost; they arrive, and the beat is done.
+func _start_escort(b: Dictionary) -> void:
+	_clear_escort()
+	_escort = b
+	_escort_timer = 3.0
+	_escort_spawned = 0
+	var who: String = b["who"]
+	var info: Dictionary = story.characters[who]
+	var from: Vector2 = b["from"]
+	var pos := Vector3(from.x, 0.2, from.y)
+	var npc: StoryNpc = npcs.get(who)
+	if npc:
+		pos = npc.global_position + Vector3.UP * 0.2
+		npc.vanish()
+		npcs.erase(who)
+	var goal: Vector2 = b["to"]
+	var e := EnemyShinobi.new()
+	e.name = "Escort_" + who
+	e.team = &"player"
+	e.rank = &"chunin"
+	e.element = info["element"]
+	e.title_override = info["name"]
+	e.health_override = b["health"]
+	e.style_override = info["style"]
+	e.voice_id = who
+	var chosen := CharacterModel.resolve_roster(info["model"])
+	e.model_path = chosen if chosen != "" else EnemyShinobi.pick_model(who)
+	e.position = pos
+	e.escort_to = Vector3(goal.x, 0.2, goal.y)
+	e.escort_leader = player
+	e.escort_arrived.connect(_on_escort_arrived)
+	e.defeated.connect(_on_escortee_down)
+	stage.add_child(e)
+	e.caster.power_scale *= 0.7
+	escortee = e
+	_escort_marker = _goal_marker(Vector3(goal.x, 0.0, goal.y), Element.color(info["element"]))
+	hud.show_banner(Story.format(b["text"]), &"cast")
+	Sfx.play(&"wave_start")
+
+
+## A tall soft pillar of light over a place to reach.
+func _goal_marker(at: Vector3, colour: Color) -> Node3D:
+	var pillar := MeshInstance3D.new()
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = 1.0
+	mesh.bottom_radius = 1.4
+	mesh.height = 14.0
+	pillar.mesh = mesh
+	pillar.material_override = Vfx.glow_material(colour.lightened(0.3), 1.2, 0.22)
+	pillar.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	stage.add_child(pillar)
+	pillar.global_position = Vector3(at.x, 7.0, at.z)
+	return pillar
+
+
+func _tick_escort(delta: float) -> void:
+	if _escort.is_empty() or not running or player.is_down() or not is_instance_valid(escortee):
+		return
+	var goal: Vector3 = escortee.escort_to
+	var left := Vector2(escortee.global_position.x - goal.x, escortee.global_position.z - goal.z).length()
+	hud.set_objective("%s  ·  %d m to go" % [Story.format(_escort["text"]), ceili(left)])
+	if _escort["enemies"].is_empty():
+		return
+	var alive := stage.find_children("*", "EnemyShinobi", true, false).filter(
+		func(n: EnemyShinobi) -> bool: return not n.is_ally() and not n.is_defeated())
+	_escort_timer -= delta
+	if _escort_timer > 0.0 or alive.size() >= int(_escort["max_alive"]):
+		return
+	_escort_timer = 4.0
+	var pairs: Array = _escort["enemies"]
+	var pair: Array = pairs[_escort_spawned % pairs.size()]
+	var e := EnemyShinobi.new()
+	e.rank = pair[0]
+	e.element = pair[1]
+	e.tier = _tier()
+	e.target = escortee
+	# From the side of the road the escortee is walking toward.
+	var ahead := (goal - escortee.global_position)
+	ahead.y = 0.0
+	var angle := randf_range(-1.1, 1.1)
+	var dir := (ahead.normalized() if ahead.length() > 0.5 else Vector3.FORWARD).rotated(Vector3.UP, angle)
+	var flat := Vector2(escortee.global_position.x, escortee.global_position.z) + Vector2(dir.x, dir.z) * 11.0
+	if flat.length() > 19.0:
+		flat = flat.normalized() * 19.0
+	var at := Vector3(flat.x, 0.2, flat.y)
+	e.position = Combat.clear_spot(player.get_world_3d(), at, _ground_at()) if player.is_inside_tree() else at
+	_escort_spawned += 1
+	stage.add_child(e)
+
+
+func _on_escort_arrived() -> void:
+	if _escort.is_empty() or not running:
+		return
+	var b := _escort
+	var who: String = b["who"]
+	var goal: Vector3 = escortee.escort_to
+	_clear_escort()
+	for n in stage.find_children("*", "EnemyShinobi", true, false):
+		if not (n as EnemyShinobi).is_ally():
+			(n as EnemyShinobi).dismiss()
+	hud.set_objective("")
+	hud.show_banner("Safe!", &"cast")
+	Sfx.play(&"victory", -4.0)
+	# They are on stage where they ended up, ready to talk.
+	add_npc(who, Vector2(goal.x, goal.z), true)
+	_next()
+
+
+func _on_escortee_down(_who: EnemyShinobi) -> void:
+	if _escort.is_empty() or not running:
+		return
+	var name_of := str(story.speaker_name(_escort["who"]))
+	hud.show_banner("%s has fallen" % name_of, &"fail")
+	if beat_index == _checkpoint:
+		_lose_fight()
+
+
+func _clear_escort() -> void:
+	_escort = {}
+	if is_instance_valid(escortee):
+		escortee.escort_to = null
+		escortee.leave()
+	escortee = null
+	if is_instance_valid(_escort_marker):
+		_escort_marker.queue_free()
+	_escort_marker = null
+
+
+# --- Search ------------------------------------------------------------------------
+
+## Find every marked place by walking the ground: no pin, only "cold, warm,
+## hot", a glow close by, and an ambush at each if the beat has one.
+func _start_search(b: Dictionary) -> void:
+	_clear_search()
+	_search = b
+	_search_found.clear()
+	for i in (b["spots"] as Array).size():
+		_search_found.append(false)
+	_search_ping = 0.0
+	hud.show_banner(Story.format(b["text"]), &"cast")
+	Sfx.play(&"wave_start")
+
+
+func _tick_search(delta: float) -> void:
+	if _search.is_empty() or not running or player.is_down():
+		return
+	var spots: Array = _search["spots"]
+	var total := spots.size()
+	var found := _search_found.count(true)
+	_search_ambush.assign(_search_ambush.filter(func(e: EnemyShinobi) -> bool: return is_instance_valid(e) and not e.is_defeated()))
+	if not _search_ambush.is_empty():
+		hud.set_objective("%s  ·  ambush: %d left" % [Story.format(_search["text"]), _search_ambush.size()])
+		return
+	if found >= total:
+		_finish_search()
+		return
+	var here := Vector2(player.global_position.x, player.global_position.z)
+	var nearest := INF
+	var nearest_i := -1
+	for i in total:
+		if _search_found[i]:
+			continue
+		var d := here.distance_to(spots[i])
+		if d < nearest:
+			nearest = d
+			nearest_i = i
+	if nearest <= float(_search["radius"]):
+		_search_found[nearest_i] = true
+		found += 1
+		var spot: Vector2 = spots[nearest_i]
+		var colour := Color(0.95, 0.85, 0.5)
+		Vfx.ground_mark(stage, Vector3(spot.x, 0.0, spot.y), colour, float(_search["radius"]) + 1.0, 2.0)
+		Vfx.flash(stage, Vector3(spot.x, 1.0, spot.y), colour, 3.0, 0.3)
+		Sfx.ui(&"ui_select")
+		hud.show_banner("Found! (%d/%d)" % [found, total], &"cast")
+		_spawn_ambush(spot)
+		return
+	_search_ping -= delta
+	if nearest < 14.0 and _search_ping <= 0.0:
+		_search_ping = 1.4
+		var at: Vector2 = spots[nearest_i]
+		Vfx.ground_mark(stage, Vector3(at.x, 0.0, at.y), Color(0.95, 0.85, 0.5, 0.6), float(_search["radius"]), 1.2)
+	var heat := "hot" if nearest < 14.0 else ("warm" if nearest < 32.0 else "cold")
+	hud.set_objective("%s  (%d/%d)  ·  %s" % [Story.format(_search["text"]), found, total, heat])
+
+
+func _spawn_ambush(spot: Vector2) -> void:
+	var pairs: Array = _search["enemies"]
+	for i in pairs.size():
+		var e := EnemyShinobi.new()
+		e.rank = pairs[i][0]
+		e.element = pairs[i][1]
+		e.tier = _tier()
+		e.target = player
+		var angle := TAU * float(i) / float(maxi(pairs.size(), 1)) + 0.6
+		var at := Vector3(spot.x + cos(angle) * 6.0, 0.2, spot.y + sin(angle) * 6.0)
+		e.position = Combat.clear_spot(player.get_world_3d(), at, _ground_at()) if player.is_inside_tree() else at
+		_search_ambush.append(e)
+		stage.add_child(e)
+
+
+func _finish_search() -> void:
+	_search = {}
+	hud.set_objective("")
+	hud.show_banner("Everything found!", &"cast")
+	Sfx.play(&"victory", -4.0)
+	_next()
+
+
+func _clear_search() -> void:
+	_search = {}
+	_search_found.clear()
+	for e in _search_ambush:
+		if is_instance_valid(e):
+			e.queue_free()
+	_search_ambush.clear()
 
 
 func _finish() -> void:

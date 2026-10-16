@@ -34,6 +34,8 @@ var player: Player
 var waves: Array = WAVES
 ## How far into the story its fighters are (see EnemyTier); Trials stay 0.
 var tier := 0
+## The enemies yield instead of falling (see EnemyShinobi.nonlethal).
+var nonlethal := false
 ## (x, z) -> the terrain's height, if the stage knows it (Island.height_at):
 ## spawns are kept clear of rocks and props with it (see Combat.clear_spot).
 var ground_at := Callable()
@@ -98,6 +100,7 @@ func _spawn(rank: StringName, element: int, index: int, count: int) -> EnemyShin
 	e.rank = rank
 	e.element = element
 	e.tier = tier
+	e.nonlethal = nonlethal
 	e.target = player
 	e.position = spawn_point(index, count)
 	e.rotation.y = atan2(-(player.global_position.x - e.position.x), -(player.global_position.z - e.position.z))
