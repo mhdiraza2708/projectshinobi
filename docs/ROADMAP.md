@@ -75,10 +75,11 @@ from layers:
 
 ## Bosses
 
-Harder means new mechanics, not health (tiers already scale that). Each of
-Asahi, Iwao, Kagerou, Tsumugi and Nue gets two or three signature mechanics
-and new phases, with readable tells: rock walls and quake zones, a clone
-ambush, lightning dash chains, arena changes. About a day of work each.
+Harder means new mechanics, not health (tiers already scale that). Done:
+seven kinds of signature attack (`quake`, `ring`, `chain`, `sweep`, `pull`,
+`ward`, `call`), each with a readable tell, and every story boss and bounty
+has its own mix (see [STORY.md](STORY.md)). Still to do: arena changes (rock
+walls, a rising tide) and bespoke phases per boss.
 
 ## Voices
 

@@ -34,7 +34,7 @@
 		{"do": "ally", "who": "asahi", "rank": "chunin", "health": 240},
 		{"do": "ally", "who": "tsumugi", "rank": "chunin", "health": 240},
 		{"do": "boss", "music": "finale", "who": "mikage", "rank": "jonin", "health": 520, "element": "water", "size": 1.05, "aura": "#7a5fb0aa", "taunt": "A name is only a sound. I have kept the sound of mine for no one.",
-			"specials": [{"kind": "chain", "every": 11, "below": 0.9, "count": 4, "damage": 17}, {"kind": "quake", "every": 12, "below": 0.7, "count": 5, "damage": 18}, {"kind": "ring", "every": 13, "below": 0.5, "damage": 20}],
+			"specials": [{"kind": "chain", "every": 11, "below": 0.9, "count": 4, "damage": 17}, {"kind": "ward", "every": 26, "below": 0.85, "duration": 8, "force": 90}, {"kind": "call", "every": 22, "below": 0.65, "count": 2, "max": 3, "duration": 22}, {"kind": "sweep", "every": 12, "below": 0.4, "damage": 19, "duration": 2.4}],
 			"phases": [
 				{"at": 0.75, "element": "wind", "say": "Wind, which forgets everything it carries.", "summon": [["genin", "wind"], ["genin", "wind"]]},
 				{"at": 0.5, "element": "lightning", "say": "Lightning, which remembers only the instant.", "summon": [["chunin", "lightning"], ["genin", "water"]]},

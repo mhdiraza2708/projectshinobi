@@ -70,7 +70,7 @@ controls can be remapped.
   (the academy yard, a burned pass, a forest shrine, a dam, a snowbound road,
   a summit), so you cross the sea between them; arriving starts the mission
   with a banner, and when it ends the next objective is on your tracker. Boss
-  duels with signature attacks (telegraphed quakes, a running shockwave, blinking strike chains), a boss who changes nature as it weakens, fights beside allies, a
+  duels with signature attacks (telegraphed quakes, a running shockwave, blinking strike chains, a turning blade, a pull and burst, a seal ward to break, called shinobi), a boss who changes nature as it weakens, fights beside allies, a
   survival stand in a storm, and a finale sealed with a five-seal technique.
   Every line is voiced (Kokoro TTS). Missions are plain data files. See
   [docs/STORY.md](docs/STORY.md) to write your own.

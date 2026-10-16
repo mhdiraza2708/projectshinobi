@@ -136,8 +136,7 @@ setting (pause menu, Accessibility tab) adds tiers: Hard +2, Nightmare +4.
 When every chapter is cleared the Quests tab offers **New Game+**: the story,
 quests, world and its places start over, skills, level and looks stay, and
 every round adds three more tiers (the ceiling is tier 9). The tell before a
-blow never drops below 0.3 s. Boss signature attacks (quakes, a running
-shockwave ring, blinking strike chains; `scripts/enemies/boss_specials.gd`)
+blow never drops below 0.3 s. Boss signature attacks (`scripts/enemies/boss_specials.gd`)
 are written on the boss beat as `"specials"` and scale the same way:
 
 ```json
@@ -145,9 +144,24 @@ are written on the boss beat as `"specials"` and scale the same way:
              {"kind": "chain", "every": 16, "below": 0.45, "count": 3, "damage": 16}]
 ```
 
-`kind` is `quake`, `ring` or `chain`; `every` the seconds between uses;
-`below` the health share under which it starts; `count`, `radius`, `damage`
-and `delay` (the warning) have defaults per kind.
+`every` is the seconds between uses and `below` the health share under which
+it starts; `count`, `radius`, `damage` and `delay` (the warning) have defaults
+per kind. Only one special runs at a time. Each is shown before it lands and
+is beaten by what you do, not by how much health you have:
+
+| `kind` | What it does | The answer |
+|---|---|---|
+| `quake` | Marks fall round you and where you stand. | Leave them. |
+| `ring` | A shockwave runs out along the ground. | Jump or dash through it. |
+| `chain` | The boss blinks to strike points round you, one after another. | Keep moving. |
+| `sweep` | A blade of light turns round the boss at knee height (`radius` is its length, `duration` seconds per `turns`). | Jump it. |
+| `pull` | The boss drags you toward itself for `duration` seconds, then bursts (`radius`, `strength`, `range`). | Dash away before the burst. |
+| `ward` | A seal ward turns away `reduction` of every blow for up to `duration` seconds. | Land `force` damage on it, all at once, to break it and leave the boss reeling. |
+| `call` | The boss calls `count` shinobi of its own nature (`max` alive, they stay `duration` seconds). | Beat them, or the boss, first. |
+
+Every story boss and every bounty has its own mix, so a fight with Iwao
+(stone clones and quakes) feels different from one with Mikage (a ward, her
+Court, a turning blade).
 
 ## Islands
 

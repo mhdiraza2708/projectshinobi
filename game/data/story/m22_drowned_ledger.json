@@ -37,7 +37,7 @@
 			["sumi", "I did not write him out. I only stopped writing him in. There is a difference, and it has not made me sleep any better."]
 		]},
 		{"do": "boss", "who": "sumi", "rank": "jonin", "health": 400, "element": "water", "taunt": "The water will take the ink anyway. I would only prefer it be mine.",
-			"specials": [{"kind": "quake", "every": 9, "count": 5, "damage": 17}, {"kind": "ring", "every": 13, "below": 0.7, "damage": 18}, {"kind": "chain", "every": 15, "below": 0.4, "count": 3, "damage": 17}],
+			"specials": [{"kind": "quake", "every": 9, "count": 5, "damage": 17}, {"kind": "ward", "every": 25, "below": 0.75, "duration": 9, "force": 85}, {"kind": "pull", "every": 15, "below": 0.55, "damage": 20}],
 			"phases": [
 				{"at": 0.65, "element": "earth", "say": "Stone, then. Iwao taught the Court that much.", "summon": [["genin", "earth"], ["genin", "earth"]]},
 				{"at": 0.3, "element": "lightning", "say": "The Ledger names me, too. I am only the last line on the page.", "summon": [["chunin", "lightning"]]}
