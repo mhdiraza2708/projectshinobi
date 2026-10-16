@@ -232,3 +232,41 @@ func test_nothing_waits_on_the_road_during_a_chapter() -> void:
 	await physics_frames(2)
 	assert_true(enc.current.is_empty(), "a chapter clears the road")
 	scene.mode = mode
+
+
+func test_going_down_in_a_rescue_gives_the_road_back() -> void:
+	await _load()
+	var w := _wild()
+	enc.begin("rescue", w["at"])
+	var raiders: Array = enc.current["raiders"]
+	await _stand_at(enc.ground(w["at"] + Vector3(20, 0, 0)))
+	assert_true(world.busy)
+	player.defeated.emit()
+	await physics_frames(2)
+	assert_true(enc.current.is_empty(), "the encounter ends")
+	assert_false(world.busy, "and free roam is not stuck")
+	for e: Variant in raiders:
+		assert_true(not is_instance_valid(e) or (e as EnemyShinobi).is_defeated(), "its raiders go")
+
+
+func test_losing_an_ambush_ends_it() -> void:
+	await _load()
+	var w := _wild()
+	enc.begin("ambush", w["at"])
+	await _stand_at(enc.ground(w["at"] + Vector3(8, 0, 0)))
+	assert_true(is_instance_valid(world._fight))
+	player.defeated.emit()
+	await physics_frames(2)
+	assert_true(enc.current.is_empty())
+	assert_false(is_instance_valid(world._fight) and not world._fight.is_queued_for_deletion(), "the fight is gone")
+	assert_eq(enc.done_count("ambush"), 0)
+
+
+func test_travelling_away_leaves_a_waiting_encounter_behind() -> void:
+	await _load()
+	var w := _wild()
+	await _stand_at(enc.ground(w["at"] + Vector3(40, 0, 0)))
+	enc.begin("pilgrim", w["at"])
+	assert_true(await world.fast_travel("emberwood"))
+	await physics_frames(3)
+	assert_true(enc.current.is_empty(), "it does not wait for you across the map")
