@@ -1469,6 +1469,30 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 						await get_tree().process_frame
 						world.sites.update()
 				await (world.archipelago as ContinentWorld).settle()
+			if _user_args().has("encounter") and world.encounters != null:
+				# --encounter=rescue|duelist|pilgrim|cache|ambush puts one on the
+				# road in the wilds nearest you and stands you a little way off.
+				var kind := str(_user_args()["encounter"])
+				var enc := world.encounters
+				var back := {"rescue": 40.0, "duelist": 24.0, "pilgrim": 7.0, "cache": 7.0, "ambush": 32.0}
+				if _user_args().has("back"):
+					back[kind] = float(_user_args()["back"])
+				var found: Variant = null
+				for r in range(1, 14):
+					for a in 12:
+						var at := player.global_position + Vector3.FORWARD.rotated(Vector3.UP, TAU * a / 12.0) * r * 90.0
+						var stand := at + Vector3(0.0, 0.0, float(back.get(kind, 20.0)))
+						if enc.good_spot(at) and enc.good_spot(stand):
+							found = at
+							break
+					if found != null:
+						break
+				if found is Vector3:
+					var at: Vector3 = enc.ground(found)
+					await world._put_player_at(enc.ground(at + Vector3(0.0, 0.0, float(back.get(kind, 20.0)))))
+					await (world.archipelago as ContinentWorld).settle()
+					enc.begin(kind, at)
+					site_at = world.archipelago.to_local(at)
 			if site_at != Vector3.ZERO:
 				var face := world.archipelago.to_global(site_at) - player.global_position
 				player.rotation.y = atan2(-face.x, -face.z)

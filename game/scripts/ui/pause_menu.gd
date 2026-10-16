@@ -809,6 +809,10 @@ func _add_deeds(world: OpenWorld) -> void:
 		lines.append("Relics taken  ·  %d / %d" % [world.sites.done_count("ruin"), plan.of_kind("ruin").size()])
 		lines.append("Shrines attuned  ·  %d / %d" % [world.sites.done_count("shrine"), plan.of_kind("shrine").size()])
 		lines.append("Contracts fulfilled  ·  %d" % int(Game.record("world", "contracts_done", 0)))
+		if world.encounters != null:
+			var enc := world.encounters
+			lines.append("On the road  ·  %d ambushes beaten, %d travellers saved, %d duelists bested" % [
+				enc.done_count("ambush"), enc.done_count("rescue"), enc.done_count("duelist")])
 	lines.append("Side quests done  ·  %d / %d" % [Quests.with_status(Quests.DONE).size(), Quests.all().size()])
 	for line in lines:
 		var label := UiKit.label(line, 18, UiKit.INK_SOFT, &"bold")
@@ -849,6 +853,17 @@ func _refresh_map() -> void:
 		c.queue_free()
 	_travel.add_child(_section("Travel"))
 	var can := world.can_travel()
+	# Straight to what you're tracking, found or not.
+	var goal := world.objective()
+	if world.objective_landing() is Vector3:
+		var go := _button("%s  Go to: %s" % [str(goal["kanji"]), str(goal["title"])], func() -> void:
+			close()
+			world.travel_to_objective())
+		go.disabled = not can
+		go.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		go.clip_text = true
+		go.tooltip_text = str(goal["text"])
+		_travel.add_child(go)
 	for id: String in Archipelago.LAYOUT:
 		var known := world.discovered(id)
 		var b := _button("%s  %s" % [OpenWorld.ISLAND_KANJI.get(id, ""), Island.display_name(id)] if known else "?  Not yet found",

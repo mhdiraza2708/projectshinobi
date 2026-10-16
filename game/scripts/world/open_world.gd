@@ -68,6 +68,8 @@ var dialogue: DialogueBox
 ## on the islands).
 var sites: WorldSites
 var activities: SiteActivities
+## Life on the roads between places (the continent only).
+var encounters: WorldEncounters
 ## A chapter or quest fight in progress (free roam pauses its quests).
 var busy := false
 ## Nothing is checked (islands, water, pickups) until start() has put you
@@ -234,6 +236,10 @@ func _make_sites() -> void:
 	activities.sites = sites
 	add_child(activities)
 	sites.discovered.connect(activities.on_found)
+	encounters = WorldEncounters.new()
+	encounters.world = self
+	encounters.sites = sites
+	add_child(encounters)
 	sites.site_built.connect(func(node: SiteNode) -> void:
 		if get_parent().has_method(&"light_lanterns"):
 			get_parent().light_lanterns(node.lanterns))
@@ -616,6 +622,8 @@ func _find_interact() -> void:
 				prompt = "Talk to %s" % str(story.characters.get(who, {}).get("name", who))
 	if _interact.is_empty() and activities != null:
 		var here := activities.interact_for(player.global_position)
+		if here.is_empty() and encounters != null:
+			here = encounters.interact_for(player.global_position)
 		if not here.is_empty():
 			_interact = here
 			prompt = str(here["prompt"])
@@ -633,6 +641,9 @@ func _use_interact() -> void:
 		return
 	if kind == "shrine" or kind == "board":
 		activities.use(kind, id)
+		return
+	if kind == "encounter":
+		encounters.use(id)
 		return
 	await talk_to(id)
 
@@ -695,7 +706,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	# A camp has its own fight music and a named rival a duel's; the rest take turns.
 	if q["type"] == "duel":
 		battle = DUEL_TRACK
-	elif str(q["id"]).begins_with(SiteActivities.PREFIX):
+	elif str(q["id"]).begins_with(SiteActivities.PREFIX) or str(q["id"]).begins_with(WorldEncounters.PREFIX):
 		battle = CAMP_TRACK
 	var first := not _films_seen.has(q["id"])
 	_films_seen[q["id"]] = true
@@ -755,7 +766,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	_fight.waves = waves
 	archipelago.add_child(_fight)
 	_fight.wave_started.connect(func(index: int, total: int, _e: int) -> void:
-		if not _fight_quest.begins_with(SiteActivities.PREFIX):
+		if not _fight_quest.begins_with(SiteActivities.PREFIX) and not _fight_quest.begins_with(WorldEncounters.PREFIX):
 			Quests.set_progress(_fight_quest, index)
 		hud.show_banner("%s  ·  wave %d / %d" % [q["name"], index + 1, total], &"cast")
 		tracker.refresh())
@@ -859,7 +870,9 @@ func _end_fight(won: bool) -> void:
 	_fight_quest = ""
 	busy = false
 	update_music()
-	if won and id.begins_with(SiteActivities.PREFIX):
+	if id.begins_with(WorldEncounters.PREFIX):
+		encounters.finish_fight(id, won)
+	elif won and id.begins_with(SiteActivities.PREFIX):
 		activities.finish_fight(id)
 	elif won:
 		_finish_quest(id, Quests.quest(id).get("outro", []))
@@ -952,6 +965,54 @@ func fast_travel(id: String) -> bool:
 		return false
 	if not can_travel():
 		return false
+	var at: Vector3
+	if to_site:
+		at = sites.build_site(id).spot("interact")
+	else:
+		at = archipelago.on_island(id, TRAVEL_POINT)
+	return await _travel_to(at)
+
+
+## How far short of the tracked objective objective travel sets you down:
+## close enough to see it, and for a mission's pillar, close enough to begin.
+const OBJECTIVE_SHORT := 4.0
+
+
+## Where travelling to the tracked objective would set you down, or null when
+## it has no place (the story is told, a gather quest with nothing left).
+func objective_landing() -> Variant:
+	var at: Variant = objective().get("at")
+	if not at is Vector3:
+		return null
+	var back := player.global_position - (at as Vector3)
+	back.y = 0.0
+	if back.length() < 0.5:
+		back = Vector3.BACK
+	return (at as Vector3) + back.normalized() * OBJECTIVE_SHORT
+
+
+## Whether the tracked objective can be travelled to right now.
+func can_travel_to_objective() -> bool:
+	return can_travel() and objective_landing() is Vector3
+
+
+## Travels straight to the tracked objective (the next mission's pillar or a
+## side quest's place), found or not, and faces you toward it: the walk to
+## work you have chosen is never the game.
+func travel_to_objective() -> bool:
+	var land: Variant = objective_landing()
+	if not land is Vector3 or not can_travel():
+		return false
+	var at: Vector3 = objective()["at"]
+	if Quests.tracked() == Quests.MAIN and is_instance_valid(_beacon):
+		# You chose to go: arriving begins it.
+		_beacon.armed = true
+	return await _travel_to(land, at)
+
+
+## The seal flares, a white flash, and you stand at `at` (facing `look` when
+## given).
+func _travel_to(at: Vector3, look: Variant = null) -> bool:
 	busy = true
 	player.input_enabled = false
 	var scene := get_parent()
@@ -959,12 +1020,14 @@ func fast_travel(id: String) -> bool:
 		await scene._teleport_out()
 	if not is_inside_tree():
 		return false
-	var at: Vector3
-	if to_site:
-		at = sites.build_site(id).spot("interact")
-	else:
-		at = archipelago.on_island(id, TRAVEL_POINT)
 	await _put_player_at(at)
+	if look is Vector3 and is_instance_valid(player):
+		var dir := (look as Vector3) - player.global_position
+		dir.y = 0.0
+		if dir.length() > 0.1:
+			player._face_now(dir)
+			player.camera_rig.yaw = player.global_rotation.y
+			player.camera_rig.snap()
 	save_position()
 	if scene.has_method(&"_teleport_in"):
 		await scene._teleport_in()

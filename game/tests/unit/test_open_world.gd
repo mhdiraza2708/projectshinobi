@@ -392,6 +392,53 @@ func test_the_map_charts_the_islands_and_travel_needs_a_visit() -> void:
 	menu.close()
 
 
+func test_travel_goes_straight_to_the_next_mission_found_or_not() -> void:
+	await _load()
+	var chapter: Dictionary = {}
+	for c: Dictionary in world.story.chapters:
+		if str(c["island"]) != "emberwood":
+			chapter = c
+			break
+		Game.mark_chapter_done(c["id"])
+	world.refresh()
+	var region := str(chapter["island"])
+	assert_true(region != "emberwood" and not world.discovered(region), "the mission is somewhere you haven't been")
+	var menu: PauseMenu = scene.pause_menu
+	menu.open()
+	menu._select_tab(PauseMenu.TAB_MAP)
+	await physics_frames(2)
+	var offered := menu._travel.find_children("*", "Button", true, false).filter(
+		func(b: Button) -> bool: return b.text.contains("Go to:") and not b.disabled)
+	assert_eq(offered.size(), 1, "the map offers to go to the tracked objective")
+	menu.close()
+	var started := [""]
+	world.chapter_requested.connect(func(id: String) -> void: started[0] = id)
+	assert_true(await world.travel_to_objective())
+	await physics_frames(4)
+	assert_eq(world.archipelago.island_near(player.global_position), region, "you arrive in its region")
+	assert_true(world.discovered(region), "which is found by arriving")
+	assert_eq(started[0], chapter["id"], "at the pillar, so the mission begins")
+
+
+func test_travel_to_a_side_quest_lands_at_its_place() -> void:
+	await _load()
+	var q: Dictionary = {}
+	for each in Quests.all():
+		if each["type"] == "defeat" and str(each["island"]) != "emberwood":
+			q = each
+			break
+	assert_false(q.is_empty(), "a defeat quest away from home")
+	Game.set_record("quests", q["id"], Quests.ACTIVE)
+	Quests.set_tracked(q["id"])
+	var spot := world.archipelago.on_island(str(q["island"]), Vector2(q["at"][0], q["at"][1]))
+	var landing: Variant = world.objective_landing()
+	assert_true(landing is Vector3 and (landing as Vector3).distance_to(spot) < OpenWorld.OBJECTIVE_SHORT + 0.1)
+	assert_true(await world.travel_to_objective())
+	assert_true(player.global_position.distance_to(spot) < OpenWorld.FIGHT_TRIGGER, "set down within reach of the fight")
+	await physics_frames(3)
+	assert_false(world.can_travel_to_objective(), "and no travelling out of it once it starts")
+
+
 func test_continuing_at_sea_announces_no_island() -> void:
 	# Until the world puts you back where you were you stand at the origin,
 	# on Emberwood: nothing may be announced (or found) from there.
