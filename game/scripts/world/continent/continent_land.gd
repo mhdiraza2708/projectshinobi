@@ -41,6 +41,13 @@ const YARD := 22.0
 const REGION_SNOW := {"frozen_road": 0.9}
 ## The continent's own colours (Emberwood's), for ground far from any region.
 const BASE_REGION := "emberwood"
+## Where a region's continent ground wants other colours than its island's:
+## the island paints Ashen Pass's grass with the dirt texture, but here every
+## region shares the grass texture, and the island's cool grey over green grass
+## reads as lavender under the sky. A warm ash grey-brown reads as ash.
+const CONTINENT_PALETTE := {
+	"ashen_pass": {"grass": Color("5a4f3e"), "dirt": Color("665848"), "sand": Color("6f6556")},
+}
 
 # --- Land ----------------------------------------------------------------------------
 const COAST_LEVEL := 0.85
@@ -189,8 +196,9 @@ func _place_regions() -> void:
 				pts.append(at + Vector2(q[0], q[1]))
 			walks.append([pts, float(path[1]) * 0.5])
 		_footpaths.append(walks)
+		var own: Dictionary = CONTINENT_PALETTE.get(id, {})
 		for layer in ["grass", "dirt", "rock", "sand"]:
-			var want := (preset[layer] as Color).srgb_to_linear()
+			var want := (own.get(layer, preset[layer]) as Color).srgb_to_linear()
 			var have := (base_palette[layer] as Color).srgb_to_linear()
 			_ratio.append(Color(clampf(want.r / maxf(have.r, 0.004), 0.1, 3.9), clampf(want.g / maxf(have.g, 0.004), 0.1, 3.9),
 				clampf(want.b / maxf(have.b, 0.004), 0.1, 3.9), 1.0))

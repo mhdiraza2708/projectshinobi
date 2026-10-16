@@ -11,7 +11,13 @@ attunements are shared.
 ## How the continent is built
 
 - `ContinentLand` (`scripts/world/continent/`) is a pure function of (x, z):
-  height, biome paint, roads, rivers, lakes. The same every time; 4096 m
+  height, biome paint, roads, rivers, lakes. Each region's ground colours
+  and tree mix are full strength within 200 m and fade out by 1300 m
+  (`BIOME_REACH`), so the wilds between take on the look of the nearer
+  region (grey ash toward Ashen Pass, gold toward Autumn Wood); only the far
+  edges keep Emberwood's green. Its snow keeps to 650 m.
+  `CONTINENT_PALETTE` overrides an island's colours where the shared grass
+  texture needs it (Ashen Pass). The same every time; 4096 m
   square; the six story regions stand on flat pads (`pad_height`).
 - `Continent` streams it round the player as chunks of several levels of
   detail, collision only near. `ContinentScatter` plants trees and boulders
@@ -102,8 +108,7 @@ and `battle3`. See [STORY.md](STORY.md#music) for the story's picks.
 ## Not yet
 
 - Five Winds' leap stones, islets and gulls (the island layout only).
-- Per-region ground palettes and paths on the pads (the continent is Emberwood
-  green everywhere; region yards are bare earth).
+- Paths on the region pads (region yards are bare earth).
 - Roaming patrols you can see from afar, weather by region, collectibles
   beyond relics. (Road encounters are placed ahead of you, not walking the
   roads on their own.)
