@@ -952,6 +952,54 @@ func fast_travel(id: String) -> bool:
 		return false
 	if not can_travel():
 		return false
+	var at: Vector3
+	if to_site:
+		at = sites.build_site(id).spot("interact")
+	else:
+		at = archipelago.on_island(id, TRAVEL_POINT)
+	return await _travel_to(at)
+
+
+## How far short of the tracked objective objective travel sets you down:
+## close enough to see it, and for a mission's pillar, close enough to begin.
+const OBJECTIVE_SHORT := 4.0
+
+
+## Where travelling to the tracked objective would set you down, or null when
+## it has no place (the story is told, a gather quest with nothing left).
+func objective_landing() -> Variant:
+	var at: Variant = objective().get("at")
+	if not at is Vector3:
+		return null
+	var back := player.global_position - (at as Vector3)
+	back.y = 0.0
+	if back.length() < 0.5:
+		back = Vector3.BACK
+	return (at as Vector3) + back.normalized() * OBJECTIVE_SHORT
+
+
+## Whether the tracked objective can be travelled to right now.
+func can_travel_to_objective() -> bool:
+	return can_travel() and objective_landing() is Vector3
+
+
+## Travels straight to the tracked objective (the next mission's pillar or a
+## side quest's place), found or not, and faces you toward it: the walk to
+## work you have chosen is never the game.
+func travel_to_objective() -> bool:
+	var land: Variant = objective_landing()
+	if not land is Vector3 or not can_travel():
+		return false
+	var at: Vector3 = objective()["at"]
+	if Quests.tracked() == Quests.MAIN and is_instance_valid(_beacon):
+		# You chose to go: arriving begins it.
+		_beacon.armed = true
+	return await _travel_to(land, at)
+
+
+## The seal flares, a white flash, and you stand at `at` (facing `look` when
+## given).
+func _travel_to(at: Vector3, look: Variant = null) -> bool:
 	busy = true
 	player.input_enabled = false
 	var scene := get_parent()
@@ -959,12 +1007,14 @@ func fast_travel(id: String) -> bool:
 		await scene._teleport_out()
 	if not is_inside_tree():
 		return false
-	var at: Vector3
-	if to_site:
-		at = sites.build_site(id).spot("interact")
-	else:
-		at = archipelago.on_island(id, TRAVEL_POINT)
 	await _put_player_at(at)
+	if look is Vector3 and is_instance_valid(player):
+		var dir := (look as Vector3) - player.global_position
+		dir.y = 0.0
+		if dir.length() > 0.1:
+			player._face_now(dir)
+			player.camera_rig.yaw = player.global_rotation.y
+			player.camera_rig.snap()
 	save_position()
 	if scene.has_method(&"_teleport_in"):
 		await scene._teleport_in()

@@ -849,6 +849,17 @@ func _refresh_map() -> void:
 		c.queue_free()
 	_travel.add_child(_section("Travel"))
 	var can := world.can_travel()
+	# Straight to what you're tracking, found or not.
+	var goal := world.objective()
+	if world.objective_landing() is Vector3:
+		var go := _button("%s  Go to: %s" % [str(goal["kanji"]), str(goal["title"])], func() -> void:
+			close()
+			world.travel_to_objective())
+		go.disabled = not can
+		go.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		go.clip_text = true
+		go.tooltip_text = str(goal["text"])
+		_travel.add_child(go)
 	for id: String in Archipelago.LAYOUT:
 		var known := world.discovered(id)
 		var b := _button("%s  %s" % [OpenWorld.ISLAND_KANJI.get(id, ""), Island.display_name(id)] if known else "?  Not yet found",
