@@ -1429,6 +1429,8 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				var kind := str(_user_args()["encounter"])
 				var enc := world.encounters
 				var back := {"rescue": 40.0, "duelist": 24.0, "pilgrim": 7.0, "cache": 7.0, "ambush": 32.0}
+				if _user_args().has("back"):
+					back[kind] = float(_user_args()["back"])
 				var found: Variant = null
 				for r in range(1, 14):
 					for a in 12:

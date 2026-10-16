@@ -52,14 +52,16 @@ bonus (`SiteActivities.milestone`). The Quests tab lists the tally.
 
 Between the places, the wilds are not empty. Every 300-500 m you travel
 outside a region, something waits about 60 m ahead of you, on dry, level
-ground clear of the regions, the places, rivers and lakes:
+ground clear of the regions, the places, rivers and lakes. All but the
+ambush stand under a slim pillar of light (red for a rescue, the duelist's
+nature colour, gold for a pilgrim or a cache) so you can see them coming:
 
 | Kind | What happens | Pays |
 |---|---|---|
 | ambush | raiders spring out as you pass (one wave, two later in the story) | XP |
-| rescue | raiders have a traveller cornered (a red 助 over them); they wait until you come near. Save the traveller and they tell you of the nearest place you haven't found (it goes on your map) | XP, a place |
+| rescue | raiders have a traveller cornered; they wait until you come near. Save the traveller and they tell you of the nearest place you haven't found (it goes on your map) | XP, a place |
 | duelist | a wandering shinobi stands in the road, speaks, and duels you (a signature attack, health by story tier) | more XP |
-| pilgrim | someone resting by the way (a gold ?); talk to them and they mark a place on your map | a little XP, a place |
+| pilgrim | someone resting by the way; talk to them and they mark a place on your map | a little XP, a place |
 | cache | a dropped bundle of supplies | XP, wounds bound, chakra full |
 
 One at a time, never during a chapter; walk 170 m away from one you never

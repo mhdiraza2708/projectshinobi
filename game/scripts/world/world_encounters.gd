@@ -18,7 +18,6 @@ const PREFIX := "road:"
 const KINDS: Array[String] = ["ambush", "rescue", "duelist", "pilgrim", "cache"]
 ## How often each kind comes up, against the others.
 const WEIGHTS := {"ambush": 3.0, "rescue": 2.0, "duelist": 1.5, "pilgrim": 1.5, "cache": 2.0}
-const KANJI := {"ambush": "伏", "rescue": "助", "duelist": "流", "pilgrim": "巡", "cache": "包"}
 ## Metres travelled through the wilds between one encounter and the next.
 const SPACING := Vector2(300.0, 500.0)
 ## How far ahead of you one appears.
@@ -345,7 +344,7 @@ func _set_rescue() -> void:
 	world.archipelago.add_child(t)
 	t.global_position = at + Vector3.UP * 0.2
 	t.caster.power_scale *= 0.5
-	_mark(t, KANJI["rescue"], UiKit.CRIMSON.lightened(0.25))
+	_mark(Color(1.0, 0.35, 0.25))
 	current["traveller"] = t
 	current["nodes"].append(t)
 	var elements: Array = SiteActivities.REGION_ELEMENTS.get(str(current["region"]), ["fire", "earth"])
@@ -369,7 +368,8 @@ func _set_rescue() -> void:
 
 func _start_rescue() -> void:
 	world.busy = true
-	for n: Variant in current["nodes"]:
+	_unmark()
+	for n: Variant in [current["traveller"]] + (current["raiders"] as Array):
 		if is_instance_valid(n):
 			(n as EnemyShinobi).hold = false
 	world.hud.show_banner("Save the traveller!", &"cast")
@@ -426,7 +426,7 @@ func _set_duelist() -> void:
 	npc.quiet = true
 	world.archipelago.add_child(npc)
 	npc.global_position = current["at"]
-	_mark(npc, KANJI["duelist"], Element.color(npc.element))
+	_mark(Element.color(npc.element))
 	current["nodes"].append(npc)
 
 
@@ -457,7 +457,7 @@ func _set_pilgrim() -> void:
 	npc.quiet = true
 	world.archipelago.add_child(npc)
 	npc.global_position = current["at"]
-	_mark(npc, "?", UiKit.GOLD.lightened(0.2))
+	_mark(UiKit.GOLD.lightened(0.2))
 	current["pilgrim"] = npc
 	current["nodes"].append(npc)
 
@@ -483,6 +483,7 @@ func use(_id: String) -> void:
 		note = "  ·  %s, that way (on your map)" % site["name"]
 	if is_instance_valid(npc):
 		npc.speak("")
+	_unmark()
 	_pay("pilgrim", note)
 	current["nodes"].erase(npc)
 	current = {}
@@ -516,6 +517,7 @@ func _set_cache() -> void:
 	pickup.global_position = current["at"] + Vector3.UP * 0.6
 	current["cache"] = pickup
 	current["nodes"].append(pickup)
+	_mark(Color(1.0, 0.8, 0.4))
 
 
 func _take_cache() -> void:
@@ -523,6 +525,7 @@ func _take_cache() -> void:
 	current["nodes"].erase(pickup)
 	if is_instance_valid(pickup):
 		pickup.collect()
+	_unmark()
 	world.player.stats.restore()
 	_pay("cache", "  ·  wounds bound, chakra full")
 	current = {}
@@ -530,17 +533,19 @@ func _take_cache() -> void:
 
 # --- Marks -----------------------------------------------------------------------------
 
-## A sign over someone's head, seen from far off.
-func _mark(node: Node3D, text: String, colour: Color) -> void:
-	var tag := Label3D.new()
-	tag.name = "EncounterMark"
-	tag.font = UiKit.font(&"display")
-	tag.font_size = 96
-	tag.outline_size = 14
-	tag.outline_modulate = Color(UiKit.INK, 0.9)
-	tag.modulate = colour
-	tag.pixel_size = 0.012
-	tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	tag.no_depth_test = true
-	tag.position.y = 3.0
-	node.add_child(tag)
+## A slim pillar of light where the encounter is, seen from far off (an
+## ambush has none: that is the point of one).
+func _mark(colour: Color) -> void:
+	var m := SiteMarker.new()
+	m.color = colour
+	world.archipelago.add_child(m)
+	m.global_position = current["at"]
+	current["marker"] = m
+	current["nodes"].append(m)
+
+
+func _unmark() -> void:
+	var m: Variant = current.get("marker")
+	if is_instance_valid(m):
+		(m as Node).queue_free()
+	current.erase("marker")
