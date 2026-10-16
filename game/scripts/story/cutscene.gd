@@ -491,7 +491,7 @@ func _weave(s: Dictionary) -> void:
 		Sfx.play_at(StringName("seal_%d" % (Seal.bank_of(seal) + 1)), a.global_position, -2.0)
 		var model: CharacterModel = a.get(&"model")
 		if model and model.animator:
-			model.animator.seal_flick()
+			model.animator.seal(seal)
 		await _sleep(0.32)
 	if is_instance_valid(tag):
 		tag.queue_free()

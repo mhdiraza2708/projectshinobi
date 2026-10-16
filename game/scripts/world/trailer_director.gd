@@ -313,7 +313,7 @@ func _weave() -> void:
 		if k < 2.2 and k >= float(st["next_seal"]):
 			st["next_seal"] = k + 0.22
 			if player.animator:
-				player.animator.seal_flick()
+				player.animator.seal(int(st["seal"]) % Seal.COUNT)
 			Sfx.play(StringName("seal_%d" % (int(st["seal"]) % 3 + 1)), -2.0, 0.05)
 			Vfx.sparks(stage, chest + fwd * 0.35, Color(0.62, 0.68, 0.95), 6, 3.0)
 			st["seal"] = int(st["seal"]) + 1

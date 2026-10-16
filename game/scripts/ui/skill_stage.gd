@@ -283,7 +283,7 @@ func _pose(_animate: bool) -> void:
 	model.animator.pose = shot["pose"]
 	model.animator.speed_ratio = 0.0
 	if tree_id == "mind" or tree_id == "chakra":
-		model.animator.seal_flick()
+		model.animator.seal(Seal.TIGER)
 	# The Eye tree opens your eye art in the irises; a model without irises
 	# (nothing to draw it on) gets a glow of its colour at the eyes instead.
 	var art := Perks.active_eye_art()

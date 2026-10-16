@@ -35,6 +35,9 @@ const FINGERS: Array[String] = ["Index", "Middle", "Ring", "Little"]
 const FINGER_SEGMENTS: Array[String] = ["Proximal", "Intermediate", "Distal"]
 
 var pose := Pose.LOCOMOTION
+## The hand seal being held while weaving (SealPoses), or -1 for the ready pose.
+var seal_pose := -1
+var _was_weaving := false
 ## 0 = idle, 1 = run, above 1 = sprint.
 var speed_ratio := 0.0
 var airborne := false
@@ -180,6 +183,13 @@ func seal_flick() -> void:
 	_flick_t = 0.14
 
 
+## A hand seal is formed (0-11, see SealPoses): the hands take its shape and
+## hold it until the next. -1 goes back to the ready pose.
+func set_seal(seal: int) -> void:
+	seal_pose = seal
+	_flick_t = 0.14
+
+
 const CAST_TIME := 0.32
 const FLINCH_TIME := 0.26
 ## How much of a wrist's twist its forearm takes (see _share_wrist_twist).
@@ -212,6 +222,12 @@ func leg_length() -> float:
 # (canonical -X); the right side mirrors x unless given explicitly.
 
 func _target_params() -> Dictionary:
+	# A held seal ends with the weave.
+	if pose == Pose.WEAVE:
+		_was_weaving = true
+	elif _was_weaving:
+		_was_weaving = false
+		seal_pose = -1
 	var p := {
 		"lean": 0.0, "twist": 0.0, "head_pitch": 0.0, "hips_drop": 0.02,
 		"arm_L": Vector3(-0.2, -0.93, 0.06), "arm_R": Vector3(0.2, -0.93, 0.06),
@@ -273,6 +289,11 @@ func _target_params() -> Dictionary:
 			p["lean"] = 0.06
 			p["foot_L"] = Vector3(-0.07, 0, 0)
 			p["foot_R"] = Vector3(0.07, 0, 0)
+			if seal_pose >= 0:
+				# The seal's own shape: each wrist, hand, thumb and finger.
+				p.merge(SealPoses.pose(seal_pose), true)
+				for side in ["L", "R"]:
+					(p["seal_" + side] as Vector3).y += flick
 			p["hips_drop"] = 0.05
 		Pose.CHARGE:
 			var tremble := sin(_time * 38.0) * 0.012
@@ -682,7 +703,9 @@ func _process_modification_with_delta(delta: float) -> void:
 			continue
 		var pre := "Left" if side == "L" else "Right"
 		var goal: Vector3
-		if p.has("seal"):
+		if p.has("seal_" + side):
+			goal = shoulder_mid + _frame * (p["seal_" + side] * _arm_len)
+		elif p.has("seal"):
 			var sx := -0.035 if side == "L" else 0.035
 			goal = shoulder_mid + _frame * ((p["seal"] + Vector3(sx, 0, 0)) * _arm_len)
 		else:
@@ -695,7 +718,11 @@ func _process_modification_with_delta(delta: float) -> void:
 		_two_bone(StringName(pre + "UpperArm"), StringName(pre + "LowerArm"), StringName(pre + "Hand"),
 			goal, _frame * p["pole_" + side])
 		_aim_hand(pre, _frame * p["hand_" + side], _frame * p["thumb_" + side])
-		_curl_fingers(pre, p.get("curl_" + side, p["curl"]))
+		var each := PackedFloat32Array()
+		if p.has("fin_%s_0" % side):
+			for i in 4:
+				each.append(float(p.get("fin_%s_%d" % [side, i], 0.0)))
+		_curl_fingers(pre, p.get("curl_" + side, p["curl"]), each, float(p.get("spread_" + side, 0.0)))
 		_curl_thumb(pre, float(p.get("wrap_" + side, 0.0)))
 
 	# Clip or pose alike: share each wrist's twist with its forearm.
@@ -818,12 +845,68 @@ func _share_wrist_twist(pre: String, share: float) -> void:
 ## The thumb's bones, base to tip, and how much of the wrap each takes.
 const THUMB_SEGMENTS: Array[String] = ["ThumbMetacarpal", "ThumbProximal", "ThumbIntermediate", "ThumbDistal"]
 const THUMB_SHARE := [0.35, 0.6, 0.6, 0.45]
+## How far each finger fans (radians at full spread): the index toward the
+## thumb, the little finger away from it.
+const FINGER_SPLAY := [0.3, 0.06, -0.16, -0.38]
+
+
+## Puts a hand's fingers and thumb back to their rest pose (straight).
+func _straighten_hand(pre: String) -> void:
+	var segs: Array[String] = []
+	for finger in FINGERS:
+		for seg in FINGER_SEGMENTS:
+			segs.append(finger + seg)
+	for seg in THUMB_SEGMENTS:
+		segs.append(seg)
+	for seg in segs:
+		var name := StringName(pre + seg)
+		if _b.has(name):
+			var i: int = _b[name]
+			_skel.set_bone_pose_rotation(i, _skel.get_bone_rest(i).basis.get_rotation_quaternion())
+
+
+## Which way the thumb side of this hand lies (a unit vector, as the hand is
+## posed), or ZERO without the bones to tell.
+func _thumb_side(pre: String, ht: Transform3D) -> Vector3:
+	var hand_name := StringName(pre + "Hand")
+	var mid := StringName(pre + "MiddleProximal")
+	var base_name := StringName(pre + "ThumbMetacarpal") if _b.has(StringName(pre + "ThumbMetacarpal")) else StringName(pre + "ThumbProximal")
+	if not _b.has(mid) or not _b.has(base_name):
+		return Vector3.ZERO
+	var rest := _skel.get_bone_global_rest(_b[hand_name])
+	var turn := ht.basis * rest.basis.inverse()
+	var fingers := (_pos(mid) - ht.origin).normalized()
+	var side := turn * (_skel.get_bone_global_rest(_b[base_name]).origin - rest.origin)
+	side = side - fingers * side.dot(fingers)
+	return side.normalized() if side.length_squared() > 1e-8 else Vector3.ZERO
+
+
+## Turns a finger's base sideways by `toward` (a vector whose length is the angle
+## in radians and whose direction is the way to lean), fanning it from its neighbours.
+func _splay_finger(bone_name: String, toward: Vector3) -> void:
+	var name := StringName(bone_name)
+	if not _b.has(name):
+		return
+	var i: int = _b[name]
+	var t := _skel.get_bone_global_pose(i)
+	var children := _skel.get_bone_children(i)
+	if children.is_empty():
+		return
+	var along := (_skel.get_bone_global_pose(children[0]).origin - t.origin).normalized()
+	var angle := toward.length()
+	if angle < 1e-4:
+		return
+	var axis := along.cross(toward.normalized())
+	if axis.length_squared() < 1e-8:
+		return
+	t.basis = Basis(axis.normalized(), angle) * t.basis
+	_skel.set_bone_global_pose(i, t)
 
 
 ## Wraps the thumb across the palm toward the little-finger side, as it lies
 ## over the fingers round a sword's grip (0 = at rest, 1 = round the grip).
 func _curl_thumb(pre: String, amount: float) -> void:
-	if amount < 0.01:
+	if absf(amount) < 0.01:
 		return
 	var hand_name := StringName(pre + "Hand")
 	var mid := StringName(pre + "MiddleProximal")
@@ -862,17 +945,29 @@ func _curl_thumb(pre: String, amount: float) -> void:
 		_skel.set_bone_global_pose(i, t)
 
 
-## Curls the four fingers toward the palm (0 = flat, ~1.3 = fist).
-func _curl_fingers(pre: String, amount: float) -> void:
-	if amount < 0.01:
+## Curls the four fingers toward the palm (0 = flat, ~1.3 = fist), all by
+## `amount` or each by its own (`each`: index, middle, ring, little).
+func _curl_fingers(pre: String, amount: float, each := PackedFloat32Array(), spread := 0.0) -> void:
+	if amount < 0.01 and each.is_empty() and absf(spread) < 0.01:
 		return
 	var hand: int = _b[StringName(pre + "Hand")]
 	var ht := _skel.get_bone_global_pose(hand)
 	# VRM and Godot's humanoid profile rest with palms facing down.
 	var palm := (ht.basis * _skel.get_bone_global_rest(hand).basis.inverse()) * (_frame * Vector3.DOWN)
-	for finger in FINGERS:
+	if not each.is_empty():
+		# A seal's shape is absolute: start every finger and the thumb from
+		# straight (the rest pose), not from whatever curl the body's clip left.
+		_straighten_hand(pre)
+		ht = _skel.get_bone_global_pose(hand)
+	var side_dir := _thumb_side(pre, ht)
+	for f in FINGERS.size():
+		var curl := float(each[f]) if not each.is_empty() else amount
+		if absf(spread) > 0.01 and side_dir != Vector3.ZERO:
+			_splay_finger(pre + FINGERS[f] + FINGER_SEGMENTS[0], side_dir * (FINGER_SPLAY[f] * spread))
+		if curl < 0.01:
+			continue
 		for seg in FINGER_SEGMENTS:
-			var bone_name := StringName(pre + finger + seg)
+			var bone_name := StringName(pre + FINGERS[f] + seg)
 			if not _b.has(bone_name):
 				continue
 			var i: int = _b[bone_name]
@@ -886,5 +981,5 @@ func _curl_fingers(pre: String, amount: float) -> void:
 			var axis := along.normalized().cross(palm)
 			if axis.length_squared() < 1e-8:
 				continue
-			t.basis = Basis(axis.normalized(), amount * 0.55) * t.basis
+			t.basis = Basis(axis.normalized(), curl * 0.55) * t.basis
 			_skel.set_bone_global_pose(i, t)

@@ -1247,13 +1247,50 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			for old in find_children("*", "TrainingDummy", true, false):
 				old.free()
 			await _frames(10)
-			match demo.trim_prefix("pose:"):
+			var which := demo.trim_prefix("pose:")
+			match which:
 				"jump":
 					player._jump()
 				"hold":
 					player._strike()
+				_ when which.begins_with("seals"):
+					# pose:seals2,3,9 weaves those seals one after another, a new one
+					# every --every physics frames (default 12), and stops --upto frames
+					# after the first (pair it with --frames=1).
+					Input.action_press(&"weave")
+					player._begin_weave()
+					for i in 4:
+						await get_tree().physics_frame
+					var order := which.trim_prefix("seals").split(",")
+					var every := int(_user_args().get("every", "12"))
+					var total := int(_user_args().get("upto", "10"))
+					for f in total:
+						if f % every == 0 and f / every < order.size():
+							player.weaver.add_seal(int(order[f / every]))
+						await get_tree().physics_frame
+				_ when which.begins_with("seal"):
+					# pose:seal3 weaves that seal (0-11) and holds it.
+					Input.action_press(&"weave")
+					player._begin_weave()
+					for i in 4:
+						await get_tree().physics_frame
+					player.weaver.add_seal(int(which.trim_prefix("seal")))
+			# Where the hands are as posed (the poser runs as a skeleton modifier,
+			# so only skeleton_updated sees its result).
+			var posed_hands := [Vector3.ZERO]
+			var skel_now := player.model.skeleton
+			var watch := func() -> void:
+				var li := skel_now.find_bone("LeftHand")
+				var ri := skel_now.find_bone("RightHand")
+				if li >= 0 and ri >= 0:
+					posed_hands[0] = skel_now.global_transform * ((skel_now.get_bone_global_pose(li).origin
+						+ skel_now.get_bone_global_pose(ri).origin) * 0.5)
+			if skel_now:
+				skel_now.skeleton_updated.connect(watch)
 			for i in int(_user_args().get("frames", "10")):
 				await get_tree().physics_frame
+			if skel_now:
+				skel_now.skeleton_updated.disconnect(watch)
 			get_tree().paused = true
 			var anim := player.animator
 			if _user_args().has("debug"):
@@ -1276,10 +1313,19 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			var skel := player.model.skeleton
 			if bone_name != "" and skel and skel.find_bone(bone_name) >= 0:
 				chest = skel.global_transform * skel.get_bone_global_pose(skel.find_bone(bone_name)).origin
+			elif bone_name == "hands" and posed_hands[0] != Vector3.ZERO:
+				# Between the two hands (a hand seal), a little toward the fingers.
+				chest = posed_hands[0] + Vector3.UP * 0.06
 			cam.global_position = chest + round * float(_user_args().get("dist", "1.9")) + Vector3.UP * 0.15
 			cam.look_at(chest)
 			cam.fov = 45.0
 			cam.current = true
+			if _user_args().has("light"):
+				# A lamp at the camera, so hands in shadow can be read.
+				var lamp := OmniLight3D.new()
+				lamp.omni_range = 4.0
+				lamp.light_energy = 0.7
+				cam.add_child(lamp)
 			await _frames(3)
 		_ when demo.begins_with("rush:"):
 			# A rush jutsu from the gameplay camera, locked on to a dummy:
