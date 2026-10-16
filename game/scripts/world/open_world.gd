@@ -68,6 +68,8 @@ var dialogue: DialogueBox
 ## on the islands).
 var sites: WorldSites
 var activities: SiteActivities
+## Life on the roads between places (the continent only).
+var encounters: WorldEncounters
 ## A chapter or quest fight in progress (free roam pauses its quests).
 var busy := false
 ## Nothing is checked (islands, water, pickups) until start() has put you
@@ -234,6 +236,10 @@ func _make_sites() -> void:
 	activities.sites = sites
 	add_child(activities)
 	sites.discovered.connect(activities.on_found)
+	encounters = WorldEncounters.new()
+	encounters.world = self
+	encounters.sites = sites
+	add_child(encounters)
 	sites.site_built.connect(func(node: SiteNode) -> void:
 		if get_parent().has_method(&"light_lanterns"):
 			get_parent().light_lanterns(node.lanterns))
@@ -616,6 +622,8 @@ func _find_interact() -> void:
 				prompt = "Talk to %s" % str(story.characters.get(who, {}).get("name", who))
 	if _interact.is_empty() and activities != null:
 		var here := activities.interact_for(player.global_position)
+		if here.is_empty() and encounters != null:
+			here = encounters.interact_for(player.global_position)
 		if not here.is_empty():
 			_interact = here
 			prompt = str(here["prompt"])
@@ -633,6 +641,9 @@ func _use_interact() -> void:
 		return
 	if kind == "shrine" or kind == "board":
 		activities.use(kind, id)
+		return
+	if kind == "encounter":
+		encounters.use(id)
 		return
 	await talk_to(id)
 
@@ -695,7 +706,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	# A camp has its own fight music and a named rival a duel's; the rest take turns.
 	if q["type"] == "duel":
 		battle = DUEL_TRACK
-	elif str(q["id"]).begins_with(SiteActivities.PREFIX):
+	elif str(q["id"]).begins_with(SiteActivities.PREFIX) or str(q["id"]).begins_with(WorldEncounters.PREFIX):
 		battle = CAMP_TRACK
 	var first := not _films_seen.has(q["id"])
 	_films_seen[q["id"]] = true
@@ -755,7 +766,7 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	_fight.waves = waves
 	archipelago.add_child(_fight)
 	_fight.wave_started.connect(func(index: int, total: int, _e: int) -> void:
-		if not _fight_quest.begins_with(SiteActivities.PREFIX):
+		if not _fight_quest.begins_with(SiteActivities.PREFIX) and not _fight_quest.begins_with(WorldEncounters.PREFIX):
 			Quests.set_progress(_fight_quest, index)
 		hud.show_banner("%s  ·  wave %d / %d" % [q["name"], index + 1, total], &"cast")
 		tracker.refresh())
@@ -859,7 +870,9 @@ func _end_fight(won: bool) -> void:
 	_fight_quest = ""
 	busy = false
 	update_music()
-	if won and id.begins_with(SiteActivities.PREFIX):
+	if id.begins_with(WorldEncounters.PREFIX):
+		encounters.finish_fight(id, won)
+	elif won and id.begins_with(SiteActivities.PREFIX):
 		activities.finish_fight(id)
 	elif won:
 		_finish_quest(id, Quests.quest(id).get("outro", []))

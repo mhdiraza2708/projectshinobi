@@ -809,6 +809,10 @@ func _add_deeds(world: OpenWorld) -> void:
 		lines.append("Relics taken  ·  %d / %d" % [world.sites.done_count("ruin"), plan.of_kind("ruin").size()])
 		lines.append("Shrines attuned  ·  %d / %d" % [world.sites.done_count("shrine"), plan.of_kind("shrine").size()])
 		lines.append("Contracts fulfilled  ·  %d" % int(Game.record("world", "contracts_done", 0)))
+		if world.encounters != null:
+			var enc := world.encounters
+			lines.append("On the road  ·  %d ambushes beaten, %d travellers saved, %d duelists bested" % [
+				enc.done_count("ambush"), enc.done_count("rescue"), enc.done_count("duelist")])
 	lines.append("Side quests done  ·  %d / %d" % [Quests.with_status(Quests.DONE).size(), Quests.all().size()])
 	for line in lines:
 		var label := UiKit.label(line, 18, UiKit.INK_SOFT, &"bold")
