@@ -81,6 +81,8 @@ seven kinds of signature attack (`quake`, `ring`, `chain`, `sweep`, `pull`,
 has its own mix (see [STORY.md](STORY.md)). Still to do: arena changes (rock
 walls, a rising tide) and bespoke phases per boss.
 
+The next story arc is outlined in [STORY_PART8_DRAFT.md](STORY_PART8_DRAFT.md); it waits on voice credits and a read-through.
+
 ## Voices
 
 Current voices are Kokoro (local, free, ~258 lines, ~16,900 characters).
