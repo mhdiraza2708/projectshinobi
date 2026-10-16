@@ -136,7 +136,8 @@ func spot_ahead(from: Vector3, heading: Vector3) -> Variant:
 	if heading.length() < 0.01:
 		heading = Vector3.FORWARD
 	heading = heading.normalized()
-	for reach: float in [AHEAD, AHEAD * 1.3, AHEAD * 0.8]:
+	# Not much further than AHEAD: the ground only has collision near you.
+	for reach: float in [AHEAD, AHEAD * 1.15, AHEAD * 0.8]:
 		for turn: float in [0.0, 0.3, -0.3, 0.6, -0.6]:
 			var at := from + heading.rotated(Vector3.UP, turn) * reach
 			if good_spot(at):
@@ -369,9 +370,14 @@ func _set_rescue() -> void:
 func _start_rescue() -> void:
 	world.busy = true
 	_unmark()
+	var space := world.player.get_world_3d()
 	for n: Variant in [current["traveller"]] + (current["raiders"] as Array):
 		if is_instance_valid(n):
-			(n as EnemyShinobi).hold = false
+			var f := n as EnemyShinobi
+			# Out of any tree or boulder it was set down in (the scatter has
+			# collision by now).
+			f.global_position = Combat.clear_spot(space, f.global_position)
+			f.hold = false
 	world.hud.show_banner("Save the traveller!", &"cast")
 	Music.play(OpenWorld.CAMP_TRACK)
 
