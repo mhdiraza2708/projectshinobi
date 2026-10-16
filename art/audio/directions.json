@@ -1,0 +1,862 @@
+{
+ "kurogane": [
+  {
+   "key": "ff78709f95f4",
+   "prompt": "[dryly] You are late. I have been standing here since the light turned, and the shrine has not got any newer."
+  },
+  {
+   "key": "acdbc33235b7",
+   "prompt": "[gruffly] I do. I was paid to keep it. Forty bags of tile and timber for the shrine, [bitterly] and I carried the Court's word that nobody would come looking."
+  },
+  {
+   "key": "e50b212c06d2",
+   "prompt": "[quietly] Hanae has her roof again. The pillars are straight. It is the best-built thing on the pass, [bitterly] and I am sick every time I look at it."
+  },
+  {
+   "key": "61deaea77b27",
+   "prompt": "[heavily] I took it hoping. [quietly] It is a different crime, and not a smaller one."
+  },
+  {
+   "key": "04560b535336",
+   "prompt": "[firmly] I will not draw the map for a stranger. I will draw it for someone who can cut me. [proudly] That is the whole of my honour, and I would like it kept."
+  },
+  {
+   "key": "8aa9a1f2ad45",
+   "prompt": "[fiercely] Edge to edge. No tricks."
+  },
+  {
+   "key": "5592be7bf098",
+   "prompt": "[shouting] Wind, for the road I did not walk."
+  },
+  {
+   "key": "66541c8f0be6",
+   "prompt": "[angrily] And fire again. It was always the fire."
+  },
+  {
+   "key": "24020ee1dd02",
+   "prompt": "[breathless] Good. [satisfied] That is the edge I was missing."
+  },
+  {
+   "key": "2c5def0e5a5a",
+   "prompt": "[low voice] The Court keeps its Ledger in the old vault under the Old Dam. The dam was built over it, to keep the door shut. [grimly] Iwao has been scraping his seals off the face of it for a week."
+  },
+  {
+   "key": "c118015b6a57",
+   "prompt": "[quietly] Stone remembers. Ask him what the spillway sounds like at night. Ask what he hears in it."
+  },
+  {
+   "key": "39ec92b3f465",
+   "prompt": "[resolute] I will pay back the Court's coin to Hanae's roof, one tile at a time, by teaching her scouts to cut straight. [gruffly] Tell Hisame I said so."
+  }
+ ],
+ "iwao": [
+  {
+   "key": "ef8311628a27",
+   "prompt": "[scornfully] Kagerou said the academy would send its best. He didn't say they'd be children."
+  },
+  {
+   "key": "007610beedba",
+   "prompt": "[coldly] Stone doesn't bleed."
+  },
+  {
+   "key": "a594bcb3b971",
+   "prompt": "[shouting] Rise, stone clones!"
+  },
+  {
+   "key": "0d54c0b05fbc",
+   "prompt": "[furious] [shouting] Enough! I'll bury you here!"
+  },
+  {
+   "key": "486b8bdc365e",
+   "prompt": "[contemptuously] Emberwood again. You should have stayed home and let the stone settle."
+  },
+  {
+   "key": "3662afd862aa",
+   "prompt": "[bitterly] Kagerou gave me a reason. The academy gave me a door. Guess which one I kept."
+  },
+  {
+   "key": "2abb9cb048ad",
+   "prompt": "[menacing] The array wakes at the top of the hour. Stop me if you can. [shouting] Clones, rise!"
+  },
+  {
+   "key": "96710c3f5190",
+   "prompt": "[defiantly] Not while I'm standing. Earth, and now water. Kagerou taught me that much."
+  },
+  {
+   "key": "561425fe2e56",
+   "prompt": "[grimly] Stone first, then the flood."
+  },
+  {
+   "key": "47f5062a2384",
+   "prompt": "[taunting] Water now. Let's see your circle."
+  },
+  {
+   "key": "97d0505bc670",
+   "prompt": "[furious] [shouting] Enough! I'll bury you under the dam!"
+  },
+  {
+   "key": "856d715dce70",
+   "prompt": "[defeated] [quietly] ...He told me the Nue would make us something the academy couldn't throw away."
+  },
+  {
+   "key": "0a02ca6a3e5d",
+   "prompt": "[ashamed] A man who fought children at a dam."
+  },
+  {
+   "key": "3f19597a63c4",
+   "prompt": "[urgently] The unsealing is at the Shrine of the Five Winds, at the new moon. Two nights from now. [pause] [bitterly] Stop him. I couldn't."
+  },
+  {
+   "key": "6d772a5fc3c1",
+   "prompt": "[gravely] Stone doesn't lie, little one. Every seal I carved last month is sitting on top of a door. I carved a lid onto it."
+  },
+  {
+   "key": "0c03b03d0cd0",
+   "prompt": "[haunted] [quietly] I have heard it every night. A voice that says the same name, over and over, and nobody I know has ever been called it."
+  },
+  {
+   "key": "73b1e88aab5e",
+   "prompt": "[strained] A minute is a long time in a storm. Keep them off my back. [softly] I have done enough harm with these hands."
+  },
+  {
+   "key": "1282cae94379",
+   "prompt": "[breathless] It's open. There is a book down there as long as my arm."
+  },
+  {
+   "key": "e3e524136107",
+   "prompt": "[gently] Forty years. You were a girl."
+  },
+  {
+   "key": "faa6f496a55c",
+   "prompt": "[seriously] Go north. Renji's scouts have gone quiet on the Frozen Road, and the Court's last hunter went through there last night. [warmly] Go carefully."
+  }
+ ],
+ "mikage": [
+  {
+   "key": "9e2dd0ab7f18",
+   "prompt": "[politely] Good evening. I am Mikage, envoy of the Hollow Court. You will not have heard of us. [amused] That was rather the point of us."
+  },
+  {
+   "key": "a9e156ef5302",
+   "prompt": "[thoughtfully] Four hundred years ago the Court forged the Five-Nature Seal. A child from a small island has just finished it, [amused] and it wears her like a borrowed coat."
+  },
+  {
+   "key": "8cbcef5c4023",
+   "prompt": "[smoothly] Courtesy is the one thing we have in abundance. Bring the Seal to the Five Winds by the new moon, and we will take the burden from you."
+  },
+  {
+   "key": "e175e07e4617",
+   "prompt": "[softly] [mysteriously] It is a door. You have been standing in front of it for a week, and you have not yet asked what is on the other side."
+  },
+  {
+   "key": "791e4b7bfb90",
+   "prompt": "[amused] Then you have been warned by better storytellers than I. [commanding] Hollow, to me."
+  },
+  {
+   "key": "3e65e4439db5",
+   "prompt": "[approvingly] Good. You did not flinch. The Court dislikes being wrong about people."
+  },
+  {
+   "key": "14497c799319",
+   "prompt": "[coldly] The new moon, at the Five Winds. Come, or we will come for the one thing that makes you who you are."
+  },
+  {
+   "key": "aa8c3217fc1a",
+   "prompt": "[whispers] Your name."
+  },
+  {
+   "key": "616e03d9b878",
+   "prompt": "[pleased] You came. I did hope you would. [playfully] It is so dull to take a name from someone who isn't watching."
+  },
+  {
+   "key": "23fdcb73dce5",
+   "prompt": "[calmly] I will tell you why, since you have climbed so far. The Court was not made to hurt anyone. [sadly] It was made to forget a war."
+  },
+  {
+   "key": "85d393f57c26",
+   "prompt": "[quietly] We wrote the worst of it out of every mind that remembered. The Seal is the lock, and the lock needs a keeper who will never remember what is inside. [softly] That keeper was always meant to be hollow."
+  },
+  {
+   "key": "a0e720bcba03",
+   "prompt": "[earnestly] I am asking one to be nobody so that all of you may sleep. I have been nobody for three hundred years, [wryly] and I assure you it is survivable."
+  },
+  {
+   "key": "a6be38f87e43",
+   "prompt": "[sadly] Then we will do this the hard way, and I regret it more than any of you will know."
+  },
+  {
+   "key": "86636d374312",
+   "prompt": "[coldly] A name is only a sound. I have kept the sound of mine for no one."
+  },
+  {
+   "key": "439648b44cae",
+   "prompt": "[dramatically] Wind, which forgets everything it carries."
+  },
+  {
+   "key": "28f7e74cb5d0",
+   "prompt": "[dramatically] Lightning, which remembers only the instant."
+  },
+  {
+   "key": "e7bd87444547",
+   "prompt": "[trembling voice] And water, which has been trying to tell me something for three hundred years."
+  },
+  {
+   "key": "2cabbd5f9a66",
+   "prompt": "[desperately] [softly] ...Say it. Say my name, any of you. I want to hear whether it is still a name."
+  },
+  {
+   "key": "33dd953c5806",
+   "prompt": "[crying] [softly] ...Oh. It is. It is still a name."
+  },
+  {
+   "key": "4b6c09ae36e5",
+   "prompt": "[softly] [resolute] I have a Ledger to put right. It will take me a long time."
+  }
+ ],
+ "tobi": [
+  {
+   "key": "b2269c188835",
+   "prompt": "[cheerfully] So this is the new genin. Tobi. [wryly] I teach the first-years to throw things at targets instead of each other."
+  },
+  {
+   "key": "99db96908edd",
+   "prompt": "[dryly] Every spring they get better at hitting each other. [chuckles] That's a kind of progress."
+  },
+  {
+   "key": "3fa3ad9d3166",
+   "prompt": "[seriously] And it's older than the academy. Older than the walls. [quietly] Some of the seals in it nobody here can read any more."
+  },
+  {
+   "key": "732d48753471",
+   "prompt": "[kindly] Enough history. You've had a long day, and you'll have a longer one tomorrow."
+  },
+  {
+   "key": "e3341bcfacab",
+   "prompt": "[encouragingly] Show me you can still move. Two dashes, then gather your chakra."
+  },
+  {
+   "key": "598f76ede5fd",
+   "prompt": "[warmly] Good. Tired, but good. [chuckles] That's the right way round."
+  },
+  {
+   "key": "0651ac472f6b",
+   "prompt": "[amused] [quietly] He's been on the wall since your trial. He thinks nobody saw."
+  },
+  {
+   "key": "b6be632858b2",
+   "prompt": "[teasing] The hero of the Five Winds. The first-years have made a song about you. [laughs] It's terrible."
+  },
+  {
+   "key": "c90d4694ebe7",
+   "prompt": "[seriously] The Watch wanted him. The council told them the academy looks after its own. [softly] Even the ones it got wrong."
+  },
+  {
+   "key": "2777fa90c43e",
+   "prompt": "[wryly] She meant Asahi. Speaking of whom."
+  },
+  {
+   "key": "f264a0b275a7",
+   "prompt": "[warmly] Seven lanterns, one for each night since the mountain. Hisame says it's a custom. [chuckles] I think she just likes lanterns."
+  },
+  {
+   "key": "f537bfc719bd",
+   "prompt": "[urgently] [quietly] Sensei. The crane."
+  },
+  {
+   "key": "8ca031596f8d",
+   "prompt": "[uneasy] It was already folded when it landed on the lantern. [quietly] And it landed in the one you hadn't lit."
+  },
+  {
+   "key": "66f356bbf654",
+   "prompt": "[nervously] Is she going to say she'll ask again, less politely? [wryly] Because Chiyo told me about that line."
+  },
+  {
+   "key": "b2dfac042e60",
+   "prompt": "[anxiously] So what do we do?"
+  }
+ ],
+ "renji": [
+  {
+   "key": "a39a73968e0e",
+   "prompt": "[surprised] Academy? [relieved] Then you're the one he said would come."
+  },
+  {
+   "key": "ee6e6f0246f4",
+   "prompt": "[shivering] A man walked past my lantern at dawn. Red coat, no cloak, in this cold. [quietly] The snow melted where he stepped."
+  },
+  {
+   "key": "43320db5d9e6",
+   "prompt": "[wryly] He bought tea from me and paid too much. [thoughtfully] He said a child from Emberwood would come asking, and that I should tell them where he went."
+  },
+  {
+   "key": "31206caafa9f",
+   "prompt": "[gravely] Up the road, to the shrine. [warily] But he left company behind. Look at the trees."
+  },
+  {
+   "key": "2f7c3a794d83",
+   "prompt": "[sadly] Fire clones in the snow. They hissed when they fell. [sighs] I'll be hearing that all winter."
+  },
+  {
+   "key": "1b0369cdc87e",
+   "prompt": "[knowingly] He's not hiding, you know. A man who wants to hide doesn't pay for the tea."
+  },
+  {
+   "key": "0e7271b3867f",
+   "prompt": "[gently] He wants to be found by you. [seriously] Whatever you are to him, go carefully."
+  },
+  {
+   "key": "2c723b9353ae",
+   "prompt": "[urgently] [shouting] Don't stand still. Nobody who stood still out here this morning is still out here."
+  },
+  {
+   "key": "87fcfa33e46a",
+   "prompt": "[confused] Eight of them, out on the ridge. I can see the ridge. [trembling voice] I can't remember their names, and I wrote them myself last night."
+  },
+  {
+   "key": "c0cd703d4505",
+   "prompt": "[hushed] A man in white came through at first light. He did not speak. [fearfully] Every lantern he passed went dark."
+  },
+  {
+   "key": "21f4dc13688a",
+   "prompt": "[shaken] Is that what he is? I thought he was weather. [resolute] Here. Take my lantern. It's the only one he hasn't put out."
+  },
+  {
+   "key": "7b3e3a29c2b4",
+   "prompt": "[joyfully] Eight names, back in my head. All at once, like a sneeze. [laughs] I would cry, but my face is frozen."
+  },
+  {
+   "key": "eb71bd683b6e",
+   "prompt": "[warmly] Tell them at the academy the road is open. [chuckles] And tell Asahi I owe him a tea."
+  }
+ ],
+ "nue": [
+  {
+   "key": "7ca3c6b593b2",
+   "prompt": "[growls] ...Hungry..."
+  },
+  {
+   "key": "3c34c5c41406",
+   "prompt": "[hissing] The thrush's cry..."
+  },
+  {
+   "key": "91448aa8cb37",
+   "prompt": "[roaring] Tiger's claws!"
+  },
+  {
+   "key": "1021fef986ff",
+   "prompt": "[shouting] The tanuki's weight!"
+  },
+  {
+   "key": "1f6268243cdb",
+   "prompt": "[shouting] The serpent's tide!"
+  },
+  {
+   "key": "9cc7b82d6066",
+   "prompt": "[roaring] The monkey's fire!"
+  }
+ ],
+ "kagerou": [
+  {
+   "key": "c88e61f21e7c",
+   "prompt": "[amused] You came, and you brought everyone. [coldly] Good. Someone should see this."
+  },
+  {
+   "key": "95717e4938fe",
+   "prompt": "[bitterly] It was too late the day they made me leave."
+  },
+  {
+   "key": "556f58841d54",
+   "prompt": "[commanding] Five natures, bound in one. [shouting] Wake, Nue!"
+  },
+  {
+   "key": "2208b014d4d2",
+   "prompt": "[sadly] [quietly] ...It's quiet. [softly] For the first time in years, it's quiet."
+  },
+  {
+   "key": "c7e7ce8e471a",
+   "prompt": "[hollow] Why stop it from taking me? [quietly] I'd have deserved it."
+  },
+  {
+   "key": "bd06543cdda4",
+   "prompt": "[wryly] Hisame-sensei. You brought children."
+  },
+  {
+   "key": "03870a8395b6",
+   "prompt": "[furious] The academy threw me out for being too strong. [bitterly] Now I'll have an army of me. Let's see who they throw out then."
+  },
+  {
+   "key": "5228a5aba649",
+   "prompt": "[mockingly] Fire, wind, lightning, earth, water. I carry all five now. [menacing] Which will you answer with, little fire user?"
+  },
+  {
+   "key": "0f6379e40992",
+   "prompt": "[mockingly] Fire, wind, lightning, earth, water. I carry all five now. [menacing] Which will you answer with, little wind user?"
+  },
+  {
+   "key": "d69af74b49c4",
+   "prompt": "[mockingly] Fire, wind, lightning, earth, water. I carry all five now. [menacing] Which will you answer with, little lightning user?"
+  },
+  {
+   "key": "974b290e6824",
+   "prompt": "[mockingly] Fire, wind, lightning, earth, water. I carry all five now. [menacing] Which will you answer with, little earth user?"
+  },
+  {
+   "key": "a8fd4aba2b71",
+   "prompt": "[mockingly] Fire, wind, lightning, earth, water. I carry all five now. [menacing] Which will you answer with, little water user?"
+  },
+  {
+   "key": "af254ed7576a",
+   "prompt": "[snarling] Burn first."
+  },
+  {
+   "key": "409096cf6373",
+   "prompt": "[scornfully] Too slow. Wind, then."
+  },
+  {
+   "key": "cb1f24c283f6",
+   "prompt": "[shouting] Lightning! Faster than your seals!"
+  },
+  {
+   "key": "39b102416fd1",
+   "prompt": "[coldly] Earth. You can't break what doesn't move."
+  },
+  {
+   "key": "71ff17893641",
+   "prompt": "[bitterly] Water puts out every fire. Even yours."
+  },
+  {
+   "key": "eb3c2365c4ee",
+   "prompt": "[exhausted] [quietly] ...Five natures. [sighs] And you still beat me."
+  },
+  {
+   "key": "c5a48cedffb6",
+   "prompt": "[wearily] Take it. It never liked me anyway."
+  },
+  {
+   "key": "1d022a6b99be",
+   "prompt": "[defiant] But the seal I cut from it stays with me. [coldly] Until next time, Sensei."
+  },
+  {
+   "key": "9fe1c0fbe084",
+   "prompt": "[sardonic] Alone? Your sensei sends children out and lets them walk the road by themselves."
+  },
+  {
+   "key": "133445e69ffc",
+   "prompt": "[quietly] She trusted me too. [bitterly] Did she ever tell you why they threw me out?"
+  },
+  {
+   "key": "5c1ed6f6c974",
+   "prompt": "[sadly] A training accident. My fire, a friend's arm. [quietly] Forty stitches. The academy decided I was too strong to be safe."
+  },
+  {
+   "key": "41ad5de2b8d7",
+   "prompt": "[intensely] The Nue can't be held by anyone careful. It needs someone who isn't afraid of his own strength."
+  },
+  {
+   "key": "9988df6d8130",
+   "prompt": "[coldly] ...Then show me the difference. [menacing] Fire only. No tricks."
+  },
+  {
+   "key": "4f59e699da3b",
+   "prompt": "[fiercely] Fire only. Like the old days."
+  },
+  {
+   "key": "c7e511fcf841",
+   "prompt": "[irritated] Still standing? Then wind, just this once."
+  },
+  {
+   "key": "32156488439f",
+   "prompt": "[incredulous] You hold back. Every strike, you hold back. [quietly] And you still win."
+  },
+  {
+   "key": "0d3d5642cd7c",
+   "prompt": "[softly] [thoughtfully] Maybe that's the difference."
+  },
+  {
+   "key": "88083004275f",
+   "prompt": "[furious] It changes nothing. New moon, the Shrine of the Five Winds. Bring the scroll, or I break the seal without it. [coldly] Without the scroll the Nue won't be bound. It'll be free."
+  }
+ ],
+ "hisame": [
+  {
+   "key": "c63aeb7ab55f",
+   "prompt": "[pleading] [calmly] Kagerou, stop. It isn't too late."
+  },
+  {
+   "key": "975a6fc6bed8",
+   "prompt": "[firmly] Wear it down. When it breaks, I'll give you the seals. [shouting] Go!"
+  },
+  {
+   "key": "784a067bab89",
+   "prompt": "[urgent] [shouting] It's out of him, but it's loose! The Five-Nature Seal. Rat, Ox, Hare, Tiger, Rat. Now!"
+  },
+  {
+   "key": "ecc36659a891",
+   "prompt": "[quietly] You're still here, Kagerou. That's more than the Nue wanted."
+  },
+  {
+   "key": "fa89061871c7",
+   "prompt": "[warmly] The Watch can have him after the academy hears me speak for him. [firmly] This time I won't stay quiet."
+  },
+  {
+   "key": "b3b6066f432e",
+   "prompt": "[dryly] You're late. The sun is up, and so are the dummies."
+  },
+  {
+   "key": "605ad5783086",
+   "prompt": "[sternly] Neither are you, until you pass. [calmly] Graduation trial. Three parts: tools, seals, and an opponent who hits back."
+  },
+  {
+   "key": "0eb3cd714eb8",
+   "prompt": "[briskly] Tools first. A kunai that misses is a gift to your enemy. Hit a dummy. Twice."
+  },
+  {
+   "key": "b6e2260c4de0",
+   "prompt": "[approvingly] Good. [wryly] Now the part they write songs about: hand seals."
+  },
+  {
+   "key": "b2e5e344e09d",
+   "prompt": "[calmly] Hold the weave button, make the seals, let go to cast. Tiger, then Ox. That's Ember Volley."
+  },
+  {
+   "key": "2ddad6ec4a04",
+   "prompt": "[calmly] Fire burns wind. Wind cuts lightning. Lightning shatters earth. Earth dams water. Water drowns fire."
+  },
+  {
+   "key": "64d9206feb43",
+   "prompt": "[calmly] Learn the circle and every fight gets shorter. [wryly] The dummy on the right is wind-natured. Show it some fire."
+  },
+  {
+   "key": "c0ecebbedfe5",
+   "prompt": "[seriously] Last part. When something swings at you, don't be there. [quietly] Or be ready."
+  },
+  {
+   "key": "5cdcc297028e",
+   "prompt": "[calmly] Hold the guard button to guard. Show me."
+  },
+  {
+   "key": "0f94ced1fe3c",
+   "prompt": "[calmly] This is the Scroll of Five Natures. The academy lends its chakra to make clones for training."
+  },
+  {
+   "key": "4ffa804120c4",
+   "prompt": "[gravely] They hit back. They weave, too. [urgently] Watch for seals above their heads: hit them first, and the jutsu dies in their hands."
+  },
+  {
+   "key": "2045c63ff908",
+   "prompt": "[wryly] Then you learn faster. Begin."
+  },
+  {
+   "key": "31a5356834b2",
+   "prompt": "[sternly] Asahi. You're supposed to be on patrol."
+  },
+  {
+   "key": "525da80595b4",
+   "prompt": "[warmly] Congratulations. You're a genin. [dryly] Don't let him get in your head."
+  },
+  {
+   "key": "92590180174c",
+   "prompt": "[amused] ...Well. Not all the way in."
+  },
+  {
+   "key": "f45393087a88",
+   "prompt": "[firmly] A duel under academy rules. No real blades, no lasting harm. Stop when I say stop."
+  },
+  {
+   "key": "43274ceb29f6",
+   "prompt": "[calmly] What beats lightning?"
+  },
+  {
+   "key": "7609cda8a0f1",
+   "prompt": "[briskly] Then find some wind. [wryly] Or hit him hard enough to break his seals. Begin!"
+  },
+  {
+   "key": "95e656cecf7f",
+   "prompt": "[hushed] Quiet. Listen. Those are the academy bells."
+  },
+  {
+   "key": "ed1ddd2e265f",
+   "prompt": "[alarmed] [quietly] That's the alarm pattern. Someone broke into the scroll vault."
+  },
+  {
+   "key": "53bd5cb99fae",
+   "prompt": "[sternly] Both of you, with me. Now."
+  },
+  {
+   "key": "355273f35cdb",
+   "prompt": "[gravely] [quietly] The vault seal was cut, not broken. Whoever did this knew our seals."
+  },
+  {
+   "key": "5cfc994fda7d",
+   "prompt": "[gravely] The Scroll of Five Natures is gone. In the wrong hands it makes clones without end."
+  },
+  {
+   "key": "a37cf77c4e32",
+   "prompt": "[dryly] That one was polite. These won't be."
+  },
+  {
+   "key": "e9cf3898c5c1",
+   "prompt": "[sharply] And there they are. The thief left us a welcome party. [firmly] Hold the yard. I'll guard the vault."
+  },
+  {
+   "key": "38270e667968",
+   "prompt": "[seriously] Because the scroll holds all five. The clones fled toward the Ashen Pass."
+  },
+  {
+   "key": "9ca7e3ec8301",
+   "prompt": "[sadly] [quietly] And I know those seal cuts. I taught them."
+  },
+  {
+   "key": "3868557245c1",
+   "prompt": "[quietly] Years ago. [wistfully] He had a gift for fire and no patience for anything else. His name is Kagerou."
+  },
+  {
+   "key": "947d75c3d641",
+   "prompt": "[softly] We follow at nightfall. Rest while you can."
+  },
+  {
+   "key": "5838ad255db9",
+   "prompt": "[commanding] I brought shinobi. Give back the scroll, Kagerou."
+  },
+  {
+   "key": "76245399d0cc",
+   "prompt": "[urgently] Watch his chakra change. Answer each nature with the one that beats it."
+  },
+  {
+   "key": "feec8d6d59e3",
+   "prompt": "[firmly] Asahi and I will hold off his clones. He's yours."
+  },
+  {
+   "key": "150e7460a8b2",
+   "prompt": "[coldly] The scroll, Kagerou."
+  },
+  {
+   "key": "e1ad38671135",
+   "prompt": "[quietly] [sadly] That this isn't over."
+  },
+  {
+   "key": "35a607c68ee4",
+   "prompt": "[proudly] But tonight, you did what three jonin couldn't. [warmly] Rest. Tomorrow your real training starts."
+  },
+  {
+   "key": "cc8718b767c5",
+   "prompt": "[pleased] Three days of rain, and you're still out here. Good."
+  },
+  {
+   "key": "c6c1108f27e3",
+   "prompt": "[seriously] Which is why today's lesson matters. Last time you won by hitting harder. [gravely] Next time he'll weave faster."
+  },
+  {
+   "key": "b037889d8648",
+   "prompt": "[briskly] So you'll learn to break a weave. Watch the seals over a clone's head. Before the last one lands, hit it. [wryly] A kunai is enough for these."
+  },
+  {
+   "key": "579cf2dc6ea2",
+   "prompt": "[approvingly] Better. You stopped watching their hands and started watching their seals."
+  },
+  {
+   "key": "f10261dfcd19",
+   "prompt": "[wary] Tsumugi. The Windward Watch doesn't visit without a reason."
+  },
+  {
+   "key": "06f5fca76845",
+   "prompt": "[quietly] [sadly] ...A binding. The scroll's makers put something inside it."
+  },
+  {
+   "key": "54071777959a",
+   "prompt": "[gently] Take Asahi. He'll never forgive either of us otherwise."
+  },
+  {
+   "key": "3a34082f0353",
+   "prompt": "[gently] Iwao. [softly] You were never a bad man. Only a stubborn one."
+  },
+  {
+   "key": "b389b826339e",
+   "prompt": "[sharply] [shouting] His barrier is tied to the array. I need time to cut the seal lines. Hold them off!"
+  },
+  {
+   "key": "ab070ba5dc08",
+   "prompt": "[relieved] The barrier's down! Iwao, it's over."
+  },
+  {
+   "key": "a6515f87ab84",
+   "prompt": "[quietly] And what did it make you?"
+  },
+  {
+   "key": "d703c2bb674b",
+   "prompt": "[softly] You found him."
+  },
+  {
+   "key": "cf0c87c420b8",
+   "prompt": "[quietly] [heavy] The friend was me."
+  },
+  {
+   "key": "3cfd38705db5",
+   "prompt": "[quietly] I never blamed him. The academy did, and [bitterly] I let them. I should have fought them harder."
+  },
+  {
+   "key": "dd37f2d51fad",
+   "prompt": "[gravely] [quietly] Tomorrow night we finish this. And I'll teach you the one technique in that scroll no one has used in a hundred years."
+  },
+  {
+   "key": "fba4cc06f63c",
+   "prompt": "[amused] And he fails at it every spring."
+  },
+  {
+   "key": "989518671971",
+   "prompt": "[warmly] Sit with us a moment. A genin should know what the academy is guarding."
+  },
+  {
+   "key": "ad301f14e850",
+   "prompt": "[gently] What's in it. The Scroll of Five Natures. [calmly] The founders wrote it when these islands were still at war with each other."
+  },
+  {
+   "key": "a56f5ee213df",
+   "prompt": "[calmly] Fire, wind, lightning, earth, water. Five natures, five seals. It can lend its chakra to make clones, which is why we train with it."
+  },
+  {
+   "key": "8c4b12e26c04",
+   "prompt": "[quietly] [sadly] Because the founders made us promise to. And because whatever they sealed is safer with us than with anyone else."
+  },
+  {
+   "key": "25d39d1bdf39",
+   "prompt": "[dryly] Asahi. Your patrol route doesn't come through the yard."
+  },
+  {
+   "key": "6dd0633041fb",
+   "prompt": "[warmly] He's not as loud as he sounds. Most of it is for himself."
+  },
+  {
+   "key": "969241b50824",
+   "prompt": "[softly] Sleep. Noon comes early."
+  },
+  {
+   "key": "2ad61fa2445e",
+   "prompt": "[sharply] I heard the fighting from the water. Report."
+  },
+  {
+   "key": "502c1504441f",
+   "prompt": "[calmly] Then I cut the seal lines while the two of you keep the clones off me. [quietly] And then we talk to Iwao."
+  },
+  {
+   "key": "87575e1dcd81",
+   "prompt": "[sadly] He has a reason. That's harder to fight than an army. Come back when the storm breaks."
+  },
+  {
+   "key": "258561d69584",
+   "prompt": "[softly] [sadly] You came back. I wasn't sure you would, after what he told you."
+  },
+  {
+   "key": "c503513eca20",
+   "prompt": "[gravely] The founders' own binding. The Five-Nature Seal. Rat, Ox, Hare, Tiger, Rat."
+  },
+  {
+   "key": "240f74a4d949",
+   "prompt": "[gravely] Five natures woven into one circle. It is how they tore the Nue apart the first time. [quietly] It will cost you nearly everything you have."
+  },
+  {
+   "key": "a5af0c5968fd",
+   "prompt": "[seriously] Tomorrow you'll weave it while the Nue screams at you. [quietly] Tonight you'll weave it while I watch. Twice."
+  },
+  {
+   "key": "6f748ff951e2",
+   "prompt": "[softly] [warmly] ...The founders would have liked you. They were stubborn too."
+  },
+  {
+   "key": "655735fe7965",
+   "prompt": "[firmly] The Watch can want what it likes. He's coming home."
+  },
+  {
+   "key": "8952f87dabb0",
+   "prompt": "[bitterly] Then I drag him home. I should have done it years ago."
+  },
+  {
+   "key": "e6a85f23c2f0",
+   "prompt": "[calmly] Five Winds. The summit stands far to the north, past the dam. [helpfully] Leap stones at the foot of its southern cliffs will carry you up."
+  },
+  {
+   "key": "013ba04f27be",
+   "prompt": "[quietly] We meet at the top at dusk. Sleep if you can. [sighs] I won't."
+  },
+  {
+   "key": "f9782932f50e",
+   "prompt": "[softly] Five silent pillars. You've made his circle harder to close."
+  },
+  {
+   "key": "7979b10e5324",
+   "prompt": "[gratefully] [softly] Again. Yes. Thank you."
+  },
+  {
+   "key": "00a406205290",
+   "prompt": "[quietly] The light's going. When the moon is gone, he'll come. [firmly] Stay together, whatever he wakes."
+  },
+  {
+   "key": "5a298268db86",
+   "prompt": "[amused] I spoke for him. For two hours. I've never talked that long in my life."
+  },
+  {
+   "key": "072e45d90162",
+   "prompt": "[calmly] He stays, under watch. He'll teach the fire classes. [firmly] Control, not strength. He asked for that himself."
+  },
+  {
+   "key": "611780861b18",
+   "prompt": "[warmly] Back at the dam with Chiyo, scraping his own seals off the stone. [chuckles] He says it's the hardest work he's ever done."
+  },
+  {
+   "key": "1da76ec9dd40",
+   "prompt": "[gently] Tsumugi left at dawn with the Watch. [warmly] She said to tell you there's a place for you there, when you're tired of being loud."
+  },
+  {
+   "key": "4c3b13cf7e19",
+   "prompt": "[firmly] No real blades. No lasting harm. Stop when I say stop."
+  },
+  {
+   "key": "d648b129d000",
+   "prompt": "[softly] Graduation was the easy part. Everything after it is yours."
+  },
+  {
+   "key": "24f393b12227",
+   "prompt": "[gently] It is a custom. [softly] One light for every night the Seal holds. The academy has kept it since before there was an academy."
+  },
+  {
+   "key": "a7f7786c9823",
+   "prompt": "[quietly] It is more than anyone has kept it in a long while."
+  },
+  {
+   "key": "01d86ebcffcb",
+   "prompt": "[puzzled] [quietly] Black paper. Nobody at this academy folds black paper."
+  },
+  {
+   "key": "c8e62bb9820c",
+   "prompt": "[dryly] You are four hundred years late to be this polite."
+  },
+  {
+   "key": "51a0eff630a6",
+   "prompt": "[sadly] [quietly] The Hollow Court was a story for apprentices. [wryly] Be good, or the Court takes your name."
+  },
+  {
+   "key": "ce2691b1a0ad",
+   "prompt": "[quietly] I was told it as a child, and I told it to Asahi, and to you. I did not think I was describing anyone."
+  },
+  {
+   "key": "9dc05d521992",
+   "prompt": "[thoughtfully] We find out what they really want. Tsumugi's Watch has kept records on them for two hundred years. Start there."
+  },
+  {
+   "key": "7e7fbc8d79be",
+   "prompt": "[wryly] Mikage will want to speak first. Let her. [dryly] She has had four hundred years to prepare, and it would be rude."
+  },
+  {
+   "key": "8172ebbb1357",
+   "prompt": "[gravely] You are asking a child to be nobody, [firmly] so that everyone else may be somebody."
+  },
+  {
+   "key": "62ec38fe07ce",
+   "prompt": "[firmly] Mikage."
+  },
+  {
+   "key": "d69053620538",
+   "prompt": "[warmly] Come down the mountain. The academy has a council, [gently] and a place at it for the people who have been lonely the longest."
+  }
+ ]
+}
