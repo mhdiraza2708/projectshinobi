@@ -26,7 +26,7 @@
 		{"do": "exit", "who": "asahi"},
 		{"do": "boss", "who": "iwao", "rank": "jonin", "health": 260,
 			"taunt": "Stone doesn't bleed.",
-			"specials": [{"kind": "quake", "every": 11, "count": 3, "damage": 14}, {"kind": "call", "every": 20, "below": 0.6, "count": 2, "max": 3, "duration": 22}],
+			"specials": [{"kind": "quake", "every": 11, "count": 3, "damage": 14}, {"kind": "call", "every": 20, "below": 0.6, "count": 2, "max": 3, "duration": 22}, {"kind": "walls", "every": 22, "below": 0.85, "count": 3, "damage": 10}],
 			"phases": [
 				{"at": 0.6, "say": "Rise, stone clones!", "summon": [["genin", "earth"], ["genin", "earth"]]},
 				{"at": 0.25, "say": "Enough! I'll bury you here!"}

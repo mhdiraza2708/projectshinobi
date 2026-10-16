@@ -76,10 +76,10 @@ from layers:
 ## Bosses
 
 Harder means new mechanics, not health (tiers already scale that). Done:
-seven kinds of signature attack (`quake`, `ring`, `chain`, `sweep`, `pull`,
-`ward`, `call`), each with a readable tell, and every story boss and bounty
-has its own mix (see [STORY.md](STORY.md)). Still to do: arena changes (rock
-walls, a rising tide) and bespoke phases per boss.
+nine kinds of signature attack (`quake`, `ring`, `chain`, `sweep`, `pull`,
+`ward`, `call`, plus the arena changes `walls` and `tide`), each with a
+readable tell, and every story boss and bounty has its own mix (see
+[STORY.md](STORY.md)). Still to do: bespoke phases per boss.
 
 The next story arc is outlined in [STORY_PART8_DRAFT.md](STORY_PART8_DRAFT.md); it waits on voice credits and a read-through.
 
