@@ -4,7 +4,8 @@ extends Node
 ## shown before it lands (a mark on the ground, a gathering ring) and hurts
 ## only if you are still where it falls, so they are about moving, not about
 ## health. Data lives on the boss beat or bounty:
-##   {"kind": "quake" | "ring" | "chain" | "sweep" | "pull" | "ward" | "call",
+##   {"kind": "quake" | "ring" | "chain" | "sweep" | "pull" | "ward" | "call"
+##             | "walls" | "tide",
 ##    "every": seconds between uses,
 ##    "below": health share under which it starts (1 = from the start),
 ##    "count", "radius", "damage", "delay" (seconds of warning)}
@@ -18,9 +19,13 @@ extends Node
 ## ward   - the boss raises a seal ward that turns almost every blow aside;
 ##          hit it hard enough, all at once, to break it and leave the boss reeling.
 ## call   - the boss calls shinobi of its own nature to its side.
-## Only one special runs at a time.
+## walls  - slabs of rock rise round the arena (one between you and the boss):
+##          cover from its jutsu, and a wall in your way. They sink after a while.
+## tide   - a flood comes in from the edge and closes on the middle; stay on dry
+##          ground. It drains again.
+## Only one special runs at a time (walls stand on after theirs has finished).
 
-const KINDS: Array[String] = ["quake", "ring", "chain", "sweep", "pull", "ward", "call"]
+const KINDS: Array[String] = ["quake", "ring", "chain", "sweep", "pull", "ward", "call", "walls", "tide"]
 ## Defaults for what a spec leaves out.
 const DEFAULTS := {
 	"quake": {"every": 9.0, "below": 1.0, "count": 4, "radius": 3.6, "damage": 16.0, "delay": 1.15},
@@ -35,6 +40,15 @@ const DEFAULTS := {
 	# duration = seconds before it fades on its own.
 	"ward": {"every": 24.0, "below": 1.0, "radius": 2.6, "damage": 0.0, "delay": 0.8, "duration": 9.0,
 		"reduction": 0.9, "force": 80.0},
+	# count = slabs (the first stands between you and the boss, the rest round you at
+	# `radius` m); width = a slab's width; duration = seconds they stand; damage = to
+	# anyone on the spot where one rises.
+	"walls": {"every": 20.0, "below": 1.0, "count": 3, "radius": 6.0, "damage": 10.0, "delay": 1.1,
+		"duration": 14.0, "width": 4.5},
+	# radius = how far out the flood starts; to = the dry circle it closes to; rise = seconds
+	# to close; duration = seconds before it drains; damage = per second in the water.
+	"tide": {"every": 30.0, "below": 1.0, "radius": 15.0, "to": 6.0, "damage": 7.0, "delay": 1.4,
+		"duration": 10.0, "rise": 4.0},
 	# count = shinobi per call; duration = seconds they stay; max = most alive at once.
 	"call": {"every": 22.0, "below": 1.0, "count": 2, "radius": 3.0, "damage": 0.0, "delay": 0.7,
 		"duration": 24.0, "max": 4},
@@ -56,6 +70,9 @@ var specs: Array = []
 
 var _left: Array[float] = []
 var _busy := false
+## While a tide is in: the radius (m) of the dry circle round its middle
+## (INF when there is none), for the HUD and for tests.
+var tide_safe_radius := INF
 ## Shinobi this boss has called that are still about.
 var _calls: Array[EnemyShinobi] = []
 
@@ -120,6 +137,10 @@ func _run(spec: Dictionary) -> void:
 			await _ward(spec)
 		"call":
 			await _call(spec)
+		"walls":
+			await _walls(spec)
+		"tide":
+			await _tide(spec)
 	_busy = false
 
 
@@ -366,6 +387,119 @@ func _call(spec: Dictionary) -> void:
 	Sfx.play_at(&"smoke", boss.global_position + Vector3.UP)
 	if not boss.defeated.is_connected(_send_calls_away):
 		boss.defeated.connect(_send_calls_away)
+
+
+## Slabs of rock rise: one between the player and the boss, the rest round the
+## player. Anyone on the spot is struck; after that they are cover, and in the way.
+func _walls(spec: Dictionary) -> void:
+	var player := boss.target as Node3D
+	var delay := float(spec["delay"])
+	var half := float(spec["width"]) * 0.5
+	var colour := Element.color(boss.element)
+	var spots: Array[Vector3] = []
+	var facings: Array[float] = []
+	var between := (boss.global_position - player.global_position)
+	between.y = 0.0
+	var line := between.normalized() if between.length() > 0.5 else Vector3.FORWARD
+	for i in int(spec["count"]):
+		var at: Vector3
+		if i == 0:
+			at = player.global_position + line * minf(between.length() * 0.5, 7.0)
+			facings.append(atan2(-line.x, -line.z))
+		else:
+			var a := randf() * TAU
+			at = player.global_position + Vector3(cos(a), 0.0, sin(a)) * float(spec["radius"])
+			facings.append(atan2(cos(a), sin(a)))
+		spots.append(_on_ground(at))
+	for at in spots:
+		Vfx.ground_mark(boss.get_parent(), at, colour.lerp(Color(1, 0.2, 0.15), 0.4), half, delay)
+	await get_tree().create_timer(delay, false).timeout
+	if not is_instance_valid(boss) or boss.stats.is_dead():
+		return
+	for i in spots.size():
+		_hurt_in_circle(spots[i], half * 0.7, float(spec["damage"]))
+		var wall := JutsuWall.new()
+		wall.element = boss.element
+		wall.half_width = half
+		wall.duration = float(spec["duration"])
+		# Under the boss's feet in the tree, so it goes if the boss does.
+		add_child(wall)
+		wall.global_position = spots[i]
+		wall.rotation.y = facings[i]
+
+
+## A flood closes in from the edge of the arena toward its middle, then drains.
+## Standing in it hurts, every half second.
+func _tide(spec: Dictionary) -> void:
+	var player := boss.target as Node3D
+	var centre := _on_ground((boss.global_position + player.global_position) * 0.5)
+	var outer := float(spec["radius"])
+	var floor_r := float(spec["to"])
+	var delay := float(spec["delay"])
+	var rise := maxf(float(spec["rise"]), 0.2)
+	var duration := maxf(float(spec["duration"]), rise)
+	var colour := Element.color(Element.WATER)
+	# The edge of the coming water, shown before it moves.
+	Vfx.ground_mark(boss.get_parent(), centre, colour, outer, delay)
+	await get_tree().create_timer(delay, false).timeout
+	if not is_instance_valid(boss) or boss.stats.is_dead():
+		return
+	var flood := MeshInstance3D.new()
+	flood.material_override = Vfx.glow_material(colour.lightened(0.1), 0.9, 0.5)
+	flood.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(flood)
+	flood.global_position = centre + Vector3.UP * 0.12
+	var t := 0.0
+	var tick := 0.0
+	var drain := 1.5
+	while t < duration + drain and is_instance_valid(boss) and not boss.stats.is_dead():
+		await get_tree().physics_frame
+		var dt := get_physics_process_delta_time()
+		t += dt
+		tide_safe_radius = _tide_safe_radius(t, outer, floor_r, rise, duration, drain)
+		flood.mesh = _annulus(tide_safe_radius, outer + 12.0)
+		tick += dt
+		if tick >= 0.5:
+			tick = 0.0
+			if is_instance_valid(player):
+				var flat := Vector2(player.global_position.x - centre.x, player.global_position.z - centre.z).length()
+				if flat > tide_safe_radius and player.global_position.y < centre.y + 1.0:
+					_hurt(float(spec["damage"]) * 0.5)
+	tide_safe_radius = INF
+	if is_instance_valid(flood):
+		flood.queue_free()
+
+
+## The dry circle's radius `t` seconds into a flood: closing over `rise`,
+## holding until `duration`, then opening again over `drain`.
+static func _tide_safe_radius(t: float, outer: float, floor_r: float, rise: float, duration: float, drain: float) -> float:
+	if t < rise:
+		return lerpf(outer, floor_r, smoothstep(0.0, 1.0, t / rise))
+	if t < duration:
+		return floor_r
+	return lerpf(floor_r, outer + 12.0, clampf((t - duration) / drain, 0.0, 1.0))
+
+
+## A flat ring from `inner` to `outer` metres, for water over the ground.
+static func _annulus(inner: float, outer: float) -> ArrayMesh:
+	var segments := 48
+	var verts := PackedVector3Array()
+	var idx := PackedInt32Array()
+	for i in segments:
+		var a := TAU * float(i) / float(segments)
+		verts.append(Vector3(cos(a) * inner, 0.0, sin(a) * inner))
+		verts.append(Vector3(cos(a) * outer, 0.0, sin(a) * outer))
+	for i in segments:
+		var a0 := i * 2
+		var b0 := ((i + 1) % segments) * 2
+		idx.append_array([a0, a0 + 1, b0, b0, a0 + 1, b0 + 1])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 ## When the boss falls, the shinobi it called leave with it.

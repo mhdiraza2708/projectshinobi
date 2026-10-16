@@ -39,7 +39,7 @@
 			{"say": [["sumi", "Oh dear. You've scattered my couriers. They were very good couriers.", "sad"], ["sumi", "I am Sumi. I keep the Ledger. I'm sorry about this, truly. It is such a quiet job, and it does so poorly with company."], ["tsumugi", "She's the one who wrote my sister out of my own house."], ["sumi", "Was she? There are so many. I am sorry, I cannot recall her name."]]}
 		]},
 		{"do": "boss", "who": "sumi", "rank": "jonin", "health": 330, "element": "earth", "taunt": "Hold still. It stings less if you hold still.",
-			"specials": [{"kind": "quake", "every": 10, "count": 4, "damage": 16}, {"kind": "ward", "every": 24, "below": 0.8, "duration": 9, "force": 75}],
+			"specials": [{"kind": "quake", "every": 10, "count": 4, "damage": 16}, {"kind": "ward", "every": 24, "below": 0.8, "duration": 9, "force": 75}, {"kind": "walls", "every": 22, "below": 0.6, "count": 3, "damage": 10}],
 			"phases": [
 				{"at": 0.5, "element": "water", "say": "Wet ink spreads. That is rather the point.", "summon": [["genin", "water"], ["genin", "earth"]]}
 			]},

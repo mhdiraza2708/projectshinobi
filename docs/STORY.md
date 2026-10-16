@@ -158,9 +158,11 @@ is beaten by what you do, not by how much health you have:
 | `pull` | The boss drags you toward itself for `duration` seconds, then bursts (`radius`, `strength`, `range`). | Dash away before the burst. |
 | `ward` | A seal ward turns away `reduction` of every blow for up to `duration` seconds. | Land `force` damage on it, all at once, to break it and leave the boss reeling. |
 | `call` | The boss calls `count` shinobi of its own nature (`max` alive, they stay `duration` seconds). | Beat them, or the boss, first. |
+| `walls` | `count` slabs of rock rise (the first between you and the boss, the rest round you at `radius`), `duration` seconds, striking anyone on the spot. | Use them as cover from its jutsu; don't get pinned against them. |
+| `tide` | A flood comes in from `radius` m out toward the middle and closes to a dry circle of `to` m over `rise` seconds, `damage` per second in the water, then drains after `duration`. | Get to the dry middle and stay there. |
 
 Every story boss and every bounty has its own mix, so a fight with Iwao
-(stone clones and quakes) feels different from one with Mikage (a ward, her
+(stone clones, rock walls and quakes) feels different from one with Mikage (a ward, her
 Court, a turning blade).
 
 ## Islands

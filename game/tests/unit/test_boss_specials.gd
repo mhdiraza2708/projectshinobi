@@ -225,6 +225,75 @@ func test_a_call_brings_shinobi_to_the_bosss_side_and_they_leave_with_it() -> vo
 	assert_eq(specials._calls.size(), 0, "when the boss falls, the ones it called go too")
 
 
+func test_walls_rise_between_you_and_the_boss_and_then_sink() -> void:
+	await _load()
+	player.set_physics_process(false)
+	specials._run(_spec("walls", {"delay": 0.2, "count": 3, "duration": 0.6}))
+	await _until_spent()
+	var walls := specials.find_children("*", "JutsuWall", true, false)
+	assert_eq(walls.size(), 3, "three slabs stand")
+	for w in walls:
+		assert_eq((w as JutsuWall).collision_layer, Combat.LAYER_WALLS, "and they are solid")
+	# The first is between the two of them.
+	var first := walls[0] as JutsuWall
+	var to_boss := boss.global_position - player.global_position
+	var to_wall := first.global_position - player.global_position
+	assert_true(to_wall.dot(to_boss) > 0.0 and to_wall.length() < to_boss.length(), "between you and the boss")
+	var end := Time.get_ticks_msec() + 8000
+	while specials.find_children("*", "JutsuWall", true, false).size() > 0 and Time.get_ticks_msec() < end:
+		await physics_frames(5)
+	assert_eq(specials.find_children("*", "JutsuWall", true, false).size(), 0, "they sink away after their time")
+
+
+func test_a_slab_rising_under_you_hurts_but_standing_clear_does_not() -> void:
+	await _load()
+	player.set_physics_process(false)
+	var before := player.stats.health
+	# Radius 0 puts the second slab on the player.
+	specials._run(_spec("walls", {"delay": 0.2, "count": 2, "radius": 0.0, "damage": 20.0, "duration": 0.3}))
+	await _until_spent()
+	assert_true(player.stats.health < before, "the slab rose under you")
+	player.stats.health = player.stats.max_health
+	before = player.stats.health
+	specials._run(_spec("walls", {"delay": 0.4, "count": 2, "radius": 0.0, "damage": 20.0, "duration": 0.3}))
+	await physics_frames(5)
+	player.global_position += Vector3(30, 0, 0)
+	await _until_spent()
+	assert_eq(player.stats.health, before, "step away in the warning and it misses")
+	var cleanup := Time.get_ticks_msec() + 4000
+	while specials.find_children("*", "JutsuWall", true, false).size() > 0 and Time.get_ticks_msec() < cleanup:
+		await physics_frames(5)
+
+
+func test_the_tide_closes_in_and_drains_again() -> void:
+	var outer := 15.0
+	assert_eq(BossSpecials._tide_safe_radius(0.0, outer, 6.0, 4.0, 10.0, 1.5), outer, "it starts at the edge")
+	assert_eq(BossSpecials._tide_safe_radius(4.0, outer, 6.0, 4.0, 10.0, 1.5), 6.0, "closes to the dry circle")
+	assert_eq(BossSpecials._tide_safe_radius(8.0, outer, 6.0, 4.0, 10.0, 1.5), 6.0, "holds")
+	assert_true(BossSpecials._tide_safe_radius(2.0, outer, 6.0, 4.0, 10.0, 1.5) < outer, "closing")
+	assert_true(BossSpecials._tide_safe_radius(10.75, outer, 6.0, 4.0, 10.0, 1.5) > 6.0, "then draining")
+	assert_true(BossSpecials._tide_safe_radius(12.0, outer, 6.0, 4.0, 10.0, 1.5) >= outer, "and gone")
+
+
+func test_a_tide_hurts_in_the_water_and_spares_the_dry_middle() -> void:
+	await _load()
+	player.set_physics_process(false)
+	var before := player.stats.health
+	# The player stands 6 m from the middle; the dry circle closes to 2 m.
+	specials._run(_spec("tide", {"delay": 0.1, "rise": 0.4, "duration": 1.6, "to": 2.0, "radius": 15.0, "damage": 30.0}))
+	await _until_spent()
+	assert_true(player.stats.health < before, "in the water you are hurt")
+	assert_eq(specials.tide_safe_radius, INF, "and the tide is gone when it is done")
+	player.stats.health = player.stats.max_health
+	before = player.stats.health
+	specials._run(_spec("tide", {"delay": 0.3, "rise": 0.4, "duration": 1.6, "to": 2.0, "radius": 15.0, "damage": 30.0}))
+	await physics_frames(2)
+	# The middle is halfway between the two of them.
+	player.global_position = (player.global_position + boss.global_position) * 0.5
+	await _until_spent()
+	assert_eq(player.stats.health, before, "on the dry middle it never reaches you")
+
+
 func test_every_story_boss_and_every_bounty_has_signature_attacks() -> void:
 	var story := Story.load_all()
 	assert_true(story.errors.is_empty(), "\n".join(story.errors))
