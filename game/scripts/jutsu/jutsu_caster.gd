@@ -20,6 +20,8 @@ const AFFINITY_DISCOUNT := 0.2
 @export var body: Node3D
 ## The caster's chakra nature (Element.*): jutsu of this nature cost less.
 var affinity := Element.NONE
+## A duel to the old rules: only the kunai may be thrown, no jutsu.
+var blades_only := false
 ## Multiplies the power of everything this caster makes (enemy tuning).
 var power_scale := 1.0
 ## The player's clan and eye art shape what they cast (cost, damage, healing,
@@ -54,6 +56,8 @@ func cost_of(jutsu: JutsuDefinition, instant := false) -> float:
 
 ## &"" if `jutsu` can be cast right now, otherwise the reason it can't.
 func block_reason(jutsu: JutsuDefinition, instant := false) -> StringName:
+	if blades_only and jutsu.id != &"kunai":
+		return &"rules"
 	if cooldown_left(jutsu.id) > 0.0:
 		return &"cooldown"
 	if stats.chakra < cost_of(jutsu, instant):

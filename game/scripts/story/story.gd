@@ -15,10 +15,12 @@ const BEATS := {
 	"exit": [["who"], []],
 	"say": [["lines"], ["music"]],
 	"task": [["text", "goal"], ["count", "jutsu", "enemies", "music"]],
-	"fight": [["waves"], ["text"]],
-	"survive": [["seconds", "enemies"], ["text", "max_alive"]],
+	"fight": [["waves"], ["text", "nonlethal"]],
+	"survive": [["seconds", "enemies"], ["text", "max_alive", "nonlethal"]],
+	"escort": [["who", "to"], ["text", "from", "health", "enemies", "max_alive"]],
+	"search": [["text", "spots"], ["radius", "enemies"]],
 	"ally": [["who", "rank"], ["health", "at"]],
-	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "specials", "size", "aura", "music"]],
+	"boss": [["who", "rank", "health"], ["at", "element", "taunt", "phases", "specials", "size", "aura", "music", "rules"]],
 	"wait": [["seconds"], []],
 	"banner": [["text"], []],
 	"scene": [["steps"], []],
@@ -61,6 +63,8 @@ const SCENE_POSES := {"idle": HumanoidPoser.Pose.LOCOMOTION, "weave": HumanoidPo
 	"guard": HumanoidPoser.Pose.GUARD, "charge": HumanoidPoser.Pose.CHARGE}
 const CAST_KINDS: PackedStringArray = ["projectile", "blast", "bolt"]
 const FX_KINDS: PackedStringArray = ["flash", "shake", "lightning", "blast", "smoke", "dust", "aura", "beam"]
+## Duel rules a boss beat may set.
+const RULES: PackedStringArray = ["blades"]
 const GOALS: PackedStringArray = ["kunai_hit", "strike_hit", "jutsu_hit", "weak_hit", "cast", "guard", "dash", "charge", "lock_on", "interrupt"]
 const TIMES: PackedStringArray = ["dawn", "day", "dusk", "night"]
 const WEATHERS: PackedStringArray = ["none", "rain", "storm", "snow", "leaves"]
@@ -447,6 +451,7 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 				errors.append("%s: unknown jutsu '%s'" % [label, b["jutsu"]])
 		"fight":
 			b["text"] = str(raw.get("text", "Defeat the clones"))
+			b["nonlethal"] = bool(raw.get("nonlethal", false))
 			b["waves"] = []
 			if not raw["waves"] is Array or raw["waves"].is_empty():
 				errors.append("%s: waves must be a non-empty list" % label)
@@ -461,8 +466,33 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 			b["enemies"] = _pairs(label, raw["enemies"])
 			b["max_alive"] = int(raw.get("max_alive", 3))
 			b["text"] = str(raw.get("text", "Hold out"))
+			b["nonlethal"] = bool(raw.get("nonlethal", false))
 			if b["enemies"].is_empty():
 				errors.append("%s: survive needs enemies [[rank, element], ...]" % label)
+		"escort":
+			b["who"] = _who(label, raw["who"], false)
+			b["to"] = _vec2(label, raw["to"])
+			b["from"] = _vec2(label, raw.get("from", [0, -6]))
+			b["text"] = str(raw.get("text", "Get them there safely"))
+			b["health"] = float(raw.get("health", 120.0))
+			b["max_alive"] = int(raw.get("max_alive", 3))
+			b["enemies"] = _pairs(label, raw.get("enemies", []))
+			if b["health"] <= 0.0:
+				errors.append("%s: escort health must be above 0" % label)
+			# Whoever is escorted stands at the end of it, ready to talk.
+			present[b["who"]] = true
+		"search":
+			b["text"] = str(raw["text"])
+			b["radius"] = float(raw.get("radius", 3.0))
+			b["enemies"] = _pairs(label, raw.get("enemies", []))
+			b["spots"] = []
+			if not raw["spots"] is Array or raw["spots"].is_empty():
+				errors.append("%s: spots must be a non-empty list of [x, z]" % label)
+			else:
+				for spot: Variant in raw["spots"]:
+					b["spots"].append(_vec2(label, spot))
+			if b["radius"] <= 0.0:
+				errors.append("%s: search radius must be above 0" % label)
 		"ally":
 			b["who"] = _who(label, raw["who"], false)
 			var ally_rank := _ranks(label, [raw["rank"]])
@@ -485,6 +515,9 @@ func _parse_beat(label: String, raw: Variant, present: Dictionary) -> Dictionary
 			b["health"] = float(raw["health"])
 			b["at"] = _vec2(label, raw.get("at", [0, -8]))
 			b["taunt"] = str(raw.get("taunt", ""))
+			b["rules"] = str(raw.get("rules", ""))
+			if b["rules"] != "" and not RULES.has(b["rules"]):
+				errors.append("%s: unknown rules '%s' (one of %s)" % [label, b["rules"], RULES])
 			var fallback: int = characters[b["who"]]["element"] if characters.has(b["who"]) else Element.NONE
 			b["element"] = _element(label, raw["element"]) if raw.has("element") else fallback
 			b["specials"] = []

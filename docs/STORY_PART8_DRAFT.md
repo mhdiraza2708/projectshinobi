@@ -31,8 +31,9 @@ Everyone from Part 7 returns. Mikage is a companion for the first time
 
 ## The missions
 
-Each mission lists the *kind* of play it adds. Kinds marked **new** need
-code (a beat kind in `story.gd`); the rest use beats that exist.
+Each mission lists the *kind* of play it adds. The four new kinds (escort,
+search, rules duel, non-lethal) are built and tested; see "The newer mission
+kinds" in [STORY.md](STORY.md). What is missing is the dialogue and its voices.
 
 | # | Mission | Island | What happens | New play |
 |---|---|---|---|---|
@@ -57,8 +58,7 @@ code (a beat kind in `story.gd`); the rest use beats that exist.
 - Six missions, about 130 spoken lines in total, roughly 9,000 characters.
 - With acting directions that is about **9,000 to 10,000 ElevenLabs
   credits**, plus two new voices to cast and audition (about 600 credits).
-- Code: four small beat changes (escort, search, rules, non-lethal),
-  about a day of work with tests.
+- Code: done (escort, search, rules duel, non-lethal), with tests.
 
 ## Questions that need an answer before anything is recorded
 

@@ -971,6 +971,8 @@ func _on_cast_failed(jutsu: JutsuDefinition, reason: StringName) -> void:
 			feedback.emit("Not enough chakra for %s" % jutsu.display_name, &"fail")
 		&"cooldown":
 			feedback.emit("%s is recharging (%.1fs)" % [jutsu.display_name, caster.cooldown_left(jutsu.id)], &"fail")
+		&"rules":
+			feedback.emit("Blades only: no jutsu in this duel", &"fail")
 	InputDevice.rumble(0.0, 0.3, 0.12)
 
 
@@ -1035,6 +1037,9 @@ func ultimate_ready() -> bool:
 ## Unleashes the equipped ultimate if the meter is full. Returns whether it
 ## began.
 func try_ultimate() -> bool:
+	if caster.blades_only:
+		feedback.emit("Blades only: no ultimate in this duel", &"fail")
+		return false
 	if not ultimate_ready():
 		feedback.emit("Ultimate charging: %d%%" % floori(ult_charge / Ultimates.MAX_CHARGE * 100.0), &"info")
 		return false

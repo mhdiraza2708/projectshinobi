@@ -194,13 +194,36 @@ A new island is a new entry in `PRESETS`: colours, `hills` (height), `coast`
 | `exit` | `who` | They leave in a puff of smoke. |
 | `say` | `lines`, optional `music` | Dialogue. Each line is `[who, text]` or `[who, text, mood]`. The mood is one of neutral, angry, happy, relaxed or sad. Speakers must be on stage (or `player`). |
 | `task` | `text`, `goal`, optional `count`, `jutsu`, `enemies`, `music` | A tutorial objective. The goal is one of `kunai_hit`, `strike_hit`, `jutsu_hit`, `weak_hit`, `cast` (optionally a specific `jutsu`), `guard`, `dash`, `charge`, `lock_on` or `interrupt`. `enemies` adds practice clones that only weave, slowly, so you can interrupt them; they come back if they fall. |
-| `fight` | `waves`, optional `text` | Waves of clones: `[{"element": "wind", "enemies": ["genin", "chunin"]}]`. |
-| `boss` | `who`, `rank`, `health`, optional `element`, `taunt`, `at`, `phases`, `size` (1.35 = oversized), `aura` (colour) | A named boss fight with a health bar. If the character is on stage, they step into the fight from where they stand. |
+| `fight` | `waves`, optional `text`, `nonlethal` | Waves of clones: `[{"element": "wind", "enemies": ["genin", "chunin"]}]`. With `"nonlethal": true` they cannot be killed: below a quarter of their health they yield, reel, and go (see below). |
+| `boss` | `who`, `rank`, `health`, optional `element`, `taunt`, `at`, `phases`, `specials`, `rules`, `size` (1.35 = oversized), `aura` (colour) | A named boss fight with a health bar. If the character is on stage, they step into the fight from where they stand. `"rules": "blades"` makes it a duel to the old rules (see below). |
 | `ally` | `who`, `rank`, optional `health`, `at` | The character fights beside you, hunting the nearest enemy, until an `exit` (or until you talk to them again). If they're beaten they retreat; a retried fight brings them back. |
-| `survive` | `seconds`, `enemies` (`[[rank, element], ...]`), optional `max_alive`, `text` | Hold out: enemies keep arriving (up to `max_alive` at once) until the timer runs out. |
+| `survive` | `seconds`, `enemies` (`[[rank, element], ...]`), optional `max_alive`, `text`, `nonlethal` | Hold out: enemies keep arriving (up to `max_alive` at once) until the timer runs out. |
+| `escort` | `who`, `to` (`[x, z]`), optional `from`, `health`, `text`, `enemies`, `max_alive` | Walk a character to a place (marked by a pillar of light). They wait if you fall behind, enemies go for them before you, and if they fall the beat restarts. When they arrive they stand there on stage, ready to talk. |
+| `search` | `text`, `spots` (`[[x, z], ...]`), optional `radius`, `enemies` | Find every spot by walking the ground: there is no pin, only cold, warm or hot and a glow when close. If `enemies` is set, each find springs an ambush that must be beaten before the search goes on. |
 | `wait` | `seconds` | A pause with control. |
 | `banner` | `text` | A big banner (for example "End of Part One"). |
 | `scene` | `steps` | A cutscene (see below). |
+
+### The newer mission kinds
+
+- **Escort** (`escort`). The escorted character is an ally that walks the
+  route by herself and fights what comes within a few metres; she holds still
+  while you are more than about 14 m behind. Attackers spawn from the side
+  the road leads to and target her first. The `from` position is where she
+  starts (or where she stands now, if she is on stage). Losing her loses the
+  beat; a retry brings her back whole.
+- **Search** (`search`). Spots are found by standing within `radius` (3 m by
+  default) of them. The objective reads "cold", "warm" or "hot" by distance
+  to the nearest spot not yet found.
+- **Blades only** (`"rules": "blades"` on a `boss` beat). For the length of the
+  duel the player's jutsu are locked (the kunai still works) and so is the
+  ultimate; the boss reaches for no jutsu either. Its signature attacks
+  (`specials`) still run, since those are moves, not jutsu. The player has
+  everything back when the boss falls or the beat is retried.
+- **Non-lethal** (`"nonlethal": true` on `fight` and `survive`). The enemies
+  cannot be killed. Below a quarter of their health they stagger, concede and
+  leave, counting as beaten but worth no XP. Use it for a crowd that is angry
+  and right, not an enemy.
 
 ### Cutscenes: the `scene` beat
 
