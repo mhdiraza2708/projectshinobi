@@ -73,6 +73,13 @@ var sword_drawn := false
 var hilt: Node3D
 var _cut_t := 0.0
 var _cut := 0
+## Seconds left of a cut a Mixamo clip is playing (CharacterAnimator.strike):
+## the clip carries the sword arm and the body, not the keys (`_cut_t` is
+## then just the blade's swing, for as long as it leaves its ribbon).
+var _clip_t := 0.0
+## How much of the sword arm is the clip's (1) rather than the pose's: it
+## takes the arm in as the clip cut starts and gives it back as it ends.
+var _clip_w := 0.0
 var _draw_t := 0.0
 var _sheathe_t := 0.0
 var _ready_for_pose := false
@@ -127,6 +134,10 @@ func strike() -> void:
 
 
 const CUT_TIME := 0.26
+## Seconds a clip takes the sword arm in as its cut starts (the clip's own
+## blend in), and gives it back to the pose as it ends.
+const CLIP_IN := 0.05
+const CLIP_OUT := 0.15
 ## Drawing: the hand reaches the hilt (DRAW_REACH of the way), then the
 ## blade comes out in a cut across the front.
 const DRAW_TIME := 0.36
@@ -141,14 +152,37 @@ const SHEATHE_HOME := 0.7
 func cut(index: int) -> void:
 	_cut = posmod(index, CUTS.size())
 	_cut_t = cut_time(_cut)
+	_clip_t = 0.0
 	_draw_t = 0.0
 	_sheathe_t = 0.0
+
+
+## Cut `index` made by a Mixamo clip of `clip_time` seconds, the blade cutting
+## for the first `swing_time` of it. The clip owns the sword arm, the free
+## hand and the spine meanwhile: the poser only keeps the fist round the grip.
+func clip_cut(index: int, clip_time: float, swing_time: float) -> void:
+	cut(index)
+	_cut_t = swing_time
+	_clip_t = clip_time
+
+
+## The clip's cut is over or was cut short (hit, guard, a new pose).
+func release_clip_cut() -> void:
+	if _clip_t > 0.0:
+		_clip_t = 0.0
+		_cut_t = 0.0
+
+
+## A clip is making the cut (see `clip_cut`).
+func is_clip_cutting() -> bool:
+	return _clip_t > 0.0
 
 
 ## The right hand goes to the hilt at the hip and draws in a cut.
 func draw() -> void:
 	_draw_t = DRAW_TIME
 	_cut_t = 0.0
+	_clip_t = 0.0
 	_sheathe_t = 0.0
 
 
@@ -157,6 +191,7 @@ func sheathe() -> void:
 	_sheathe_t = SHEATHE_TIME
 	_draw_t = 0.0
 	_cut_t = 0.0
+	_clip_t = 0.0
 
 
 ## How long cut `index` of the combo takes (the X, the finisher, longest).
@@ -520,6 +555,8 @@ func _sword(p: Dictionary) -> void:
 			p["hilt_w"] = 1.0 - smoothstep(SHEATHE_HOME, 1.0, t)
 			p["curl_R"] = lerpf(1.25, 0.35, smoothstep(SHEATHE_HOME, 1.0, t))
 			p["wrap_R"] = lerpf(1.0, 0.0, smoothstep(SHEATHE_HOME, 1.0, t))
+	elif _clip_t > 0.0:
+		_clip_cut(p)
 	elif _cut_t > 0.0:
 		var keys: Array = CUTS[_cut]
 		var t := 1.0 - _cut_t / cut_time(_cut)
@@ -533,6 +570,17 @@ func _sword(p: Dictionary) -> void:
 			# The X is thrown with the whole body.
 			p["lean"] = float(p["lean"]) + lerpf(0.0, 0.25, t)
 			p["hips_drop"] = float(p["hips_drop"]) + 0.07 * sin(t * PI)
+
+
+## A cut a clip makes: nothing of the keys. The clip moves the arms, the spine
+## and the legs; the poser's own pose (the hold above) only fades in again once
+## it is over (`_clip_w`).
+func _clip_cut(p: Dictionary) -> void:
+	p["use_legs"] = false
+	if _throw_t <= 0.0:
+		# (A kunai thrown with the free hand is still the poser's.)
+		p["use_spine"] = false
+		p["use_arm_L"] = false
 
 
 ## A one-handed cut: the free hand swings back and out, open, against the
@@ -652,6 +700,8 @@ func _process_modification_with_delta(delta: float) -> void:
 	_cast_t = maxf(0.0, _cast_t - delta)
 	_flinch_t = maxf(0.0, _flinch_t - delta)
 	_cut_t = maxf(0.0, _cut_t - spent)
+	_clip_t = maxf(0.0, _clip_t - spent)
+	_clip_w = move_toward(_clip_w, 1.0 if _clip_t > 0.0 else 0.0, delta / (CLIP_IN if _clip_t > 0.0 else CLIP_OUT))
 	_draw_t = maxf(0.0, _draw_t - spent)
 	_sheathe_t = maxf(0.0, _sheathe_t - spent)
 	if speed_ratio > 0.05 and not airborne:
@@ -719,9 +769,24 @@ func _process_modification_with_delta(delta: float) -> void:
 			var grip := _skel.global_transform.affine_inverse() * hilt.global_position
 			grip -= (_frame * (p["hand_R"] as Vector3)).normalized() * _arm_len * 0.12
 			goal = goal.lerp(grip, p["hilt_w"])
-		_two_bone(StringName(pre + "UpperArm"), StringName(pre + "LowerArm"), StringName(pre + "Hand"),
-			goal, _frame * p["pole_" + side])
-		_aim_hand(pre, _frame * p["hand_" + side], _frame * p["thumb_" + side])
+		# While a clip cuts, the sword arm is the clip's; it fades back to the
+		# pose as the clip ends. The pose is solved over the clip's arm and the
+		# two are blended bone by bone.
+		var clip_arm: bool = side == "R" and _clip_w > 0.0
+		var arm_bones: Array[int] = []
+		var clipped: Array[Quaternion] = []
+		if clip_arm:
+			for part in ["UpperArm", "LowerArm", "Hand"]:
+				arm_bones.append(_b[StringName(pre + part)])
+				clipped.append(_skel.get_bone_pose_rotation(arm_bones[-1]))
+		if not clip_arm or _clip_w < 1.0:
+			_two_bone(StringName(pre + "UpperArm"), StringName(pre + "LowerArm"), StringName(pre + "Hand"),
+				goal, _frame * p["pole_" + side])
+			_aim_hand(pre, _frame * p["hand_" + side], _frame * p["thumb_" + side])
+		if clip_arm:
+			for k in arm_bones.size():
+				var solved := _skel.get_bone_pose_rotation(arm_bones[k]) if _clip_w < 1.0 else clipped[k]
+				_skel.set_bone_pose_rotation(arm_bones[k], clipped[k].slerp(solved, 1.0 - _clip_w))
 		var each := PackedFloat32Array()
 		if p.has("fin_%s_0" % side):
 			for i in 4:

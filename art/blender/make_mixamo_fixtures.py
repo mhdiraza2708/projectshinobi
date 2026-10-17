@@ -2,7 +2,11 @@
 names, T-pose, armature-only "Without Skin" FBX, 30 fps) so the Mixamo
 retargeting pipeline can be tested without redistributing Mixamo files.
 
-    python art/blender/make_mixamo_fixtures.py [OUT_DIR]
+    python art/blender/make_mixamo_fixtures.py [OUT_DIR [CLIP ...]]
+
+Writes idle.fbx and run.fbx (looping clips), and cut_1.fbx: a synthetic sword
+swing, a slow wind-up, a fast cut and a slow recovery around it, to test the
+swing trimming. The cut is Mixamo's usual shape, mostly wind-up and recovery.
 
 Default OUT_DIR: game/tests/fixtures/mixamo (idle, run and jump). A second
 folder beside it, OUT_DIR + "_land", gets the same jump plus a land clip of
@@ -26,6 +30,10 @@ from mathutils import Euler, Matrix, Vector
 REPO_ROOT = Path(__file__).resolve().parents[2]
 out_dir = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("-") else str(REPO_ROOT / "game/tests/fixtures/mixamo")
 Path(out_dir).mkdir(parents=True, exist_ok=True)
+# Which clips to write (all of them by default; FBX files carry timestamps, so
+# name just the one you changed to keep the others byte for byte).
+CLIPS = ["idle", "run", "jump", "cut_1"]
+wanted = [a for a in sys.argv[2:] if not a.startswith("-")] or CLIPS
 
 J = {  # name: (head, parent)  -- Blender coords, character faces -Y like an imported Mixamo FBX
  "Hips": ((0,0,1.0), None), "Spine": ((0,0,1.1), "Hips"), "Spine1": ((0,0,1.22), "Spine"), "Spine2": ((0,0,1.35), "Spine1"),
@@ -62,10 +70,14 @@ JUMP_FRAMES = {
 }
 THIGH = 0.43  # UpLeg -> Leg, and Leg -> Foot
 
+# The sword swing (cut_1): frames of a 30 fps clip. A wind-up that raises the
+# sword arm slowly, a cut thrown across in a fifth of a second, a recovery.
+WIND_END, SWING_END, SWING_FRAMES = 36, 42, 66
+
 
 def smooth(x):
     x = min(max(x, 0.0), 1.0)
-    return x * x * (3 - 2 * x)
+    return x * x * (3.0 - 2.0 * x)
 
 
 def jump_pose(f, clip="jump"):
@@ -142,6 +154,18 @@ def pb_world(world, bone):
     return 0.0
 
 
+def swing_pose(f):
+    """Right arm (Z lifts it, X swings it fore and aft), spine twist, in radians."""
+    if f <= WIND_END:
+        k = smooth((f - 1) / (WIND_END - 1))
+        return 1.2 - 1.4 * k, -0.5 * k, -0.25 * k
+    if f <= SWING_END:
+        k = (f - WIND_END) / (SWING_END - WIND_END)
+        return -0.2 + 1.6 * k, -0.5 + 1.2 * k, -0.25 + 0.75 * k
+    k = smooth((f - SWING_END) / (SWING_FRAMES - SWING_END))
+    return 1.4 - 0.2 * k, 0.7 * (1.0 - k), 0.5 * (1.0 - k)
+
+
 def build(clip, directory=None):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scn = bpy.context.scene; scn.render.fps = 30
@@ -160,7 +184,7 @@ def build(clip, directory=None):
     for n,(h,p) in J.items():
         if p: eb[n].parent = eb[p]
     bpy.ops.object.mode_set(mode='POSE')
-    frames = {"jump": JUMP_FRAMES["end"], "land": 24}.get(clip, 24)
+    frames = {"jump": JUMP_FRAMES["end"], "land": 24, "cut_1": SWING_FRAMES}.get(clip, 24)
     scn.frame_start, scn.frame_end = 1, frames
     for f in range(1, frames + 1):
         t = (f - 1) / frames * math.tau
@@ -177,6 +201,13 @@ def build(clip, directory=None):
             pb["mixamorig:LeftArm"].rotation_euler = (0,0,-1.2 + (0.3*math.sin(t) if clip=="run" else 0.03*math.sin(t)))
             pb["mixamorig:RightArm"].rotation_euler = (0,0,1.2 + (0.3*math.sin(t) if clip=="run" else 0.03*math.sin(t)))
             pb["mixamorig:Hips"].location = (0, 0, 0.02*math.sin(2*t))
+        if clip == "cut_1":
+            lift, aft, twist = swing_pose(f)
+            pb["mixamorig:RightArm"].rotation_euler = (aft, 0, lift)
+            pb["mixamorig:RightForeArm"].rotation_euler = (0, 0, -0.3 * (1.0 - abs(lift - 0.6) / 0.8))
+            pb["mixamorig:Spine1"].rotation_euler = (0, 0, twist * 0.6)
+            pb["mixamorig:Spine2"].rotation_euler = (0, 0, twist * 0.4)
+            pb["mixamorig:Hips"].location = (0, 0, 0.0)
         for b in pb:
             b.keyframe_insert("rotation_euler", frame=f)
         pb["mixamorig:Hips"].keyframe_insert("location", frame=f)
@@ -185,10 +216,14 @@ def build(clip, directory=None):
     bpy.ops.export_scene.fbx(filepath=f"{directory or out_dir}/{clip}.fbx", use_selection=False, object_types={'ARMATURE'},
         add_leaf_bones=False, bake_anim=True, bake_anim_use_all_actions=False, bake_anim_use_nla_strips=False)
 
-for clip in ["idle", "run", "jump"]:
+for clip in wanted:
     build(clip)
-land_dir = out_dir.rstrip("/") + "_land"
-Path(land_dir).mkdir(parents=True, exist_ok=True)
-build("jump", land_dir)
-build("land", land_dir)
-print(f"wrote idle.fbx, run.fbx, jump.fbx to {out_dir}, and jump.fbx, land.fbx to {land_dir}")
+msg = f"wrote {', '.join(c + '.fbx' for c in wanted)} to {out_dir}"
+if "jump" in wanted:
+    # The same jump again, beside a land.fbx of its own.
+    land_dir = out_dir.rstrip("/") + "_land"
+    Path(land_dir).mkdir(parents=True, exist_ok=True)
+    build("jump", land_dir)
+    build("land", land_dir)
+    msg += f", and jump.fbx, land.fbx to {land_dir}"
+print(msg)
