@@ -180,6 +180,22 @@ func test_a_rescued_traveller_tells_you_of_a_place() -> void:
 	assert_true(enc.current.is_empty())
 
 
+func test_a_rescue_set_far_up_the_road_waits_on_the_ground() -> void:
+	await _load()
+	var w := _wild()
+	# Set out of reach of the ground's collision, as it is when it appears ahead.
+	await _stand_at(enc.ground(w["at"] + Vector3(0, 0, 160)))
+	enc.begin("rescue", w["at"])
+	await seconds(3.0)
+	var people: Array = [enc.current["traveller"]] + (enc.current["raiders"] as Array)
+	for e: EnemyShinobi in people:
+		assert_true(e.global_position.y > enc.ground(e.global_position).y - 0.3,
+			"%s still on the ground (%.1f m off)" % [e.name, e.global_position.y - enc.ground(e.global_position).y])
+	await _stand_at(enc.ground(w["at"] + Vector3(20, 0, 0)))
+	for e: EnemyShinobi in enc.current["raiders"]:
+		assert_true(e.global_position.distance_to(player.global_position) < 30.0, "there to fight when you come")
+
+
 func test_a_traveller_who_falls_pays_nothing() -> void:
 	await _load()
 	var w := _wild()

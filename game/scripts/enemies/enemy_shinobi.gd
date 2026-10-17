@@ -635,9 +635,15 @@ func _physics_process(delta: float) -> void:
 		State.DEFEATED:
 			_decelerate(delta)
 
-	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
-	move_and_slide()
+	if hold:
+		# Held where it was set down: the ground there may not be solid yet
+		# (a rescue waiting far up the road), and falling through it would
+		# leave nothing to fight when you arrive.
+		velocity = Vector3.ZERO
+	else:
+		if not is_on_floor():
+			velocity.y -= GRAVITY * delta
+		move_and_slide()
 	_update_animator()
 
 
