@@ -176,7 +176,9 @@ are using, and the loadout editor above them:
   and Delete (which asks twice) manage up to eight.
 - **Quick-cast slots:** pick a slot, then press **Equip** on a jutsu. The next
   empty slot is picked for you. A jutsu sits in one slot of a preset; equipping
-  it elsewhere moves it. **×** empties a slot.
+  it elsewhere moves it. **×** empties a slot. Slot 4 is locked to **Shade
+  Clones** on every loadout: it can't be replaced, cleared or moved, though
+  its cast style can change.
 - **Weave / Instant** on each slot: *Weave* forms the seals for you (a little
   slower than a fast manual weave); *Instant* skips the seals for 35% more
   chakra.

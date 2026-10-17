@@ -17,9 +17,11 @@ const INSTANT := "instant"
 const INSTANT_SURCHARGE := 0.35
 
 
-## Every starter keeps Shade Clones in this slot: on the first page, so it is
-## always on the D-pad.
+## Shade Clones is locked into this slot of every preset: on the first page,
+## so it is always on the D-pad. It can't be replaced, cleared or moved there
+## (its cast style can change).
 const CLONES_SLOT := 3
+const LOCKED := "shade_clones"
 ## The starters before they followed your nature (old saves stored these).
 const LEGACY := [
 	["Balanced", ["chakra_bolt", "ember_volley", "stone_bulwark", "mending_palm", "shade_clones", "focus_seal", "", ""]],
@@ -79,6 +81,8 @@ static func _is_stock(list: Array) -> bool:
 	for nature in [Element.FIRE, Element.WIND, Element.LIGHTNING, Element.EARTH, Element.WATER]:
 		sets.append(starters(nature))
 	for stock: Array in sets:
+		for p: Dictionary in stock:
+			_normalise(p)
 		if stock.size() != list.size():
 			continue
 		var same := true
@@ -97,7 +101,7 @@ static func _preset(preset_name: String, jutsu: Array) -> Dictionary:
 	var styles := []
 	styles.resize(SLOTS)
 	styles.fill(WEAVE)
-	return {"name": preset_name, "slots": jutsu, "styles": styles}
+	return {"name": preset_name, "slots": jutsu.duplicate(), "styles": styles}
 
 
 ## Every preset (the starters until the player changes any).
@@ -126,6 +130,34 @@ static func _normalise(p: Dictionary) -> void:
 	p["name"] = str(p.get("name", "Loadout")).strip_edges().left(MAX_NAME)
 	if p["name"] == "":
 		p["name"] = "Loadout"
+	_lock_clones(slots, styles)
+
+
+## Puts Shade Clones in CLONES_SLOT (bringing its cast style if it was
+## elsewhere); what held that slot moves to the first empty one (it is lost
+## only from a bar already full without Shade Clones).
+static func _lock_clones(slots: Array, styles: Array) -> void:
+	var at := slots.find(LOCKED)
+	if at == CLONES_SLOT:
+		return
+	var style := WEAVE
+	if at >= 0:
+		style = styles[at]
+		slots[at] = ""
+		styles[at] = WEAVE
+	var displaced: String = slots[CLONES_SLOT]
+	var displaced_style: String = styles[CLONES_SLOT]
+	slots[CLONES_SLOT] = LOCKED
+	styles[CLONES_SLOT] = style
+	var empty := slots.find("")
+	if displaced != "" and empty >= 0:
+		slots[empty] = displaced
+		styles[empty] = displaced_style
+
+
+## Whether a slot is locked (Shade Clones' own).
+static func locked(slot: int) -> bool:
+	return slot == CLONES_SLOT
 
 
 static func index() -> int:
@@ -206,8 +238,11 @@ static func remove(i: int) -> void:
 
 ## Puts `jutsu_id` ("" clears) in a slot of the equipped (or given) preset.
 ## A jutsu sits in only one slot of a preset: it moves from where it was.
+## Shade Clones' slot is locked: nothing else goes there, and it goes nowhere
+## else.
 static func assign(slot: int, jutsu_id: StringName, preset := -1) -> void:
-	if slot < 0 or slot >= SLOTS:
+	if slot < 0 or slot >= SLOTS or locked(slot) or String(jutsu_id) == LOCKED:
+		# Shade Clones and its slot are locked.
 		return
 	var list := all()
 	var i := preset if preset >= 0 else index()

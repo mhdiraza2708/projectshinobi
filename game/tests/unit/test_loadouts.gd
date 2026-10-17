@@ -83,6 +83,60 @@ func test_untouched_starters_follow_a_change_of_nature_but_your_own_presets_stay
 	assert_eq(Loadouts.active()["slots"][0], "tide_lance", "your own loadout is kept")
 
 
+func _weave_all() -> Array:
+	var styles := []
+	styles.resize(Loadouts.SLOTS)
+	styles.fill(Loadouts.WEAVE)
+	return styles
+
+
+func test_shade_clones_is_locked_into_every_preset() -> void:
+	Loadouts.add("Empty", false)
+	Loadouts.duplicate_preset(0)
+	Loadouts.assign(0, &"gale_palm", 1)
+	for p: Dictionary in Loadouts.all():
+		assert_eq(p["slots"][Loadouts.CLONES_SLOT], "shade_clones",
+			"%s has Shade Clones in slot %d" % [p["name"], Loadouts.CLONES_SLOT + 1])
+	var legacy := Loadouts.LEGACY.map(func(p: Array) -> Dictionary: return Loadouts._preset(p[0], p[1]))
+	Profile.set_value(&"loadouts", legacy)
+	for p: Dictionary in Loadouts.all():
+		assert_eq(p["slots"][Loadouts.CLONES_SLOT], "shade_clones", "an old save's %s too" % p["name"])
+
+	# A saved preset without it gets it back; what held the slot moves to the
+	# first empty one, with its cast style.
+	var styles := _weave_all()
+	styles[3] = Loadouts.INSTANT
+	Profile.set_value(&"loadouts", [{"name": "Mine", "styles": styles,
+		"slots": ["tide_lance", "gale_palm", "", "chakra_bolt", "", "", "", ""]}])
+	var slots: Array = Loadouts.active()["slots"]
+	assert_eq(slots[Loadouts.CLONES_SLOT], "shade_clones")
+	assert_eq(slots[2], "chakra_bolt", "the bolt moved to the empty slot")
+	assert_eq(Loadouts.style_in(Loadouts.active(), 2), Loadouts.INSTANT, "keeping its style")
+	assert_eq(Loadouts.style_in(Loadouts.active(), Loadouts.CLONES_SLOT), Loadouts.WEAVE)
+	assert_eq(slots.slice(0, 2), ["tide_lance", "gale_palm"], "the rest stay put")
+
+	# Saved in another slot: it moves to its own, keeping its style.
+	styles = _weave_all()
+	styles[7] = Loadouts.INSTANT
+	Profile.set_value(&"loadouts", [{"name": "Mine", "styles": styles,
+		"slots": ["", "", "", "tide_lance", "", "", "", "shade_clones"]}])
+	slots = Loadouts.active()["slots"]
+	assert_eq(slots[Loadouts.CLONES_SLOT], "shade_clones")
+	assert_eq(slots.count("shade_clones"), 1, "in one slot only")
+	assert_eq(Loadouts.style_in(Loadouts.active(), Loadouts.CLONES_SLOT), Loadouts.INSTANT)
+	assert_eq(slots[0], "tide_lance", "what held its slot moved")
+
+	# Nothing replaces it, clears it or moves it.
+	var before := (Loadouts.active()["slots"] as Array).duplicate()
+	Loadouts.assign(Loadouts.CLONES_SLOT, &"gale_palm")
+	Loadouts.assign(Loadouts.CLONES_SLOT, &"")
+	Loadouts.assign(5, &"shade_clones")
+	assert_eq(Loadouts.active()["slots"], before, "its slot is locked")
+	# Its cast style can still change.
+	Loadouts.set_style(Loadouts.CLONES_SLOT, Loadouts.WEAVE)
+	assert_eq(Loadouts.style_in(Loadouts.active(), Loadouts.CLONES_SLOT), Loadouts.WEAVE)
+
+
 func test_presets_can_be_made_renamed_copied_and_deleted() -> void:
 	var made := Loadouts.add("Duelling")
 	assert_eq(made, 3, "added at the end")
@@ -155,32 +209,34 @@ func test_the_player_has_eight_slots_from_the_equipped_preset() -> void:
 	Loadouts.equip(1)
 	assert_eq(player.quick_slots[1], StringName(Loadouts.starters()[1]["slots"][1]), "the player follows the equipped preset")
 	assert_eq(player.quick_slots[Loadouts.CLONES_SLOT], &"shade_clones")
-	player.assign_quick_slot(3, &"tide_lance")
-	assert_eq(player.quick_slots[3], &"tide_lance", "assigning edits the loadout")
-	assert_eq(Loadouts.active()["slots"][3], "tide_lance")
+	player.assign_quick_slot(4, &"tide_lance")
+	assert_eq(player.quick_slots[4], &"tide_lance", "assigning edits the loadout")
+	assert_eq(Loadouts.active()["slots"][4], "tide_lance")
+	player.assign_quick_slot(Loadouts.CLONES_SLOT, &"tide_lance")
+	assert_eq(player.quick_slots[Loadouts.CLONES_SLOT], &"shade_clones", "not over Shade Clones")
 
 
 func test_keys_five_to_eight_cast_the_upper_slots() -> void:
 	await _load()
 	Loadouts.equip(1)
-	player.assign_quick_slot(7, &"shade_clones")
+	player.assign_quick_slot(7, &"focus_seal")
 	player.stats.chakra = 100.0
 	await _tap(&"quick_cast_8")
 	await seconds(1.2)
-	assert_true(player.caster.cooldown_left(&"shade_clones") > 0.0, "slot 8 cast Shade Clones")
+	assert_true(player.caster.cooldown_left(&"focus_seal") > 0.0, "slot 8 cast Focus Seal")
 
 
 func test_on_a_gamepad_the_dpad_works_the_current_page() -> void:
 	await _load()
 	Loadouts.equip(1)
-	player.assign_quick_slot(7, &"shade_clones")
+	player.assign_quick_slot(7, &"focus_seal")
 	InputDevice.current = Binding.Device.GAMEPAD
 	player.stats.chakra = 100.0
 	await _tap(&"quick_page")
 	assert_eq(player.quick_page, 1, "Back flips to the second page")
 	await _tap(&"quick_cast_4")  # D-pad left: slot 8 on page two
 	await seconds(1.2)
-	assert_true(player.caster.cooldown_left(&"shade_clones") > 0.0, "the fourth D-pad direction cast slot 8")
+	assert_true(player.caster.cooldown_left(&"focus_seal") > 0.0, "the fourth D-pad direction cast slot 8")
 	await _tap(&"quick_page")
 	assert_eq(player.quick_page, 0)
 
@@ -188,7 +244,7 @@ func test_on_a_gamepad_the_dpad_works_the_current_page() -> void:
 func test_holding_lb_turns_the_dpad_to_slots_five_to_eight() -> void:
 	await _load()
 	Loadouts.equip(1)
-	player.assign_quick_slot(7, &"shade_clones")
+	player.assign_quick_slot(7, &"focus_seal")
 	InputDevice.current = Binding.Device.GAMEPAD
 	player.stats.chakra = 100.0
 	assert_eq(player.dpad_page(), 0)
@@ -198,7 +254,7 @@ func test_holding_lb_turns_the_dpad_to_slots_five_to_eight() -> void:
 	await _tap(&"quick_cast_4")  # D-pad left with LB held: slot 8
 	Input.action_release(&"quick_shift")
 	await seconds(1.2)
-	assert_true(player.caster.cooldown_left(&"shade_clones") > 0.0, "LB + D-pad left cast slot 8")
+	assert_true(player.caster.cooldown_left(&"focus_seal") > 0.0, "LB + D-pad left cast slot 8")
 	assert_eq(player.quick_page, 0, "holding doesn't flip the page for good")
 	assert_eq(player.dpad_page(), 0, "let go: back to slots 1-4")
 
