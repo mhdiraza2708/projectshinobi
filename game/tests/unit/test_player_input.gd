@@ -94,7 +94,11 @@ func test_toggle_mode_needs_no_holding() -> void:
 
 func test_quick_cast_weaves_automatically() -> void:
 	await _settle()
-	await _tap(&"quick_cast_2")  # Ember Volley by default
+	# Starter loadouts follow your nature, so put the jutsu in slot 2 first.
+	player.assign_quick_slot(1, &"ember_volley")
+	await physics_frames(1)
+	assert_eq(player.quick_slots[1], &"ember_volley")
+	await _tap(&"quick_cast_2")
 	assert_eq(player.state, Player.State.AUTO_WEAVING)
 	await physics_frames(60)
 	assert_eq(player.state, Player.State.FREE)
