@@ -1,5 +1,6 @@
 extends SceneTree
-## Configures every Mixamo FBX in res://assets/animations/mixamo/ for Godot's
+## Configures every Mixamo clip (FBX, or GLB converted from one) in
+## res://assets/animations/mixamo/ for Godot's
 ## humanoid retargeting, so the clips play on any VRM/humanoid character.
 ##
 ## Run via `make animations`, which imports, runs this, and re-imports:
@@ -44,7 +45,7 @@ func _initialize() -> void:
 		return
 	var configured := 0
 	for file in DirAccess.get_files_at(clip_dir):
-		if file.get_extension().to_lower() == "fbx":
+		if file.get_extension().to_lower() in ["fbx", "glb"]:
 			if configure(clip_dir.path_join(file)):
 				configured += 1
 	print("Configured %d Mixamo clip(s). Re-import to apply." % configured)
