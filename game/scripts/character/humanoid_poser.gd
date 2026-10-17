@@ -44,6 +44,9 @@ var airborne := false
 ## Poses that animation clips already cover (set by CharacterAnimator). The
 ## poser leaves those alone, except the hand-seal arms, which it always owns.
 var clip_states: Dictionary = {}
+## A Mixamo jump's air phase (see JumpClip) poses the body in the air, so the
+## poser leaves it alone there. Without one, the poser tucks the legs itself.
+var clip_air := false
 
 var _skel: Skeleton3D
 var _b: Dictionary = {}                 # bone name -> index (only bones that exist)
@@ -346,10 +349,11 @@ func _target_params() -> Dictionary:
 	elif pose == Pose.WEAVE and clip_states.has(Pose.LOCOMOTION):
 		# Seal arms over the idle clip's stance.
 		p["use_legs"] = false
-	if airborne and pose == Pose.LOCOMOTION:
+	if airborne and pose == Pose.LOCOMOTION and not clip_air:
 		# In the air the body is posed, not clipped: legs tucked, arms out
 		# for balance. A jump clip is a standing leap, and played over a
-		# game's jump it reads as standing still in mid-air.
+		# game's jump it reads as standing still in mid-air (unless it is
+		# split and followed to the body's rise and fall: clip_air).
 		p["use_arms"] = true
 		p["use_legs"] = true
 		p["use_spine"] = true

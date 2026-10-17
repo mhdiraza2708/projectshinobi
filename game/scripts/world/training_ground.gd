@@ -1242,9 +1242,11 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			cam.current = true
 			await _frames(40)
 		_ when demo.begins_with("pose:"):
-			# The real player mid-action, close up: --demo=pose:jump or
-			# pose:hold (the sword drawn and held), --frames=<physics frames
-			# after it starts>, --side=<camera angle round them, radians>.
+			# The real player mid-action, close up: --demo=pose:jump (or
+			# pose:jump_run, pose:jump_sprint: off a run or a sprint, after
+			# --lead=<physics frames of running first>) or pose:hold (the
+			# sword drawn and held), --frames=<physics frames after it
+			# starts>, --side=<camera angle round them, radians>.
 			hud.visible = false
 			for old in find_children("*", "TrainingDummy", true, false):
 				old.free()
@@ -1252,6 +1254,13 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			var which := demo.trim_prefix("pose:")
 			match which:
 				"jump":
+					player._jump()
+				"jump_run", "jump_sprint":
+					player.input_enabled = false
+					player.scripted_velocity = -player.global_basis.z \
+						* (player.sprint_speed if which == "jump_sprint" else player.run_speed)
+					for i in int(_user_args().get("lead", "40")):
+						await get_tree().physics_frame
 					player._jump()
 				"hold":
 					player._strike()
@@ -1329,6 +1338,15 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 				lamp.light_energy = 0.7
 				cam.add_child(lamp)
 			await _frames(3)
+		_ when demo.begins_with("jumpseq:"):
+			# A jump seen from the side, saved at each listed moment as
+			# <path>_<n>.png: --demo=jumpseq:stand@3,8,20,40 (or run, or
+			# sprint, jumping off that gait). The moments are physics frames
+			# after the jump; run with --fixed-fps 60 so they are exact.
+			hud.visible = false
+			for old in find_children("*", "TrainingDummy", true, false):
+				old.free()
+			await _jump_sequence(demo.trim_prefix("jumpseq:"), path)
 		_ when demo.begins_with("rush:"):
 			# A rush jutsu from the gameplay camera, locked on to a dummy:
 			# --demo=rush:cyclone_core (--frames=<physics frames after the cast>).
@@ -1951,6 +1969,40 @@ func _vfx_sequence(spec: String, path: String) -> void:
 				n.queue_free()
 		for f in 8:
 			await get_tree().physics_frame
+
+
+## The jumpseq demo: `spec` is the gait to jump off (stand, run or sprint),
+## then @ and the physics frames after the jump to save a frame at.
+func _jump_sequence(spec: String, path: String) -> void:
+	var parts := spec.split("@")
+	await _frames(10)
+	if parts[0] != "stand":
+		player.input_enabled = false
+		player.scripted_velocity = -player.global_basis.z \
+			* (player.sprint_speed if parts[0] == "sprint" else player.run_speed)
+		for i in int(_user_args().get("lead", "40")):
+			await get_tree().physics_frame
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.fov = 40.0
+	cam.current = true
+	player._jump()
+	var done := 0
+	var shot := 0
+	var yaw := float(_user_args().get("side", "0.5"))
+	for moment in parts[1].split(","):
+		for f in int(moment) - done:
+			await get_tree().physics_frame
+		done = int(moment)
+		# Round to the character's right, at a fixed height so the jump's rise shows.
+		var face := -player.global_basis.z
+		var round := face.cross(Vector3.UP).rotated(Vector3.UP, -yaw)
+		var at := Vector3(player.global_position.x, 1.2, player.global_position.z)
+		cam.global_position = at + round * float(_user_args().get("dist", "4.2")) + Vector3.UP * 0.2
+		cam.look_at(at)
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(path.replace(".png", "_%d.png" % shot))
+		shot += 1
 
 
 ## A camera off to the right of the caster, looking `ahead` metres in front
