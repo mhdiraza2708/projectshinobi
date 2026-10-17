@@ -298,7 +298,14 @@ func test_a_player_walks_across_the_land_without_falling_through() -> void:
 	walker.speed = 12.0
 	walker.position = Vector3(home.x, land.pad_height("emberwood") + 0.3, home.y)
 	continent.target = walker
+	# Held still while the ground is built, then set on it, as the game places
+	# the player (OpenWorld._put_player_at). Left to fall meanwhile, a slow
+	# build let it sink half into the ground before its collision came, and a
+	# capsule sunk past its lower half sticks there.
+	walker.set_physics_process(false)
 	await continent.start(walker.position)
+	walker.position.y = land.height_at(walker.position.x, walker.position.z) + 0.3
+	walker.set_physics_process(true)
 	var start := walker.position
 	var lowest_gap := INF
 	var worst := 0.0
