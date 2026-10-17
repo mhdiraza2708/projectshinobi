@@ -159,10 +159,12 @@ class MeshBuilder:
 		self._commit(bm, uvl, mat, xform(loc, rot), "box", texel, False)
 
 	def sphere(self, mat, loc, radius, scale=(1, 1, 1), rot=(0, 0, 0), subdiv=3, texel=1.0,
-			displace=0.0, freq=1.5, seed=0, flatten_below=None, soft=False, smooth=True, soft_origin=None):
+			displace=0.0, freq=1.5, seed=0, flatten_below=None, soft=False, smooth=True, soft_origin=None,
+			terrace=0.0):
 		"""An icosphere, optionally lumpy (`displace`). `soft` bends its normals
 		outward from its centre, or from `soft_origin` (a point in the model)
-		so several lumps shade as one mass."""
+		so several lumps shade as one mass. `terrace` (a step height) pulls
+		heights toward steps, for layered rock."""
 		bm, uvl = self._scratch()
 		bmesh.ops.create_icosphere(bm, subdivisions=subdiv, radius=radius)
 		off = Vector((seed * 13.1, seed * 7.7, seed * 3.3))
@@ -171,6 +173,8 @@ class MeshBuilder:
 			if displace:
 				v.co += d * noise.fractal(d * freq + off, 0.6, 2.0, 4) * displace * radius
 			v.co = Vector((v.co.x * scale[0], v.co.y * scale[1], v.co.z * scale[2]))
+			if terrace > 0.0:
+				v.co.z += (round(v.co.z / terrace) * terrace - v.co.z) * 0.65
 			if flatten_below is not None and v.co.z < flatten_below:
 				v.co.z = flatten_below + (v.co.z - flatten_below) * 0.15
 		bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
