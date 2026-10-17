@@ -1133,7 +1133,8 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 		_ when demo.begins_with("sword"):
 			# Your shinobi five times over, the sword frozen at five moments:
 			# --demo=sword[:<state>,...] with states hold, sheathed, run, guard,
-			# throw@<0-1>, draw@<0-1>, sheathe@<0-1> and cut<0-2>@<0-1>.
+			# throw@<0-1>, draw@<0-1>, sheathe@<0-1>, cut<0-3>@<0-1> and
+			# clip<0-3>@<0-1> (the same cut made by its Mixamo clip).
 			var spec := demo.trim_prefix("sword").trim_prefix(":")
 			if spec == "":
 				spec = "sheathed,draw@0.3,draw@0.75,cut0@0.45,cut2@0.1"
@@ -1186,6 +1187,11 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 						"sheathe":
 							a.gear.set_drawn(t < HumanoidPoser.SHEATHE_HOME)
 							poser._sheathe_t = HumanoidPoser.SHEATHE_TIME * (1.0 - t)
+						_ when st[0].begins_with("clip"):
+							# The cut's Mixamo clip, if it has one.
+							a.gear.set_drawn(true)
+							if not a.hold_clip_cut(int(st[0].trim_prefix("clip")), t):
+								push_warning("Cut %s has no clip (or is not free for one)" % st[0].trim_prefix("clip"))
 						_:
 							a.gear.set_drawn(true)
 							poser._cut = int(st[0].trim_prefix("cut"))

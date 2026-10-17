@@ -15,10 +15,13 @@ func _model(path := CharacterModel.DEFAULT_MODEL) -> CharacterModel:
 	return model
 
 
-## A model in its own look (not the Profile's), with or without a sword.
+## A model in its own look (not the Profile's), with or without a sword. It
+## plays the library's clips only: a Mixamo cut_N clip you have added would
+## replace the keyed cuts these tests look at.
 func _armed(back: String) -> CharacterModel:
 	model = CharacterModel.new()
 	model.model_path = CharacterModel.DEFAULT_MODEL
+	model.clip_dir = "res://tests/fixtures/no_clips"
 	model.use_profile = false
 	model.style = {"back": back}
 	root.add_child(model)

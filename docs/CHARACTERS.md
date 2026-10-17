@@ -229,7 +229,8 @@ top** (no animation library has seals).
    |---|---|---|
    | `idle.fbx`, `walk.fbx`, `run.fbx`, `sprint.fbx` | standing, walking, running, sprinting | the library's |
    | `jump.fbx`, `land.fbx` | in the air, landing | the library's |
-   | `strike_1.fbx`, `strike_2.fbx` | alternating standing strikes | the library's jab and cross |
+   | `strike_1.fbx`, `strike_2.fbx` | alternating standing strikes (unarmed; with a katana the cuts below are used) | the library's jab and cross |
+   | `cut_1.fbx` ... `cut_4.fbx` | the katana's four cuts, in combo order: down across, a rising backhand, a level sweep, the X finisher (see *Sword clips* below) | the procedural cut |
    | `cast.fbx` | a jutsu leaving the hands | the library's spell cast |
    | `hit.fbx`, `hit_head.fbx`, `death.fbx` | flinch, heavy flinch, defeat | the library's |
    | `talk.fbx` | story characters speaking | the library's talking idle |
@@ -244,6 +245,43 @@ top** (no animation library has seals).
    `assets/animations/mixamo_bone_map.tres`, turn on rename bones and unique
    node `GeneralSkeleton`, and set rest fixer to **Overwrite Axis**.
 6. Run the game.
+
+#### Sword clips (`cut_1` ... `cut_4`)
+
+The katana is the default attack, and its four cuts are keyed poses. A
+Mixamo sword clip in one of the `cut_` slots replaces that cut, and every
+slot is optional: an empty one keeps the keyed cut, so you can replace just
+the ones you have a good clip for.
+
+| Slot | The cut | Look for a clip that |
+|---|---|---|
+| `cut_1` | down across, from high over the right shoulder to the left hip | cuts diagonally downward from the right to the left |
+| `cut_2` | a backhand rising from the left hip to over the right shoulder | goes left to right, upward (try *Inward Slash* in the *Stable Sword* set, untested) |
+| `cut_3` | level across the chest, from the right round to the left | sweeps right to left at chest height (*Stable Sword Outward Slash* does, measured) |
+| `cut_4` | the X finisher, two crossing strokes | is a slash with some weight in it: the game plays one clip for it, not two |
+
+Match the **direction** the blade travels, as the character sees it (a
+right-hander's *outward* slash can be a forehand from the right across to the
+left, as the Stable Sword one is). The clip's own direction also sets which
+way the hit sparks fly.
+
+- **Tick In Place** on the download (the clip is played on a character the
+  game is already moving) and use a clip that starts and ends standing.
+- **Don't trim it.** Mixamo sword clips are two seconds of wind-up and
+  recovery around a half-second cut. At load the game finds the swing (where
+  the sword arm and spine turn fastest), keeps it with a short lead-in and
+  settle, and plays it at up to 2.4 times speed to fit the game's cut time
+  (0.26 s; the X 0.5 s). It never slows a clip. The blow lands when the
+  strike button is pressed, as with the keyed cuts, so the lead-in is short.
+- The clip plays only when the character **stands** (the same as the other
+  one-shot clips). A cut made on the move, in the air or in another pose
+  (guarding, weaving) stays the keyed one, because a full-body clip would
+  freeze the running legs. The draw (the first blow) and sheathing are always
+  keyed.
+- While a clip cuts, it owns the sword arm, the free arm and the body; the
+  game only closes the fist round the grip. The sword stays in the hand as
+  usual, so a clip that turns the wrist far from how a katana is held will
+  look wrong. Try another.
 
 Licence note: Adobe's terms, as I understand them, let you use Mixamo
 animations in your game royalty-free but not redistribute the raw files.
@@ -282,7 +320,13 @@ by default. Check Adobe's current terms yourself.
   poser which states the clips cover.
 - `tools/setup_ual.gd` and `tools/setup_mixamo.gd` write the retarget
   settings (bone map, rest fixer) into each library's or clip's `.import`
-  file. `tests/unit/test_animation.gd` checks the clips on every roster rig. `tests/unit/test_clips.gd` runs the whole path on
+  file.
+- `scripts/character/swing_clip.gd` finds the swing in a `cut_N` clip (the
+  summed turning speed of the sword arm and spine, from the clip's rotation
+  tracks) and builds the trimmed, sped-up clip at load. `CharacterAnimator`
+  plays it for a standing cut and calls `HumanoidPoser.clip_cut`, which
+  leaves the arm and spine to the clip (and blends the keyed pose back in
+  as it ends). The fixtures include a synthetic swing, `cut_1.fbx`. `tests/unit/test_animation.gd` checks the clips on every roster rig. `tests/unit/test_clips.gd` runs the whole path on
   Mixamo-format fixtures made by `art/blender/make_mixamo_fixtures.py`.
 - `tests/unit/test_character.gd` checks, on a real VRM, that the model faces
   forward, arms hang at idle, palms meet for seals, guard raises the
