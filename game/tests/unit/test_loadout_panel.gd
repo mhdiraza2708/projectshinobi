@@ -30,22 +30,26 @@ func test_it_lists_eight_slots_and_every_jutsu() -> void:
 
 
 func test_equipping_fills_the_picked_slot_and_moves_to_the_next_empty_one() -> void:
+	# The last two slots empty, the rest full.
+	Loadouts.assign(6, &"")
+	Loadouts.assign(7, &"")
 	panel._pick_slot(6)
 	panel._equip_to_slot(_jutsu(&"gale_palm"))
 	assert_eq(Loadouts.active()["slots"][6], "gale_palm")
 	assert_eq(panel._slot, 7, "the next empty slot is picked")
-	panel._equip_to_slot(_jutsu(&"cinder_bloom"))
-	assert_eq(Loadouts.active()["slots"][7], "cinder_bloom")
+	panel._equip_to_slot(_jutsu(&"riptide_wall"))
+	assert_eq(Loadouts.active()["slots"][7], "riptide_wall")
 	assert_eq(panel._slot, 7, "with none left it stays put")
 
 
 func test_a_jutsu_moves_rather_than_doubling() -> void:
+	var was := Loadouts.slot_of(&"chakra_bolt")
 	panel._pick_slot(7)
 	panel._equip_to_slot(_jutsu(&"chakra_bolt"))
 	var slots: Array = Loadouts.active()["slots"]
 	assert_eq(slots[7], "chakra_bolt")
 	assert_eq(slots.count("chakra_bolt"), 1, "only one slot holds it")
-	assert_eq(slots[0], "", "the old slot is emptied")
+	assert_eq(slots[was], "", "the old slot is emptied")
 
 
 func test_style_toggle_and_clear() -> void:
@@ -57,6 +61,29 @@ func test_style_toggle_and_clear() -> void:
 	assert_eq(Loadouts.active()["slots"][0], "")
 
 
+func _button(key: String) -> Button:
+	for b: Button in panel.find_children("*", "Button", true, false):
+		if b.has_meta(&"focus_key") and str(b.get_meta(&"focus_key")) == key:
+			return b
+	return null
+
+
+func test_shade_clones_slot_is_locked_in_the_editor() -> void:
+	var s := Loadouts.CLONES_SLOT
+	assert_true(_button("slot%d" % s).disabled, "its slot can't be picked")
+	assert_true(_button("clear%d" % s).disabled, "or cleared")
+	assert_false(_button("style%d" % s).disabled, "but its cast style can change")
+	assert_true(_button("equip_shade_clones").disabled, "and it can't be equipped elsewhere")
+	panel._pick_slot(s)
+	assert_true(panel._slot != s, "picking it does nothing")
+	panel._pick_slot(7)
+	panel._equip_to_slot(_jutsu(&"shade_clones"))
+	assert_eq(Loadouts.active()["slots"][s], "shade_clones", "it stays in its slot")
+	assert_true(Loadouts.active()["slots"][7] != "shade_clones")
+	panel._toggle_style(s, false)
+	assert_eq(Loadouts.style_in(Loadouts.active(), s), Loadouts.INSTANT)
+
+
 func test_presets_copy_switch_and_delete_with_confirmation() -> void:
 	var count := Loadouts.all().size()
 	panel._copy(Loadouts.index())
@@ -64,7 +91,8 @@ func test_presets_copy_switch_and_delete_with_confirmation() -> void:
 	assert_eq(Loadouts.index(), count, "and the copy is the one you carry")
 	panel._new_empty()
 	assert_eq(Loadouts.all().size(), count + 2)
-	assert_eq((Loadouts.active()["slots"] as Array).filter(func(s: String) -> bool: return s != "").size(), 0, "empty")
+	var held := (Loadouts.active()["slots"] as Array).filter(func(s: String) -> bool: return s != "")
+	assert_eq(held, [Loadouts.LOCKED], "empty but for Shade Clones")
 	panel._delete(Loadouts.index())
 	assert_eq(Loadouts.all().size(), count + 2, "the first press only asks")
 	panel._delete(Loadouts.index())

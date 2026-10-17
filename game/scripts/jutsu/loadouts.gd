@@ -17,23 +17,91 @@ const INSTANT := "instant"
 const INSTANT_SURCHARGE := 0.35
 
 
-## What a new save starts with.
-static func starters() -> Array:
+## Shade Clones is locked into this slot of every preset: on the first page,
+## so it is always on the D-pad. It can't be replaced, cleared or moved there
+## (its cast style can change).
+const CLONES_SLOT := 3
+const LOCKED := "shade_clones"
+## The starters before they followed your nature (old saves stored these).
+const LEGACY := [
+	["Balanced", ["chakra_bolt", "ember_volley", "stone_bulwark", "mending_palm", "shade_clones", "focus_seal", "", ""]],
+	["Assault", ["chakra_bolt", "ember_volley", "thunder_needle", "sunfall_orb", "crescent_cutter", "cinder_bloom",
+		"focus_seal", "shade_clones"]],
+	["Guardian", ["stone_bulwark", "granite_skin", "riptide_wall", "mending_palm", "gale_palm", "shade_clones",
+		"chakra_bolt", "focus_seal"]],
+]
+
+
+## What a new save starts with, built round a chakra nature (yours by
+## default): Balanced, Assault and Guardian, each led by that nature's own
+## jutsu, with Shade Clones always in CLONES_SLOT.
+static func starters(nature := -1) -> Array:
+	if nature < 0:
+		nature = int(Profile.get_value(&"affinity"))
+	if nature == Element.NONE:
+		nature = Element.FIRE
+	var own := []
+	var attack := []
+	var guard := []
+	var mine := JutsuRegistry.all().filter(func(j: JutsuDefinition) -> bool: return j.element == nature)
+	mine.sort_custom(func(a: JutsuDefinition, b: JutsuDefinition) -> bool: return a.chakra_cost < b.chakra_cost)
+	for j: JutsuDefinition in mine:
+		own.append(String(j.id))
+		if j.form in [JutsuDefinition.Form.PROJECTILE, JutsuDefinition.Form.AREA, JutsuDefinition.Form.RUSH]:
+			attack.append(String(j.id))
+		elif j.form in [JutsuDefinition.Form.WALL, JutsuDefinition.Form.BUFF, JutsuDefinition.Form.HEAL]:
+			guard.append(String(j.id))
+	var first := own.slice(0, 1)
+	var second := own.slice(1, 2)
 	return [
-		_preset("Balanced", ["chakra_bolt", "ember_volley", "stone_bulwark", "mending_palm",
-			"shade_clones", "focus_seal", "", ""]),
-		_preset("Assault", ["chakra_bolt", "ember_volley", "thunder_needle", "sunfall_orb",
-			"crescent_cutter", "cinder_bloom", "focus_seal", "shade_clones"]),
-		_preset("Guardian", ["stone_bulwark", "granite_skin", "riptide_wall", "mending_palm",
-			"gale_palm", "shade_clones", "chakra_bolt", "focus_seal"]),
+		_preset("Balanced", _bar(first + ["chakra_bolt"] + second, own + ["mending_palm", "focus_seal", "five_nature_seal"])),
+		_preset("Assault", _bar(attack + ["chakra_bolt"], own + ["focus_seal", "five_nature_seal", "chakra_bolt", "mending_palm"])),
+		_preset("Guardian", _bar(guard + ["mending_palm"] + attack, own + ["chakra_bolt", "focus_seal"])),
 	]
+
+
+## A bar of SLOTS: the first of `lead` before CLONES_SLOT, Shade Clones there,
+## then the rest of `lead` and `tail`, each jutsu once, empty slots at the end.
+static func _bar(lead: Array, tail: Array) -> Array:
+	var order := []
+	for id: String in lead + tail:
+		if id != "" and id != "shade_clones" and not order.has(id) and JutsuRegistry.get_jutsu(StringName(id)) != null:
+			order.append(id)
+	order.insert(mini(CLONES_SLOT, order.size()), "shade_clones")
+	order = order.slice(0, SLOTS)
+	while order.size() < SLOTS:
+		order.append("")
+	return order
+
+
+## Whether `list` is a set of starters nobody has changed (any nature's, or
+## the old fixed ones): such a set follows your nature.
+static func _is_stock(list: Array) -> bool:
+	var sets: Array = [LEGACY.map(func(p: Array) -> Dictionary: return _preset(p[0], p[1]))]
+	for nature in [Element.FIRE, Element.WIND, Element.LIGHTNING, Element.EARTH, Element.WATER]:
+		sets.append(starters(nature))
+	for stock: Array in sets:
+		for p: Dictionary in stock:
+			_normalise(p)
+		if stock.size() != list.size():
+			continue
+		var same := true
+		for i in stock.size():
+			var a: Dictionary = stock[i]
+			var b: Dictionary = list[i]
+			if str(b.get("name", "")) != a["name"] or b.get("slots", []) != a["slots"] or b.get("styles", []) != a["styles"]:
+				same = false
+				break
+		if same:
+			return true
+	return false
 
 
 static func _preset(preset_name: String, jutsu: Array) -> Dictionary:
 	var styles := []
 	styles.resize(SLOTS)
 	styles.fill(WEAVE)
-	return {"name": preset_name, "slots": jutsu, "styles": styles}
+	return {"name": preset_name, "slots": jutsu.duplicate(), "styles": styles}
 
 
 ## Every preset (the starters until the player changes any).
@@ -42,6 +110,9 @@ static func all() -> Array:
 	var list: Array = saved.duplicate(true) if not saved.is_empty() else starters()
 	for p: Dictionary in list:
 		_normalise(p)
+	if not saved.is_empty() and _is_stock(list):
+		# Untouched starters: they follow your nature as it changes.
+		return starters()
 	return list
 
 
@@ -59,6 +130,34 @@ static func _normalise(p: Dictionary) -> void:
 	p["name"] = str(p.get("name", "Loadout")).strip_edges().left(MAX_NAME)
 	if p["name"] == "":
 		p["name"] = "Loadout"
+	_lock_clones(slots, styles)
+
+
+## Puts Shade Clones in CLONES_SLOT (bringing its cast style if it was
+## elsewhere); what held that slot moves to the first empty one (it is lost
+## only from a bar already full without Shade Clones).
+static func _lock_clones(slots: Array, styles: Array) -> void:
+	var at := slots.find(LOCKED)
+	if at == CLONES_SLOT:
+		return
+	var style := WEAVE
+	if at >= 0:
+		style = styles[at]
+		slots[at] = ""
+		styles[at] = WEAVE
+	var displaced: String = slots[CLONES_SLOT]
+	var displaced_style: String = styles[CLONES_SLOT]
+	slots[CLONES_SLOT] = LOCKED
+	styles[CLONES_SLOT] = style
+	var empty := slots.find("")
+	if displaced != "" and empty >= 0:
+		slots[empty] = displaced
+		styles[empty] = displaced_style
+
+
+## Whether a slot is locked (Shade Clones' own).
+static func locked(slot: int) -> bool:
+	return slot == CLONES_SLOT
 
 
 static func index() -> int:
@@ -139,8 +238,11 @@ static func remove(i: int) -> void:
 
 ## Puts `jutsu_id` ("" clears) in a slot of the equipped (or given) preset.
 ## A jutsu sits in only one slot of a preset: it moves from where it was.
+## Shade Clones' slot is locked: nothing else goes there, and it goes nowhere
+## else.
 static func assign(slot: int, jutsu_id: StringName, preset := -1) -> void:
-	if slot < 0 or slot >= SLOTS:
+	if slot < 0 or slot >= SLOTS or locked(slot) or String(jutsu_id) == LOCKED:
+		# Shade Clones and its slot are locked.
 		return
 	var list := all()
 	var i := preset if preset >= 0 else index()
