@@ -54,6 +54,22 @@ func test_the_library_holds_every_clip_the_game_uses() -> void:
 	assert_eq(lib.get_animation(&"strike_1").loop_mode, Animation.LOOP_NONE, "a punch doesn't")
 
 
+func test_everyone_stands_up_straight_and_looks_ahead() -> void:
+	# The library's rig has a curved upper spine, which came through the
+	# retarget as a 35° stoop: every idle stared at the ground.
+	for path: String in [CharacterModel.DEFAULT_MODEL, "res://assets/characters/roster/sakurada_fumiriya.vrm"]:
+		_armed("")
+		model.model_path = path
+		await seconds(1.5)
+		var skel := model.skeleton
+		var head := skel.global_transform.basis * skel.get_bone_global_pose(skel.find_bone(&"Head")).basis
+		var face := -head.z.normalized()
+		var pitch := rad_to_deg(asin(clampf(face.y, -1.0, 1.0)))
+		assert_true(absf(pitch) < 15.0, "%s looks ahead at idle (%.0f° from level)" % [path.get_file(), pitch])
+		model.queue_free()
+		await _frames(2)
+
+
 func test_gait_follows_speed() -> void:
 	_model()
 	await _frames(2)

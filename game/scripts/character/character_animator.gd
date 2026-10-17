@@ -564,6 +564,59 @@ static func _add_ual(lib: AnimationLibrary) -> void:
 				anim.loop_mode = Animation.LOOP_LINEAR if LOOPING.has(clip) else Animation.LOOP_NONE
 				lib.add_animation(clip, anim)
 		root.free()
+	_straighten_ual(lib)
+
+
+## Bones the library's clips come out of the retarget bent forward at rest:
+## its rig's upper spine is curved, and that curve arrives as a 35° stoop
+## in every clip (the idle stood looking at the ground).
+const STOOPED: Array[StringName] = [&"UpperChest"]
+
+
+## Takes the idle's own bend of each STOOPED bone out of every library clip,
+## so the idle stands straight and the walk and run keep only their lean
+## relative to it.
+static func _straighten_ual(lib: AnimationLibrary) -> void:
+	if not lib.has_animation(&"idle"):
+		return
+	var idle := lib.get_animation(&"idle")
+	for bone in STOOPED:
+		var path := NodePath("%GeneralSkeleton:" + String(bone))
+		var it := idle.find_track(path, Animation.TYPE_ROTATION_3D)
+		if it < 0:
+			continue
+		# The idle's average turn of the bone (it barely moves).
+		var sum := Quaternion(0.0, 0.0, 0.0, 0.0)
+		for i in 9:
+			var q := idle.rotation_track_interpolate(it, idle.length * i / 8.0)
+			if sum.dot(q) < 0.0:
+				q = -q
+			sum = Quaternion(sum.x + q.x, sum.y + q.y, sum.z + q.z, sum.w + q.w)
+		var undo := sum.normalized().inverse()
+		for clip in lib.get_animation_list():
+			_turn_track(lib.get_animation(clip), path, undo)
+
+
+## Turns every key of a rotation track by `by` (in the parent's frame),
+## rebuilding the track from samples when the import compressed it.
+static func _turn_track(anim: Animation, path: NodePath, by: Quaternion) -> void:
+	var t := anim.find_track(path, Animation.TYPE_ROTATION_3D)
+	if t < 0:
+		return
+	if not anim.track_is_compressed(t):
+		for k in anim.track_get_key_count(t):
+			anim.track_set_key_value(t, k, by * (anim.track_get_key_value(t, k) as Quaternion))
+		return
+	var samples := []
+	var steps := maxi(ceili(anim.length * 30.0), 1)
+	for i in steps + 1:
+		var at := minf(i / 30.0, anim.length)
+		samples.append([at, by * anim.rotation_track_interpolate(t, at)])
+	anim.remove_track(t)
+	var n := anim.add_track(Animation.TYPE_ROTATION_3D)
+	anim.track_set_path(n, path)
+	for s: Array in samples:
+		anim.rotation_track_insert_key(n, s[0], s[1])
 
 
 static func _first_animation(path: String) -> Animation:
