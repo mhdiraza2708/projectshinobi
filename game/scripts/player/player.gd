@@ -667,10 +667,8 @@ func _cut_stroke(tilt: float, damage: float, counter: bool, finisher: bool, arme
 			Vfx.hit_spark(get_parent(), at, Color(1.0, 0.62, 0.15), 1.0, forward)
 			if armed:
 				# Steel sparks thrown along the line of the cut, a little forward
-				# (the X's first stroke is its last, mirrored).
-				var line := HumanoidPoser.cut_direction(-1 if drawing else _strike_combo)
-				if finisher and first:
-					line.x = -line.x
+				# (a Mixamo clip's cut is read from the clip).
+				var line := HumanoidPoser.cut_direction(-1) if drawing else animator.cut_direction(_strike_combo, first)
 				var along := global_basis * (line + Vector3(0.0, 0.0, -0.35))
 				Vfx.blade_sparks(get_parent(), at, along.normalized(), 1.0 if finisher else 0.8)
 	if landed:

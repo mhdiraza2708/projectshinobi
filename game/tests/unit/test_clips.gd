@@ -3,9 +3,11 @@ extends TestCase
 ## art/blender/make_mixamo_fixtures.py), retargeted at import by
 ## tools/setup_mixamo.gd, playing on the real default VRM character.
 
+const Scene := preload("res://scenes/training_ground.tscn")
 const FIXTURES := "res://tests/fixtures/mixamo"
 
 var model: CharacterModel
+var scene: Node3D
 
 
 func before_each() -> void:
@@ -13,6 +15,20 @@ func before_each() -> void:
 	model.model_path = CharacterModel.DEFAULT_MODEL
 	model.clip_dir = FIXTURES
 	root.add_child(model)
+
+
+func after_each() -> void:
+	if is_instance_valid(model):
+		model.queue_free()
+	if is_instance_valid(scene):
+		scene.queue_free()
+	# The player test borrows the default clip folder's library.
+	CharacterAnimator._library_cache.erase(CharacterAnimator.CLIP_DIR)
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await root.get_tree().process_frame
 
 
 func _bone(bone: StringName) -> Vector3:
@@ -80,3 +96,203 @@ func test_hand_seals_layer_over_clips() -> void:
 		+ _bone(&"LeftLowerArm").distance_to(_bone(&"LeftHand"))
 	assert_true(_bone(&"LeftHand").distance_to(_bone(&"RightHand")) < 0.2 * arm, "palms together over idle clip")
 	assert_eq(model.animator.clips.current_animation, &"idle", "legs still from the clip")
+
+
+# --- Sword clips (cut_1 ... cut_4) -------------------------------------------------
+# The fixtures hold one: cut_1.fbx, a synthetic swing (a slow wind-up to frame 36,
+# the cut in frames 36-42, a slow recovery), the combo's first cut.
+
+## A swordsman in the fixtures' clips, with the sword out in his hand.
+func _swordsman() -> CharacterAnimator:
+	model.free()
+	model = CharacterModel.new()
+	model.model_path = CharacterModel.DEFAULT_MODEL
+	model.use_profile = false
+	model.style = {"back": "ninjato"}
+	model.clip_dir = FIXTURES
+	root.add_child(model)
+	await _frames(2)
+	model.animator.strike()
+	await seconds(HumanoidPoser.DRAW_TIME + 0.1)
+	return model.animator
+
+
+func test_a_cut_slot_loads_and_is_trimmed_to_the_swing() -> void:
+	var lib := CharacterAnimator.load_library(FIXTURES)
+	assert_true(lib.has_animation(&"cut_1"), "the slot loads")
+	assert_false(lib.has_animation(&"cut_2"), "and the others are empty")
+	var clip := lib.get_animation(&"cut_1")
+	assert_true(String(clip.track_get_path(0)).begins_with("%GeneralSkeleton:"), "retargeted like any clip")
+	assert_eq(clip.loop_mode, Animation.LOOP_NONE, "a cut plays once")
+	var source := CharacterAnimator._first_animation(FIXTURES + "/cut_1.fbx")
+	assert_near(source.length, 65.0 / 30.0, 0.05, "the fixture is a 2 s clip")
+	assert_true(clip.length < 0.7, "of which the cut keeps well under a second (%.2f s)" % clip.length)
+	assert_eq(CharacterAnimator.cut_clip_name(0), &"cut_1")
+	assert_eq(CharacterAnimator.cut_clip_name(3), &"cut_4")
+	assert_eq(CharacterAnimator.cut_clip_name(4), &"cut_1", "the combo wraps")
+
+
+func test_auto_trim_finds_the_fast_part_and_not_the_wind_up() -> void:
+	var source := CharacterAnimator._first_animation(FIXTURES + "/cut_1.fbx")
+	var found := SwingClip.window(source)
+	var span: Vector2 = found["span"]
+	# The cut is frames 36 to 42 (1.17 s to 1.37 s); the wind-up fills the first 1.2 s.
+	assert_true(span.x > 1.0, "the wind-up is left out (the window starts at %.2f s)" % span.x)
+	assert_true(span.y < 1.6, "so is most of the recovery (it ends at %.2f s)" % span.y)
+	assert_true(span.y - span.x < 0.5, "a short window (%.2f s)" % (span.y - span.x))
+	assert_true(float(found["peak"]) > 1.15 and float(found["peak"]) < 1.4, "around the peak (%.2f s)" % float(found["peak"]))
+	var clip := CharacterAnimator.load_library(FIXTURES).get_animation(&"cut_1")
+	var swing: Vector2 = clip.get_meta(SwingClip.META_SWING)
+	assert_true(swing.y <= HumanoidPoser.CUT_TIME + 0.02, "the swing fits the game's cut time (%.2f s)" % swing.y)
+	assert_true(swing.x > 0.0 and swing.x < 0.12, "after a short lead-in (%.2f s)" % swing.x)
+	assert_true(clip.length > swing.y, "and with a settle")
+
+
+func test_a_standing_cut_plays_its_slot_clip() -> void:
+	var anim := await _swordsman()
+	var poser := model.poser
+	assert_eq(anim.cut_clip(0), &"cut_1", "the slot has a clip and he stands")
+	anim.strike(0)
+	assert_eq(anim.current_clip(), &"cut_1", "the clip plays")
+	assert_true(poser.is_clip_cutting() and poser.is_cutting(), "the poser knows the clip is cutting")
+	# The sword arm is the clip's: once the clip has blended in, the arm's
+	# rotation is what the clip says it is, not the keys' IK.
+	await seconds(0.15)
+	await model.skeleton.skeleton_updated
+	var clip := anim.library.get_animation(&"cut_1")
+	var track := clip.find_track(NodePath("%GeneralSkeleton:RightUpperArm"), Animation.TYPE_ROTATION_3D)
+	var want := clip.rotation_track_interpolate(track, anim.clips.current_animation_position)
+	var got := model.skeleton.get_bone_pose_rotation(model.skeleton.find_bone(&"RightUpperArm"))
+	assert_true(want.angle_to(got) < 0.05, "the upper arm is the clip's (%.3f rad off)" % want.angle_to(got))
+	assert_true(model.gear.is_drawn(), "the sword stays in the hand")
+	var wrist := BoneAttachment3D.new()
+	wrist.bone_name = &"RightHand"
+	model.skeleton.add_child(wrist)
+	await _frames(2)
+	var grip := model.gear.sword.to_global(Vector3(0, CharacterGear.GRIP_Y, 0))
+	assert_true(grip.distance_to(wrist.global_position) < 0.15, "the grip is in the fist (%.2f m)" % grip.distance_to(wrist.global_position))
+	# When the clip is over the pose has the arm again and the cut is done.
+	await seconds(clip.length + 0.4)
+	assert_false(poser.is_clip_cutting() or poser.is_cutting(), "the cut is over")
+	assert_eq(anim.current_clip(), &"idle", "back to the idle")
+	await _frames(2)
+	assert_near(poser._clip_w, 0.0, 0.001, "and the pose has the arm back")
+
+
+func test_a_moving_or_airborne_cut_stays_procedural() -> void:
+	var anim := await _swordsman()
+	var poser := model.poser
+	anim.speed_ratio = 0.5
+	await _frames(3)
+	assert_eq(anim.cut_clip(0), &"", "no clip on the move")
+	anim.strike(0)
+	assert_true(poser.is_cutting() and not poser.is_clip_cutting(), "the arms cut")
+	assert_eq(anim.current_clip(), &"run", "and the legs keep running")
+	anim.speed_ratio = 0.0
+	await seconds(HumanoidPoser.CUT_TIME + 0.2)
+	anim.airborne = true
+	assert_eq(anim.cut_clip(0), &"", "none in the air")
+	anim.strike(0)
+	assert_true(poser.is_cutting() and not poser.is_clip_cutting(), "the arms cut in the air too")
+	assert_true(anim.current_clip() != &"cut_1")
+	anim.airborne = false
+	anim.pose = HumanoidPoser.Pose.GUARD
+	assert_eq(anim.cut_clip(0), &"", "or in another pose")
+
+
+func test_an_empty_slot_keeps_the_procedural_cut() -> void:
+	var anim := await _swordsman()
+	var poser := model.poser
+	assert_false(anim.has_clip(&"cut_2"))
+	assert_eq(anim.cut_clip(1), &"")
+	anim.strike(1)
+	assert_true(poser.is_cutting() and not poser.is_clip_cutting(), "the keys make the cut")
+	assert_eq(anim.current_clip(), &"idle", "no clip plays")
+	await _posed()
+	assert_true(poser._cur.get("use_arm_L", false), "the free hand is thrown back, as in every keyed cut")
+	assert_eq(anim.cut_direction(1), HumanoidPoser.cut_direction(1), "and the sparks follow the keys")
+
+
+func test_the_blade_trail_emits_through_a_clip_cut() -> void:
+	var anim := await _swordsman()
+	var trail := model.gear.blade_trail
+	await seconds(trail.lifetime + 0.2)
+	assert_false(trail.emitting, "quiet after the draw")
+	anim.strike(0)
+	await seconds(0.1)
+	assert_true(model.poser.is_cutting(), "cutting")
+	assert_true(trail.emitting and trail.is_showing(), "the blade leaves its ribbon")
+	var clip := anim.library.get_animation(&"cut_1")
+	await seconds(clip.length + 0.2)
+	assert_false(trail.emitting, "and stops when the swing is done")
+
+
+func test_a_clip_cuts_sparks_follow_the_hand_not_the_keys() -> void:
+	var anim := await _swordsman()
+	var frame := model.poser.canonical_frame().inverse()
+	var wrist := BoneAttachment3D.new()
+	wrist.bone_name = &"RightHand"
+	model.skeleton.add_child(wrist)
+	await _frames(2)
+	anim.strike(0)
+	var clip := anim.library.get_animation(&"cut_1")
+	var swing: Vector2 = clip.get_meta(SwingClip.META_SWING)
+	var start := Vector3.INF
+	var end := Vector3.ZERO
+	var elapsed := 0.0
+	while elapsed < swing.y:
+		await _posed()
+		elapsed = anim.clips.current_animation_position
+		var at: Vector3 = frame * (model.skeleton.global_transform.affine_inverse() * wrist.global_position)
+		if elapsed >= swing.x and start == Vector3.INF:
+			start = at
+		end = at
+	var moved := Vector2(end.x - start.x, end.y - start.y).normalized()
+	var line := anim.cut_direction(0)
+	assert_near(line.length(), 1.0, 0.001, "a unit vector")
+	assert_eq(line.z, 0.0, "without depth, like the keyed ones")
+	assert_true(Vector2(line.x, line.y).dot(moved) > 0.5, "along the way the hand went (%s vs %s)" % [line, moved])
+	assert_true(line.distance_to(HumanoidPoser.cut_direction(0)) > 0.01, "not the keyed direction")
+
+
+func test_a_cut_struck_again_starts_the_clip_over() -> void:
+	var anim := await _swordsman()
+	anim.strike(0)
+	await seconds(0.15)
+	assert_true(anim.clips.current_animation_position > 0.05, "well into the clip")
+	anim.strike(0)
+	assert_true(anim.clips.current_animation_position < 0.02, "the next cut starts it over")
+	assert_true(model.poser.is_clip_cutting() and model.poser.is_cutting())
+
+
+func test_the_combo_keeps_its_cadence_with_a_clip_in_it() -> void:
+	# The player's own model takes the default clip folder: borrow the fixtures.
+	CharacterAnimator._library_cache[CharacterAnimator.CLIP_DIR] = CharacterAnimator.load_library(FIXTURES)
+	scene = Scene.instantiate()
+	root.add_child(scene)
+	var player: Player = scene.player
+	await physics_frames(10)
+	var anim := player.animator
+	assert_true(anim.has_clip(&"cut_1") and anim.has_sword(), "the player has the clip and a sword")
+	player._strike()
+	assert_true(anim.poser.is_drawing(), "the first blow still draws")
+	await seconds(HumanoidPoser.DRAW_TIME + 0.1)
+	var rhythm := player.strike_interval * maxf(0.4, 1.0 - Perks.value(&"strike_speed"))
+	var combo: Array[int] = []
+	var cooldown: Array[float] = []
+	var clipped: Array[bool] = []
+	for i in 4:
+		# Each blow as soon as the last allows, the lunge of the last spent.
+		while player._strike_cooldown > 0.0 or Vector2(player.velocity.x, player.velocity.z).length() > 1.0:
+			await physics_frames(1)
+		player._strike()
+		combo.append(player._strike_combo)
+		cooldown.append(player._strike_cooldown)
+		clipped.append(anim.poser.is_clip_cutting())
+	assert_eq(combo, [0, 1, 2, 3] as Array[int], "the combo advances through all four cuts")
+	assert_eq(clipped, [true, false, false, false] as Array[bool], "the first cut is the clip, the rest keep their keys")
+	for i in 3:
+		assert_near(cooldown[i], rhythm, 0.001, "the next blow is as soon as ever (cut %d)" % i)
+	assert_near(cooldown[3], rhythm * HumanoidPoser.CUT_X_TIME / HumanoidPoser.CUT_TIME, 0.001, "and the X as long as ever")
+	var swing: Vector2 = anim.library.get_animation(&"cut_1").get_meta(SwingClip.META_SWING)
+	assert_true(swing.y <= rhythm, "the clip's cut is over before the next blow is due (%.2f s of %.2f)" % [swing.y, rhythm])

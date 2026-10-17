@@ -14,6 +14,12 @@ extends Node
 ## The procedural layer stays on top: hand seals, guard, charge, the dash
 ## lean, the kunai throw, the sprinting arms swept back, and a strike or cast
 ## made on the move (a full-body punch clip would freeze the running legs).
+##
+## The katana's cuts are procedural too, unless you add a clip for one: a
+## Mixamo sword clip named cut_1 ... cut_4 (the combo's four cuts) replaces
+## that cut when the character stands (the same conditions as any one-shot).
+## The clip is trimmed to its swing on load (SwingClip), because Mixamo sword
+## clips carry seconds of wind-up and recovery around a half-second cut.
 
 const CLIP_DIR := "res://assets/animations/mixamo"
 const UAL_DIR := "res://assets/animations/ual"
@@ -44,6 +50,9 @@ const CAST_SPEED := 1.3
 const HIT_SPEED := 1.2
 ## Above this speed ratio a strike or cast is done by the arms alone.
 const MOVING := 0.25
+## Seconds a cut clip blends in over (a cut is quick, and so is the lean
+## into it).
+const CUT_BLEND := 0.08
 
 ## Same API the player controller used with the poser directly.
 var pose := HumanoidPoser.Pose.LOCOMOTION:
@@ -51,6 +60,8 @@ var pose := HumanoidPoser.Pose.LOCOMOTION:
 		if v != pose and v != HumanoidPoser.Pose.LOCOMOTION and _action != &"" and _action != &"death":
 			# Weaving, guarding, dashing... cut an action short.
 			_action = &""
+			if poser:
+				poser.release_clip_cut()
 		pose = v
 		if poser:
 			poser.pose = v
@@ -80,6 +91,7 @@ const SHEATHE_AFTER := 4.0
 var poser: HumanoidPoser
 var clips: AnimationPlayer
 var library: AnimationLibrary
+var _skeleton: Skeleton3D
 
 var _action := &""
 var _action_left := 0.0
@@ -103,6 +115,7 @@ func setup(model_root: Node, humanoid_poser: HumanoidPoser, clip_dir := CLIP_DIR
 			or model_root.get_node_or_null(^"%GeneralSkeleton") == null:
 		library = AnimationLibrary.new()
 		return
+	_skeleton = model_root.get_node_or_null(^"%GeneralSkeleton") as Skeleton3D
 	clips = AnimationPlayer.new()
 	clips.name = "ClipPlayer"
 	model_root.add_child(clips)
@@ -163,13 +176,70 @@ func strike(cut := -1) -> void:
 		# Struck again while putting it away: it stays out.
 		_swap_left = -1.0
 		_combo = cut if cut >= 0 else (_combo + 1) % HumanoidPoser.CUTS.size()
-		poser.cut(_combo)
+		var clip := cut_clip(_combo)
+		if clip == &"":
+			poser.cut(_combo)
+			return
+		# A Mixamo clip makes this cut: it plays on the whole body, and the
+		# poser leaves the sword arm and the spine to it.
+		_play_action(clip, 1.0, CUT_BLEND)
+		var anim := library.get_animation(clip)
+		var swing: Vector2 = anim.get_meta(SwingClip.META_SWING, Vector2(0.0, anim.length))
+		poser.clip_cut(_combo, anim.length, swing.y)
 		return
 	if _can_act(&"strike_1"):
 		_strike_flip = not _strike_flip
 		_play_action(&"strike_2" if _strike_flip else &"strike_1", STRIKE_SPEED, 0.06)
 	elif poser:
 		poser.strike()
+
+
+## The Mixamo clip that makes cut `index` of the combo (cut_1 ... cut_4), or
+## &"" when the cut stays procedural: there is no clip for it, or the body
+## isn't free for one (moving, in the air, in another pose).
+func cut_clip(index: int) -> StringName:
+	var clip := cut_clip_name(index)
+	return clip if _can_act(clip) else &""
+
+
+## The slot of cut `index`: cut_1 for the first cut of the combo.
+static func cut_clip_name(index: int) -> StringName:
+	return StringName("cut_%d" % (posmod(index, HumanoidPoser.CUTS.size()) + 1))
+
+
+## The way the blade travels across the front in cut `index` (`first`: its
+## first stroke; the X is two): a unit vector in the canonical frame, for
+## sparks to fly along. A clip's cut is read from the clip (where the hand
+## goes at the swing's peak), a procedural one from its keys.
+func cut_direction(index: int, first := true) -> Vector3:
+	var clip := cut_clip_name(index)
+	if _action == clip and has_clip(clip) and _skeleton != null and poser != null:
+		var travel := poser.canonical_frame().inverse() * SwingClip.travel(library.get_animation(clip), _skeleton)
+		var line := Vector3(travel.x, travel.y, 0.0)
+		if line.length() > 0.02:
+			return line.normalized()
+	var keyed := HumanoidPoser.cut_direction(index)
+	# The X's first stroke is its last, mirrored.
+	if first and posmod(index, HumanoidPoser.CUTS.size()) == HumanoidPoser.CUTS.size() - 1:
+		keyed.x = -keyed.x
+	return keyed
+
+
+## Screenshots: cut `index` made by its clip, frozen `t` (0-1) of the way
+## through (called every frame, with the poser's timers held). False when the
+## cut has no clip to play.
+func hold_clip_cut(index: int, t: float) -> bool:
+	var clip := cut_clip(index)
+	if clip == &"":
+		return false
+	var anim := library.get_animation(clip)
+	var swing: Vector2 = anim.get_meta(SwingClip.META_SWING, Vector2(0.0, anim.length))
+	if clips.current_animation != clip:
+		clips.play(clip)
+	clips.speed_scale = 0.0
+	clips.seek(anim.length * t, true)
+	poser.clip_cut(index, anim.length * (1.0 - t), maxf(swing.y - anim.length * t, 0.001))
+	return true
 
 
 func throw() -> void:
@@ -234,6 +304,9 @@ func _can_act(clip: StringName, poses: Array = [HumanoidPoser.Pose.LOCOMOTION]) 
 
 
 func _play_action(clip: StringName, speed: float, blend: float) -> void:
+	if poser and not String(clip).begins_with("cut_"):
+		# Any other action takes the body from a cut clip.
+		poser.release_clip_cut()
 	_action = clip
 	_action_left = library.get_animation(clip).length / speed
 	clips.speed_scale = speed
@@ -368,6 +441,13 @@ static func load_library(dir: String) -> AnimationLibrary:
 			if lib.has_animation(clip):
 				lib.remove_animation(clip)
 			lib.add_animation(clip, anim)
+	# A sword clip is its swing, not the seconds of wind-up around it.
+	for i in HumanoidPoser.CUTS.size():
+		var slot := cut_clip_name(i)
+		if lib.has_animation(slot):
+			var trimmed := SwingClip.trim(lib.get_animation(slot), HumanoidPoser.cut_time(i) - SwingClip.LEAD)
+			lib.remove_animation(slot)
+			lib.add_animation(slot, trimmed)
 	_library_cache[dir] = lib
 	return lib
 
