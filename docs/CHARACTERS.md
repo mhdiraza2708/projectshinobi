@@ -241,6 +241,8 @@ top** (no animation library has seals).
    | `dash.fbx` | dashing | procedural |
 
 5. Put them in `game/assets/animations/mixamo/` and run **`make animations`**.
+   A GLB converted from the FBX works too (keep the `mixamorig:` bone names,
+   armature and animation only).
    This configures Godot's humanoid retargeting for each clip and re-imports
    it. If you'd rather do it in the editor, select the FBX, go to *Import →
    Skeleton3D → Retarget*, set **Bone Map** to
@@ -328,9 +330,11 @@ way the hit sparks fly.
   look wrong. Try another.
 
 Licence note: Adobe's terms, as I understand them, let you use Mixamo
-animations in your game royalty-free but not redistribute the raw files.
-This repo is public, so `.gitignore` excludes the FBX files in that folder
-by default. Check Adobe's current terms yourself.
+animations in your game royalty-free; their FAQ says the raw files
+themselves shouldn't be redistributed. `.gitignore` keeps downloaded FBX
+files in that folder out of the repo. The repo does carry two clips,
+converted to GLB, by the owner's choice: `cut_3.glb` (*Stable Sword Outward
+Slash*) and `jump.glb` (*Jumping*). Check Adobe's current terms yourself.
 
 ## Troubleshooting
 
