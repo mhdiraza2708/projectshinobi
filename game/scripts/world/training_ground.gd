@@ -978,7 +978,9 @@ func _screenshot(path: String, demo: String, device: String) -> void:
 			await _frames(2)
 			for seal in [Seal.TIGER, Seal.SNAKE]:
 				player.weaver.add_seal(seal)
-			await _frames(4)
+			# Long enough for the hands to take the seal and the camera to
+			# come in.
+			await _frames(20)
 		"cast":
 			player.toggle_lock()
 			await _frames(30)

@@ -19,6 +19,13 @@ const STYLES := {
 }
 ## Kept this far from a wall beside the shoulder.
 const SIDE_MARGIN := 0.3
+## While weaving (by hand) the camera comes round to the side and in, aimed at
+## the chest, so the hand seals can be seen; it eases back after.
+const WEAVE_TURN := deg_to_rad(115.0)
+const WEAVE_LENGTH := 1.5
+const WEAVE_HEIGHT := 1.3
+const WEAVE_PITCH := deg_to_rad(-6.0)
+const WEAVE_EASE := 7.0
 
 @export var follow_height := 1.55
 @export var distance := 4.3
@@ -38,6 +45,13 @@ var frame_offset := 0.0
 ## style; `_side_now` eases toward it and stops short of walls.
 var side := 0.0
 var _side_now := 0.0
+
+## Whether the weave framing is wanted (Player sets it), and how far it has
+## eased in (0-1). It is laid over the orbit, never changing yaw or pitch.
+var weave_goal := false
+var weave := 0.0
+var _weave_length := -1.0
+var _weave_scale := 1.0
 
 var _shake := 0.0
 var _saved: Dictionary = {}
@@ -129,13 +143,14 @@ func _process(delta: float) -> void:
 		pitch -= look.y * s * 0.7 * inv
 	pitch = clampf(pitch, min_pitch, max_pitch)
 
+	_ease_weave(delta)
 	if target:
-		var goal := target.global_position + Vector3.UP * follow_height
+		var goal := target.global_position + Vector3.UP * lerpf(follow_height, WEAVE_HEIGHT * _height_scale(), weave)
 		global_position = global_position.lerp(goal, 1.0 - exp(-18.0 * delta))
-	rotation = Vector3(0.0, yaw, 0.0)
-	pivot.rotation.x = pitch
+	rotation = Vector3(0.0, yaw + _weave_turn() * weave, 0.0)
+	pivot.rotation.x = lerpf(pitch, WEAVE_PITCH, weave)
 	_side_now = lerpf(_side_now, _side_goal(), 1.0 - exp(-8.0 * delta))
-	pivot.position.x = _clear_side(_side_now)
+	pivot.position.x = _clear_side(_side_now * (1.0 - weave))
 
 	if _shake > 0.0:
 		camera.h_offset = frame_offset + randf_range(-1.0, 1.0) * _shake * 0.12
@@ -144,6 +159,45 @@ func _process(delta: float) -> void:
 	else:
 		camera.h_offset = frame_offset
 		camera.v_offset = 0.0
+
+
+## Eases the weave framing in or out, and the arm's length with it (the
+## length it had before is put back exactly once it is out again).
+func _ease_weave(delta: float) -> void:
+	var want := 1.0 if weave_goal and not in_showcase() and not in_conversation() else 0.0
+	if want > 0.0 and weave <= 0.0:
+		_weave_length = spring.spring_length
+		_weave_scale = showcase_scale() if target else 1.0
+	weave = move_toward(weave, want, delta * WEAVE_EASE * (0.5 + absf(want - weave)))
+	if _weave_length < 0.0:
+		return
+	if weave <= 0.0:
+		spring.spring_length = _weave_length
+		_weave_length = -1.0
+	else:
+		spring.spring_length = lerpf(_weave_length, WEAVE_LENGTH * _height_scale(), smoothstep(0.0, 1.0, weave))
+
+
+## Which way round the weave framing turns: toward the shoulder the camera
+## looks past (the right one when centred).
+func _weave_turn() -> float:
+	return WEAVE_TURN if side < 0.0 else -WEAVE_TURN
+
+
+## The character's height over the usual (measured as the weave began), so a
+## short or tall shinobi's hands are framed alike.
+func _height_scale() -> float:
+	return _weave_scale
+
+
+## Drops the weave framing at once (a showcase or a conversation takes the
+## camera), putting the arm's length back.
+func _cancel_weave() -> void:
+	weave_goal = false
+	weave = 0.0
+	if _weave_length >= 0.0:
+		spring.spring_length = _weave_length
+		_weave_length = -1.0
 
 
 ## The shoulder offset wanted now: none while a showcase or conversation
@@ -181,6 +235,7 @@ func flat_forward() -> Vector3:
 ## Swings round to look at the character's front, close up, for the
 ## customize screen. The stick/arrow keys still orbit. `end_showcase` restores.
 func begin_showcase(offset := -0.55) -> void:
+	_cancel_weave()
 	if _saved.is_empty():
 		_saved = {"length": spring.spring_length, "height": follow_height, "pitch": pitch}
 	lock_target = null
@@ -220,6 +275,7 @@ func end_showcase() -> void:
 
 ## Frames a story conversation: over the player's shoulder toward `focus`.
 func begin_conversation(focus: Node3D) -> void:
+	_cancel_weave()
 	if _conversation_saved.is_empty():
 		_conversation_saved = {"length": spring.spring_length, "lock": lock_target}
 	_focus = focus
