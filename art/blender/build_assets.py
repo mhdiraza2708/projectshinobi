@@ -196,63 +196,83 @@ def build_training_dummy() -> None:
 
 
 def build_rock() -> None:
+	"""A layered boulder: a main stone with ledges (terraced), a smaller stone
+	leaning on it, a few pebbles at its foot, and moss on the tops."""
 	root = empty("Rock")
 	mb = MeshBuilder("RockMesh")
 	rock, moss = M("rock"), M("grass", tint=(0.75, 0.85, 0.65))
-	mb.sphere(rock, (0, 0, 0.3), 0.66, scale=(1.3, 1.0, 0.72), subdiv=4, texel=1.6, displace=0.32, freq=1.3, seed=3,
-		flatten_below=-0.28)
-	mb.sphere(rock, (0.72, 0.32, 0.12), 0.34, scale=(1.1, 1.0, 0.8), subdiv=3, texel=1.6, displace=0.3, freq=1.6, seed=9,
-		flatten_below=-0.12)
-	paint_tops(mb, rock, moss, 0.82)
-	mb.build(root, sharp_angle=55)
+	mb.sphere(rock, (0, 0, 0.3), 0.66, scale=(1.3, 1.0, 0.78), subdiv=4, texel=1.6, displace=0.36, freq=1.4, seed=3,
+		flatten_below=-0.28, terrace=0.16)
+	mb.sphere(rock, (0.74, 0.34, 0.1), 0.36, scale=(1.1, 1.0, 0.85), subdiv=3, texel=1.6, displace=0.32, freq=1.8, seed=9,
+		flatten_below=-0.1, terrace=0.12)
+	mb.sphere(rock, (-0.62, -0.38, 0.02), 0.24, scale=(1.2, 1.0, 0.7), subdiv=3, texel=1.6, displace=0.3, freq=2.0, seed=14,
+		flatten_below=-0.05)
+	r = rng(41)
+	for k in range(5):
+		a = r.uniform(0, 2 * math.pi)
+		d = r.uniform(0.95, 1.35)
+		mb.sphere(rock, (math.cos(a) * d, math.sin(a) * d * 0.8, 0.0), r.uniform(0.07, 0.13), scale=(1.2, 1.0, 0.7),
+			subdiv=2, texel=1.6, displace=0.35, freq=2.5, seed=20 + k, flatten_below=-0.02)
+	paint_tops(mb, rock, moss, 0.8)
+	mb.build(root, sharp_angle=38)
+
+
+def _frond(mb: MeshBuilder, mat, base: Vector, angle: float, length: float, width: float, droop: float,
+		rise: float, tint_seed: int, segs: int = 3) -> None:
+	"""A spray of needles: a ridged blade from the trunk outward, widest a
+	third of the way, rising a little and then drooping to its tip. Built
+	with a thin underside so it shades from below too."""
+	out = Vector((math.cos(angle), math.sin(angle), 0.0))
+	side = Vector((-math.sin(angle), math.cos(angle), 0.0))
+	verts, faces = [], []
+	for i in range(segs + 1):
+		t = i / segs
+		c = base + out * (length * t) + Vector((0.0, 0.0, rise * length * t - droop * length * t * t))
+		w = width * (0.35 + 0.65 * math.sin(math.pi * min(1.0, t * 1.4))) if i < segs else width * 0.06
+		ridge = w * 0.38
+		verts += [c - side * w, c + Vector((0, 0, ridge)), c + side * w, c - Vector((0, 0, ridge * 0.45))]
+	for i in range(segs):
+		a, b = i * 4, (i + 1) * 4
+		faces += [(a, b, b + 1, a + 1), (a + 1, b + 1, b + 2, a + 2),
+			(a + 2, b + 2, b + 3, a + 3), (a + 3, b + 3, b, a)]
+	mb.raw(mat, verts, faces, texel=1.1, soft_center=tuple(base + Vector((0, 0, -0.4))))
 
 
 def _pine(name: str, snowy: bool) -> None:
-	"""A pine of drooping, ragged tiers: each tier's rim alternates long
-	drooping tips and short notches, tiers are turned and sized unevenly."""
+	"""A pine of layered sprays: each tier a ring of drooping, ridged fronds
+	round a darker core, tiers turned and sized unevenly, on a tapering,
+	root-flared trunk that shows between them."""
 	root = empty(name)
 	mb = MeshBuilder(name + "Mesh")
 	bark, needles = M("bark"), M("pine_needles")
+	core = M("pine_needles", tint=(0.72, 0.78, 0.72))
 	cap = M("snow") if snowy else needles
 	r = rng(17 if not snowy else 23)
-	mb.cyl(bark, (0, 0, 1.6), 0.25, 0.09, 3.2, segments=12, texel=1.0)
-	for i in range(5):
-		a = 2 * math.pi * i / 5 + r.uniform(-0.3, 0.3)
-		mb.cyl(bark, (math.cos(a) * 0.22, math.sin(a) * 0.22, 0.12), 0.12, 0.03, 0.55,
-			rot=(0, math.radians(55), a), segments=6, texel=0.8)
-	tiers = [(1.35, 1.8, 1.25), (2.0, 1.55, 1.15), (2.6, 1.3, 1.05), (3.15, 1.05, 0.95), (3.65, 0.82, 0.85),
-		(4.1, 0.6, 0.8), (4.5, 0.4, 0.75)]
-	for k, (z0, rad, h) in enumerate(tiers):
-		n = 22
+	trunk = [(0, 0, 0), (0.02, 0.0, 1.0), (-0.03, 0.02, 2.2), (0.0, -0.02, 3.6), (0.02, 0.0, 5.0)]
+	mb.tube_path(bark, trunk, 0.24, segments=12, texel=1.0, radius_fn=lambda t: 0.26 * (1 - t * 0.78))
+	for i in range(6):
+		a = 2 * math.pi * i / 6 + r.uniform(-0.25, 0.25)
+		mb.cyl(bark, (math.cos(a) * 0.22, math.sin(a) * 0.22, 0.1), 0.11, 0.025, 0.5,
+			rot=(0, math.radians(58), a), segments=6, texel=0.8)
+	# (height, radius, fronds) from the lowest tier up.
+	tiers = [(1.15, 1.95, 11), (1.75, 1.7, 10), (2.3, 1.45, 9), (2.85, 1.2, 9), (3.35, 0.98, 8),
+		(3.8, 0.76, 7), (4.2, 0.56, 6), (4.55, 0.38, 5)]
+	for k, (z, rad, n) in enumerate(tiers):
 		rad *= r.uniform(0.92, 1.08)
 		spin = r.uniform(0, 2 * math.pi)
-		ox, oy = r.uniform(-0.06, 0.06), r.uniform(-0.06, 0.06)
-		apex = (ox, oy, z0 + h)
-		inner, rim = [], []
+		low = 1.0 - k / len(tiers)
+		# A dark core so you never see through a tier to the sky.
+		mb.cyl(core, (0, 0, z + 0.2), rad * 0.42, 0.04, 0.85, segments=9, texel=1.1)
 		for i in range(n):
-			a = 2 * math.pi * i / n + spin
-			inner.append((ox + math.cos(a) * rad * 0.45, oy + math.sin(a) * rad * 0.45, z0 + h * 0.42 + r.uniform(-0.04, 0.04)))
-			tip = i % 2 == 0
-			rr = rad * (r.uniform(1.0, 1.18) if tip else r.uniform(0.72, 0.84))
-			droop = 0.32 * rad if tip else 0.12 * rad
-			rim.append((ox + math.cos(a) * rr, oy + math.sin(a) * rr, z0 - droop + r.uniform(-0.05, 0.05)))
-		# Upper cone (snow sits here on a snowy pine), then the ragged skirt,
-		# then a shallow underside.
-		mb.raw(cap, [apex] + inner, [(0, 1 + i, 1 + (i + 1) % n) for i in range(n)], texel=1.3,
-			soft_center=(ox, oy, z0 + h * 0.1))
-		verts = inner + rim + [(ox, oy, z0 + 0.1)]
-		faces = []
-		for i in range(n):
-			i2 = (i + 1) % n
-			faces.append((i, n + i, i2))
-			faces.append((i2, n + i, n + i2))
-			faces.append((2 * n, n + i2, n + i))
-		mb.raw(needles, verts, faces, texel=1.3, soft_center=(ox, oy, z0 + h * 0.1))
-	mb.cyl(cap, (0, 0, 5.35), 0.18, 0.0, 0.6, segments=8, texel=1.0)
+			a = spin + 2 * math.pi * i / n + r.uniform(-0.15, 0.15)
+			length = rad * r.uniform(0.88, 1.08)
+			_frond(mb, needles, Vector((0, 0, z + r.uniform(-0.06, 0.06))), a, length,
+				width=0.44 * rad / 1.6 + 0.16, droop=0.32 + 0.3 * low, rise=0.18, tint_seed=k * 31 + i)
+	mb.cyl(needles, (0, 0, 4.95), 0.16, 0.0, 0.75, segments=8, texel=1.0)
 	if snowy:
-		# Snow settles on the flatter parts of each skirt too.
-		paint_tops(mb, needles, cap, 0.64)
-	mb.build(root)
+		# Snow settles on the upper faces of every spray.
+		paint_tops(mb, needles, cap, 0.55)
+	mb.build(root, sharp_angle=60)
 
 
 def build_pine() -> None:
@@ -264,37 +284,57 @@ def build_snow_pine() -> None:
 
 
 def _broadleaf(name: str, foliage: str, seed: int, spread=1.0) -> None:
+	"""A broadleaf: a flared trunk splitting into boughs, each forking again,
+	every twig end carrying a clump of leaves, so the crown is many soft
+	masses with gaps and shadow between, not one blob."""
 	root = empty(name)
 	mb = MeshBuilder(name + "Mesh")
 	bark, leaves = M("bark"), M(foliage)
+	shade = M(foliage, tint=(0.72, 0.76, 0.72))
 	r = rng(seed)
-	mb.cyl(bark, (0, 0, 1.3), 0.27, 0.15, 2.6, segments=12, texel=1.0)
-	for i in range(4):
-		a = 2 * math.pi * i / 4 + r.uniform(-0.3, 0.3)
-		mb.cyl(bark, (math.cos(a) * 0.24, math.sin(a) * 0.24, 0.12), 0.12, 0.03, 0.5,
-			rot=(0, math.radians(55), a), segments=6, texel=0.8)
-	arms = []
-	for i in range(3):
-		a = 2 * math.pi * i / 3 + r.uniform(-0.3, 0.3)
-		start = Vector((0, 0, 2.2 + i * 0.15))
-		mid = start + Vector((math.cos(a) * 0.6, math.sin(a) * 0.6, 0.55))
-		end = start + Vector((math.cos(a) * 1.15 * spread, math.sin(a) * 1.15 * spread, 0.95))
-		pts = [start.lerp(mid, t * 2) if t < 0.5 else mid.lerp(end, (t - 0.5) * 2) for t in (0, 0.25, 0.5, 0.75, 1.0)]
-		mb.tube_path(bark, pts, 0.1, segments=7, texel=0.8, radius_fn=lambda t: 0.11 * (1 - t * 0.6))
-		arms.append(end)
-	lumps = [(Vector((0, 0, 3.75)), 1.25)] + [(e + Vector((0, 0, 0.2)), r.uniform(0.95, 1.15)) for e in arms]
-	for i in range(4):
-		a = 2 * math.pi * (i + 0.5) / 4
-		lumps.append((Vector((math.cos(a) * 0.9 * spread, math.sin(a) * 0.9 * spread, 3.3 + r.uniform(-0.2, 0.3))), r.uniform(0.8, 1.0)))
-	# A few lumps hanging lower round the sides break the mushroom outline.
+	mb.tube_path(bark, [(0, 0, 0), (0.03, 0.0, 1.0), (-0.02, 0.03, 2.0), (0.0, 0.0, 2.5)], 0.28, segments=12, texel=1.0,
+		radius_fn=lambda t: 0.3 * (1 - t * 0.45))
 	for i in range(5):
-		a = 2 * math.pi * (i + 0.3) / 5 + r.uniform(-0.2, 0.2)
-		lumps.append((Vector((math.cos(a) * 1.25 * spread, math.sin(a) * 1.25 * spread, 2.85 + r.uniform(-0.15, 0.2))),
-			r.uniform(0.55, 0.75)))
-	heart = (0.0, 0.0, 3.25)
+		a = 2 * math.pi * i / 5 + r.uniform(-0.3, 0.3)
+		mb.cyl(bark, (math.cos(a) * 0.26, math.sin(a) * 0.26, 0.12), 0.13, 0.03, 0.55,
+			rot=(0, math.radians(58), a), segments=6, texel=0.8)
+	tips = []
+
+	def bough(start: Vector, direction: Vector, length: float, radius: float, depth: int) -> None:
+		pts = [start]
+		d = direction.normalized()
+		for _ in range(4):
+			d = (d + Vector((r.uniform(-0.1, 0.1), r.uniform(-0.1, 0.1), r.uniform(0.0, 0.1)))).normalized()
+			pts.append(pts[-1] + d * length / 4)
+		mb.tube_path(bark, pts, radius, segments=7, texel=0.8, radius_fn=lambda t: radius * (1 - t * 0.6))
+		if depth == 0:
+			tips.append(pts[-1])
+			return
+		# Forks to either side of the bough, a little upward.
+		side = d.cross(Vector((0, 0, 1))).normalized()
+		for sgn in (-1, 1):
+			fork = d + side * (0.55 * sgn) + Vector((0, 0, 0.35))
+			bough(pts[3], fork, length * 0.6, radius * 0.55, depth - 1)
+
+	for i in range(5):
+		a = 2 * math.pi * i / 5 + r.uniform(-0.15, 0.15)
+		out = Vector((math.cos(a) * spread, math.sin(a) * spread, 0.85))
+		bough(Vector((0, 0, 2.1 + (i % 2) * 0.15)), out, 1.35, 0.12, 1)
+	heart = Vector((0.0, 0.0, 3.35))
+	# The crown: a cap on top, a ring of clumps round its shoulders, and a
+	# clump at every twig end, so it is round from every side and lumpy at
+	# its edge.
+	lumps = [(heart + Vector((0, 0, 0.55)), 1.0)]
+	for i in range(7):
+		a = 2 * math.pi * (i + 0.5) / 7 + r.uniform(-0.1, 0.1)
+		lumps.append((heart + Vector((math.cos(a) * 1.05 * spread, math.sin(a) * 1.05 * spread, r.uniform(0.1, 0.4))),
+			r.uniform(0.7, 0.85)))
+	for t in tips:
+		lumps.append((t + Vector((0, 0, 0.1)), r.uniform(0.55, 0.72)))
 	for k, (c, rad) in enumerate(lumps):
-		mb.sphere(leaves, tuple(c), rad, scale=(1.0 * spread, 1.0 * spread, 0.85), subdiv=3, texel=1.5,
-			displace=0.3, freq=2.2, seed=seed + k, soft=True, soft_origin=heart)
+		mat = shade if c.z < heart.z - 0.2 else leaves
+		mb.sphere(mat, tuple(c), rad, scale=(1.05, 1.05, 0.85), subdiv=3, texel=1.5,
+			displace=0.34, freq=2.6, seed=seed + k, soft=True, soft_origin=tuple(heart))
 	mb.build(root)
 
 
@@ -307,26 +347,35 @@ def build_maple() -> None:
 
 
 def build_dead_tree() -> None:
+	"""A dead tree: a gnarled, leaning trunk, boughs that fork twice and end
+	in snapped stubs, and a split stump of a lost limb."""
 	root = empty("DeadTree")
 	mb = MeshBuilder("DeadTreeMesh")
 	bark = M("bark", tint=(0.62, 0.6, 0.58))
 	r = rng(5)
-	mb.cyl(bark, (0, 0, 1.6), 0.28, 0.08, 3.2, segments=10, texel=1.0)
+	trunk = [(0, 0, 0), (0.05, 0.02, 0.8), (0.12, -0.03, 1.6), (0.08, 0.05, 2.4), (0.18, 0.02, 3.3)]
+	mb.tube_path(bark, trunk, 0.3, segments=10, texel=1.0, radius_fn=lambda t: 0.32 * (1 - t * 0.7))
+	for i in range(5):
+		a = 2 * math.pi * i / 5 + r.uniform(-0.3, 0.3)
+		mb.cyl(bark, (math.cos(a) * 0.26, math.sin(a) * 0.26, 0.1), 0.13, 0.03, 0.6,
+			rot=(0, math.radians(60), a), segments=6, texel=0.8)
 
 	def branch(start: Vector, direction: Vector, length: float, radius: float, depth: int):
 		pts = [start]
 		d = direction.normalized()
-		for i in range(4):
-			d = (d + Vector((r.uniform(-0.3, 0.3), r.uniform(-0.3, 0.3), r.uniform(-0.1, 0.25)))).normalized()
-			pts.append(pts[-1] + d * length / 4)
-		mb.tube_path(bark, pts, radius, segments=6, texel=0.8, radius_fn=lambda t: radius * (1 - t * 0.8))
+		for i in range(5):
+			d = (d + Vector((r.uniform(-0.35, 0.35), r.uniform(-0.35, 0.35), r.uniform(-0.1, 0.25)))).normalized()
+			pts.append(pts[-1] + d * length / 5)
+		mb.tube_path(bark, pts, radius, segments=6, texel=0.8, radius_fn=lambda t: radius * (1 - t * 0.75))
 		if depth > 0:
 			for _ in range(2):
-				branch(pts[r.randint(2, 3)], d + Vector((r.uniform(-1, 1), r.uniform(-1, 1), 0.4)), length * 0.55, radius * 0.5, depth - 1)
+				branch(pts[r.randint(2, 4)], d + Vector((r.uniform(-1, 1), r.uniform(-1, 1), 0.4)), length * 0.55, radius * 0.55, depth - 1)
 
-	for i in range(5):
-		a = 2 * math.pi * i / 5 + r.uniform(-0.4, 0.4)
-		branch(Vector((0, 0, r.uniform(1.8, 3.0))), Vector((math.cos(a), math.sin(a), r.uniform(0.4, 1.0))), r.uniform(1.2, 1.8), 0.08, 1)
+	for i in range(6):
+		a = 2 * math.pi * i / 6 + r.uniform(-0.4, 0.4)
+		branch(Vector(trunk[2 + i % 3]), Vector((math.cos(a), math.sin(a), r.uniform(0.3, 0.9))), r.uniform(1.3, 1.9), 0.1, 2)
+	# The stump of a limb that broke off.
+	mb.cyl(bark, (0.25, 0.1, 1.9), 0.12, 0.09, 0.45, rot=(0, math.radians(70), 0.4), segments=7, texel=0.8)
 	mb.build(root)
 
 
