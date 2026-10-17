@@ -280,6 +280,44 @@ func test_the_push_off_plays_fast_the_moment_a_jump_leaves_the_ground() -> void:
 	assert_eq(anim.current_clip(), &"jump", "then the air")
 
 
+func test_being_put_somewhere_higher_is_not_a_jump() -> void:
+	var anim := model.animator
+	await _frames(3)
+	# A spawn or fast travel drops the body metres higher in one update.
+	model.position.y = 12.0
+	anim.airborne = true
+	await _frames(2)
+	assert_true(anim.current_clip() != &"jump_takeoff", "a teleport is not a push-off")
+
+
+func test_every_clip_holds_the_torso_bones_another_clip_bends() -> void:
+	# The Mixamo clips bend the Spine and the library's own walk has no track
+	# for it: without one, the walk (or the idle) would keep whatever bend the
+	# last jump or cut left, and the character would stand hunched over.
+	var spine := NodePath("%GeneralSkeleton:Spine")
+	var arm := NodePath("%GeneralSkeleton:LeftUpperArm")
+	var bend := Animation.new()
+	bend.length = 1.0
+	var s := bend.add_track(Animation.TYPE_ROTATION_3D)
+	bend.track_set_path(s, spine)
+	bend.rotation_track_insert_key(s, 0.0, Quaternion(Vector3.RIGHT, 0.5))
+	var a := bend.add_track(Animation.TYPE_ROTATION_3D)
+	bend.track_set_path(a, arm)
+	bend.rotation_track_insert_key(a, 0.0, Quaternion(Vector3.UP, 0.5))
+	var walk := Animation.new()
+	walk.length = 1.0
+	var lib := AnimationLibrary.new()
+	lib.add_animation(&"jump", bend)
+	lib.add_animation(&"walk", walk)
+	CharacterAnimator._hold_torso_at_rest(lib)
+	var t := walk.find_track(spine, Animation.TYPE_ROTATION_3D)
+	assert_true(t >= 0, "the walk now sets the Spine")
+	for at in [0.0, 0.5, 1.0]:
+		assert_true(walk.rotation_track_interpolate(t, at).is_equal_approx(Quaternion.IDENTITY), "at rest")
+	assert_eq(walk.find_track(arm, Animation.TYPE_ROTATION_3D), -1, "limbs rest differently on each rig: left alone")
+	assert_eq(bend.get_track_count(), 2, "a clip that moves the Spine keeps its own track")
+
+
 func test_stepping_off_a_ledge_is_not_a_jump_but_a_second_jump_in_the_air_is() -> void:
 	var anim := model.animator
 	await _frames(3)
