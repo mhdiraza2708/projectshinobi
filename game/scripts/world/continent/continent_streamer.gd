@@ -272,17 +272,25 @@ func _work(chunk: Chunk) -> void:
 	var step := chunk.rect.size.x / ContinentMesh.QUADS
 	if chunk.level == 0:
 		# Height maps are scaled uniformly, so the shape holds heights in steps.
+		# Rivers and lakes are stood on, like the sea: where water covers the
+		# ground the shape is at its surface.
 		var h: PackedFloat32Array = data["heights"]
 		var scaled := PackedFloat32Array()
 		scaled.resize(h.size())
+		var n := ContinentMesh.QUADS + 1
 		for k in h.size():
-			scaled[k] = h[k] / step
+			var x := chunk.rect.position.x + float(k % n) * step
+			var z := chunk.rect.position.y + float(k / n) * step
+			scaled[k] = maxf(h[k], _land.water_level_at(x, z)) / step
 		data["collision"] = scaled
 	data.erase("heights")
 	data["scatter"] = [] as Array[Dictionary]
 	if chunk.level <= SCATTER_LEVEL:
 		var found := ContinentScatter.instances(_land, chunk.rect, 1 if chunk.level < SCATTER_LEVEL else 2)
 		data["scatter"] = ContinentScatter.multimeshes(found, chunk.rect.get_center())
+		if chunk.level == 0:
+			# Trunks and rocks are solid where you can walk into them.
+			data["solids"] = ContinentScatter.solids(found, chunk.rect.get_center())
 	data["total_ms"] = (Time.get_ticks_usec() - t0) / 1000.0
 	chunk.data = data
 
@@ -345,6 +353,11 @@ func _add_chunk(chunk: Chunk) -> void:
 		body.collision_layer = Combat.LAYER_WORLD
 		body.collision_mask = 0
 		body.add_child(col)
+		for solid: Array in data.get("solids", []):
+			var part := CollisionShape3D.new()
+			part.shape = solid[0]
+			part.transform = solid[1]
+			body.add_child(part)
 		root.add_child(body)
 		chunk.body = body
 	for entry: Dictionary in data["scatter"]:

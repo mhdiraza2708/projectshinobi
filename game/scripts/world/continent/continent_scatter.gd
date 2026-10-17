@@ -42,10 +42,69 @@ const MAX_SLOPE := 0.34
 static var _mixes: Dictionary = {}
 
 
+## What of each model is solid near you: a tree's trunk (a cylinder) or a
+## rock's body (a box), measured from the model at scale 1: {model:
+## {kind, radius | size, height, y}}. Built by warm().
+static var _solid: Dictionary = {}
+
+
 ## The models' meshes, ready for worker threads. Call once on the main thread.
 static func warm() -> void:
 	ModelMeshes.warm(SPECIES)
 	_mix_table()
+	solid_specs()
+
+
+## How each model is solid (see _solid), from its meshes' bounds: a trunk a
+## small part of the crown's width, as tall as half the tree; a rock a box a
+## little inside its bounds (so you brush it rather than stop short).
+static func solid_specs() -> Dictionary:
+	if not _solid.is_empty():
+		return _solid
+	for model in SPECIES:
+		var box := AABB()
+		var first := true
+		for part: Array in ModelMeshes.parts(model):
+			var b: AABB = (part[1] as Transform3D) * (part[0] as Mesh).get_aabb()
+			box = b if first else box.merge(b)
+			first = false
+		if model == "rock":
+			_solid[model] = {"kind": "box", "size": Vector3(box.size.x, box.size.y, box.size.z) * 0.8,
+				"y": box.position.y + box.size.y * 0.5}
+		else:
+			var width := minf(box.size.x, box.size.z)
+			_solid[model] = {"kind": "trunk", "radius": clampf(width * 0.07, 0.12, 0.45),
+				"height": box.size.y * 0.55, "y": box.position.y + box.size.y * 0.275}
+	return _solid
+
+
+## Solid shapes for the instances `found` (from instances()), relative to
+## `origin` (x, z): [[Shape3D, Transform3D], ...]. Shapes are shared per model;
+## each instance's scale is in its transform.
+static func solids(found: Dictionary, origin: Vector2) -> Array:
+	var specs := solid_specs()
+	var out := []
+	for model: String in found:
+		var spec: Dictionary = specs.get(model, {})
+		if spec.is_empty():
+			continue
+		var shape: Shape3D
+		if spec["kind"] == "box":
+			var bx := BoxShape3D.new()
+			bx.size = spec["size"]
+			shape = bx
+		else:
+			var cyl := CylinderShape3D.new()
+			cyl.radius = spec["radius"]
+			cyl.height = spec["height"]
+			shape = cyl
+		var raw: PackedFloat32Array = found[model]
+		for k in range(0, raw.size(), 5):
+			var s := raw[k + 4]
+			var basis := Basis(Vector3.UP, raw[k + 3]).scaled(Vector3.ONE * s)
+			var at := Vector3(raw[k] - origin.x, raw[k + 1] + float(spec["y"]) * s, raw[k + 2] - origin.y)
+			out.append([shape, Transform3D(basis, at)])
+	return out
 
 
 ## Every scatter instance in `rect`, taking one spot in `thin` (1 = all, 2 =

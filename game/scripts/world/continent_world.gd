@@ -141,7 +141,10 @@ func on_water(body: CharacterBody3D) -> bool:
 	for i in body.get_slide_collision_count():
 		if body.get_slide_collision(i).get_collider() == water:
 			return true
-	return false
+	# Rivers and lakes: their surface is part of the ground's collision.
+	var p := to_local(body.global_position)
+	var level := continent.land.water_level_at(p.x, p.z)
+	return level > -INF and absf(p.y - level) < 0.6
 
 
 # There are no leap stones, islets or gulls here yet.
