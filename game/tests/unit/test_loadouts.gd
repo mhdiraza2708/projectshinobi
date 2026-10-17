@@ -40,7 +40,47 @@ func test_a_new_game_has_starter_presets() -> void:
 		for id: String in preset["slots"]:
 			assert_true(id == "" or JutsuRegistry.get_jutsu(StringName(id)) != null, "%s is a real jutsu" % id)
 		assert_eq((preset["styles"] as Array).size(), Loadouts.SLOTS)
-	assert_true(list.any(func(p: Dictionary) -> bool: return (p["slots"] as Array).has("shade_clones")), "Shade Clones is on a bar")
+	for preset: Dictionary in list:
+		assert_eq(preset["slots"][Loadouts.CLONES_SLOT], "shade_clones", "%s keeps Shade Clones on the first page" % preset["name"])
+
+
+func test_the_starters_are_built_round_your_nature() -> void:
+	for nature in [Element.FIRE, Element.WIND, Element.LIGHTNING, Element.EARTH, Element.WATER]:
+		var own := JutsuRegistry.all().filter(func(j: JutsuDefinition) -> bool: return j.element == nature)
+		assert_true(own.size() >= 3, "%s has jutsu of its own" % Element.display_name(nature))
+		var list := Loadouts.starters(nature)
+		for preset: Dictionary in list:
+			var slots: Array = preset["slots"]
+			for j: JutsuDefinition in own:
+				assert_true(slots.has(String(j.id)), "%s %s has %s" % [Element.display_name(nature), preset["name"], j.id])
+			assert_eq(slots[Loadouts.CLONES_SLOT], "shade_clones")
+			for id: String in slots:
+				var j := JutsuRegistry.get_jutsu(StringName(id))
+				assert_true(id == "" or j != null)
+				assert_true(id == "" or j.element == nature or j.element == Element.NONE,
+					"%s %s: only its own nature and neutral jutsu (%s)" % [Element.display_name(nature), preset["name"], id])
+		# Balanced and Assault lead with the nature's own jutsu.
+		for k in 2:
+			assert_eq(JutsuRegistry.get_jutsu(StringName(list[k]["slots"][0])).element, nature,
+				"%s %s leads with its nature" % [Element.display_name(nature), list[k]["name"]])
+
+
+func test_untouched_starters_follow_a_change_of_nature_but_your_own_presets_stay() -> void:
+	Profile.set_value(&"affinity", Element.WATER)
+	assert_eq(JutsuRegistry.get_jutsu(StringName(Loadouts.active()["slots"][0])).element, Element.WATER)
+	Loadouts.equip(1)  # stores the (unchanged) starters
+	Profile.set_value(&"affinity", Element.EARTH)
+	assert_eq(Loadouts.index(), 1, "still on the same preset")
+	assert_eq(JutsuRegistry.get_jutsu(StringName(Loadouts.active()["slots"][0])).element, Element.EARTH,
+		"unchanged starters became earth's")
+	# An old save's fixed starters count as untouched too.
+	var legacy := Loadouts.LEGACY.map(func(p: Array) -> Dictionary: return Loadouts._preset(p[0], p[1]))
+	Profile.set_value(&"loadouts", legacy)
+	assert_eq(Loadouts.all(), Loadouts.starters(), "an old save's starters follow your nature")
+	# A preset you changed is yours: a new nature leaves it be.
+	Loadouts.assign(0, &"tide_lance")
+	Profile.set_value(&"affinity", Element.WIND)
+	assert_eq(Loadouts.active()["slots"][0], "tide_lance", "your own loadout is kept")
 
 
 func test_presets_can_be_made_renamed_copied_and_deleted() -> void:
@@ -76,12 +116,15 @@ func test_there_is_a_limit_to_presets() -> void:
 func test_assigning_moves_a_jutsu_between_slots() -> void:
 	Loadouts.equip(0)
 	var before := (Loadouts.active()["slots"] as Array).duplicate()
+	var other := (Loadouts.all()[1]["slots"] as Array).duplicate()
+	var was := Loadouts.slot_of(&"chakra_bolt")
+	assert_true(was >= 0 and was != 7, "the bolt starts in another slot")
 	Loadouts.assign(7, &"chakra_bolt")
 	var after: Array = Loadouts.active()["slots"]
 	assert_eq(after[7], "chakra_bolt")
-	assert_eq(after[0], "", "it left its old slot: a jutsu sits in one slot only")
+	assert_eq(after[was], "", "it left its old slot: a jutsu sits in one slot only")
 	assert_eq(Loadouts.slot_of(&"chakra_bolt"), 7)
-	assert_eq((Loadouts.all()[1]["slots"] as Array)[0], "chakra_bolt", "other presets are untouched")
+	assert_eq(Loadouts.all()[1]["slots"], other, "other presets are untouched")
 	Loadouts.assign(7, &"")
 	assert_eq((Loadouts.active()["slots"] as Array)[7], "", "and slots can be cleared")
 	assert_true(before != Loadouts.active()["slots"])
@@ -108,10 +151,10 @@ func test_presets_are_saved_with_the_character() -> void:
 func test_the_player_has_eight_slots_from_the_equipped_preset() -> void:
 	await _load()
 	assert_eq(player.quick_slots.size(), 8)
-	assert_eq(player.quick_slots[0], &"chakra_bolt")
+	assert_eq(player.quick_slots[0], StringName(Loadouts.starters()[0]["slots"][0]))
 	Loadouts.equip(1)
-	assert_eq(player.quick_slots[1], &"ember_volley", "the player follows the equipped preset")
-	assert_eq(player.quick_slots[7], &"shade_clones")
+	assert_eq(player.quick_slots[1], StringName(Loadouts.starters()[1]["slots"][1]), "the player follows the equipped preset")
+	assert_eq(player.quick_slots[Loadouts.CLONES_SLOT], &"shade_clones")
 	player.assign_quick_slot(3, &"tide_lance")
 	assert_eq(player.quick_slots[3], &"tide_lance", "assigning edits the loadout")
 	assert_eq(Loadouts.active()["slots"][3], "tide_lance")
@@ -120,6 +163,7 @@ func test_the_player_has_eight_slots_from_the_equipped_preset() -> void:
 func test_keys_five_to_eight_cast_the_upper_slots() -> void:
 	await _load()
 	Loadouts.equip(1)
+	player.assign_quick_slot(7, &"shade_clones")
 	player.stats.chakra = 100.0
 	await _tap(&"quick_cast_8")
 	await seconds(1.2)
@@ -129,6 +173,7 @@ func test_keys_five_to_eight_cast_the_upper_slots() -> void:
 func test_on_a_gamepad_the_dpad_works_the_current_page() -> void:
 	await _load()
 	Loadouts.equip(1)
+	player.assign_quick_slot(7, &"shade_clones")
 	InputDevice.current = Binding.Device.GAMEPAD
 	player.stats.chakra = 100.0
 	await _tap(&"quick_page")
@@ -143,6 +188,7 @@ func test_on_a_gamepad_the_dpad_works_the_current_page() -> void:
 func test_holding_lb_turns_the_dpad_to_slots_five_to_eight() -> void:
 	await _load()
 	Loadouts.equip(1)
+	player.assign_quick_slot(7, &"shade_clones")
 	InputDevice.current = Binding.Device.GAMEPAD
 	player.stats.chakra = 100.0
 	assert_eq(player.dpad_page(), 0)
@@ -164,7 +210,7 @@ func test_the_preset_keys_cycle_loadouts() -> void:
 	await _tap(&"preset_prev")
 	await _tap(&"preset_prev")
 	assert_eq(Loadouts.active()["name"], "Guardian", "wraps around")
-	assert_eq(player.quick_slots[0], &"stone_bulwark")
+	assert_eq(player.quick_slots[0], StringName(Loadouts.starters()[2]["slots"][0]))
 
 
 func test_instant_slots_skip_the_seals_for_extra_chakra() -> void:
@@ -172,10 +218,11 @@ func test_instant_slots_skip_the_seals_for_extra_chakra() -> void:
 	Loadouts.equip(0)
 	var bolt := JutsuRegistry.get_jutsu(&"chakra_bolt")
 	assert_near(player.caster.cost_of(bolt, true), player.caster.cost_of(bolt) * 1.35, 0.001)
-	Loadouts.set_style(0, Loadouts.INSTANT)
+	var slot := Loadouts.slot_of(&"chakra_bolt")
+	Loadouts.set_style(slot, Loadouts.INSTANT)
 	player.stats.chakra = 100.0
 	player.caster._cooldowns.clear()
-	player.start_quick_cast(0)
+	player.start_quick_cast(slot)
 	assert_eq(player.state, Player.State.FREE, "no weaving state")
 	assert_near(player.stats.chakra, 100.0 - player.caster.cost_of(bolt, true), 0.01, "paid the surcharge")
 	assert_true(player.caster.cooldown_left(&"chakra_bolt") > 0.0, "and it cast at once")
@@ -191,3 +238,11 @@ func test_woven_slots_still_weave() -> void:
 	player.stats.chakra = 100.0
 	player.start_quick_cast(1)
 	assert_eq(player.state, Player.State.AUTO_WEAVING)
+
+
+func test_changing_nature_refills_the_players_bar() -> void:
+	await _load()
+	Profile.set_value(&"affinity", Element.LIGHTNING)
+	await physics_frames(1)
+	assert_eq(JutsuRegistry.get_jutsu(player.quick_slots[0]).element, Element.LIGHTNING, "the bar follows the new nature")
+	assert_eq(player.quick_slots[Loadouts.CLONES_SLOT], &"shade_clones")

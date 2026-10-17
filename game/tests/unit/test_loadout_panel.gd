@@ -30,22 +30,26 @@ func test_it_lists_eight_slots_and_every_jutsu() -> void:
 
 
 func test_equipping_fills_the_picked_slot_and_moves_to_the_next_empty_one() -> void:
+	# The last two slots empty, the rest full.
+	Loadouts.assign(6, &"")
+	Loadouts.assign(7, &"")
 	panel._pick_slot(6)
 	panel._equip_to_slot(_jutsu(&"gale_palm"))
 	assert_eq(Loadouts.active()["slots"][6], "gale_palm")
 	assert_eq(panel._slot, 7, "the next empty slot is picked")
-	panel._equip_to_slot(_jutsu(&"cinder_bloom"))
-	assert_eq(Loadouts.active()["slots"][7], "cinder_bloom")
+	panel._equip_to_slot(_jutsu(&"riptide_wall"))
+	assert_eq(Loadouts.active()["slots"][7], "riptide_wall")
 	assert_eq(panel._slot, 7, "with none left it stays put")
 
 
 func test_a_jutsu_moves_rather_than_doubling() -> void:
+	var was := Loadouts.slot_of(&"chakra_bolt")
 	panel._pick_slot(7)
 	panel._equip_to_slot(_jutsu(&"chakra_bolt"))
 	var slots: Array = Loadouts.active()["slots"]
 	assert_eq(slots[7], "chakra_bolt")
 	assert_eq(slots.count("chakra_bolt"), 1, "only one slot holds it")
-	assert_eq(slots[0], "", "the old slot is emptied")
+	assert_eq(slots[was], "", "the old slot is emptied")
 
 
 func test_style_toggle_and_clear() -> void:

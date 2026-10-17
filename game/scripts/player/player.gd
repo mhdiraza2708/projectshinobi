@@ -153,7 +153,8 @@ func _ready() -> void:
 		caster.affinity = Profile.get_value(&"affinity")
 		if key in [&"clan", &"eye_art", &""]:
 			_apply_perks()
-		if key in [&"loadouts", &"loadout", &""]:
+		# Untouched starters follow a change of nature (Loadouts.all).
+		if key in [&"loadouts", &"loadout", &"affinity", &""]:
 			_load_loadout())
 	stats.dodged.connect(_on_dodged)
 
