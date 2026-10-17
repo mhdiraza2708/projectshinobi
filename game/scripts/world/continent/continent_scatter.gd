@@ -138,7 +138,7 @@ static func _try_spot(land: ContinentLand, mix_table: Dictionary, x: float, z: f
 	if clear <= 0.0:
 		return
 	# Which model: the region's own mix near it, the wilds' farther out.
-	var biome := 1.0 - smoothstep(ContinentLand.BIOME_INNER, ContinentLand.BIOME_OUTER, d)
+	var biome := 1.0 - smoothstep(ContinentLand.BIOME_INNER, ContinentLand.BIOME_REACH, d)
 	var mix: Dictionary = mix_table[near["id"]] if _unit(key, 3) < biome else mix_table[""]
 	var pick := _unit(key, 4) * float(mix["total"])
 	var model := ""
