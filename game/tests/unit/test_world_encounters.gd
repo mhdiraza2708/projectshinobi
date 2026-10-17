@@ -128,6 +128,24 @@ func test_an_ambush_springs_as_you_pass_and_pays() -> void:
 	assert_true(enc.current.is_empty())
 
 
+func test_an_ambushs_raiders_come_where_you_are_even_if_you_ran_on() -> void:
+	await _load()
+	var w := _wild()
+	enc.begin("ambush", w["at"])
+	await _stand_at(enc.ground(w["at"] + Vector3(8, 0, 0)))
+	assert_true(is_instance_valid(world._fight), "it sprang")
+	# Sprinting on before the raiders show (the film and the announce take a while).
+	await _stand_at(enc.ground(w["at"] + Vector3(48, 0, 0)))
+	await seconds(TrialDirector.ANNOUNCE_TIME + 0.3)
+	var alive: Array = world._fight.alive
+	assert_eq(alive.size(), 3, "three raiders")
+	for e: EnemyShinobi in alive:
+		var d := Vector2(e.global_position.x - player.global_position.x, e.global_position.z - player.global_position.z).length()
+		assert_true(d < TrialDirector.SPAWN_DISTANCE + 4.0, "near you, not back where it began (%.0f m)" % d)
+		assert_true(e.global_position.y > enc.ground(e.global_position).y - 0.3, "on the ground, not under it")
+	world._end_fight(true)
+
+
 func test_ambush_waves_grow_with_the_story() -> void:
 	await _load()
 	enc.current = {"region": "ashen_pass"}

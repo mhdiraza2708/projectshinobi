@@ -58,6 +58,9 @@ const TAKEOFF_SPEED := 1.8
 ## Rising faster than this (m/s) as the feet leave the ground, or after a fall
 ## or the top of a jump, is a jump.
 const LAUNCH_RISE := 4.0
+## A height change bigger than this in one update (m) is the body being put
+## somewhere, not moving.
+const TELEPORT_RISE := 2.0
 ## Seconds a cut clip blends in over (a cut is quick, and so is the lean
 ## into it).
 const CUT_BLEND := 0.08
@@ -358,6 +361,10 @@ func _follow_height(delta: float) -> void:
 		_height_known = false
 		return
 	var height := body.global_position.y
+	if _height_known and absf(height - _last_height) > TELEPORT_RISE:
+		# Placed somewhere new (a spawn, fast travel), not a jump.
+		_height_known = false
+		vertical_speed = 0.0
 	if _height_known:
 		var rise := clampf((height - _last_height) / delta, -40.0, 40.0)
 		if airborne and rise > LAUNCH_RISE and vertical_speed < 1.0 and (_action == &"" or _action == &"land") \
@@ -497,8 +504,39 @@ static func load_library(dir: String) -> AnimationLibrary:
 			var trimmed := SwingClip.trim(lib.get_animation(slot), HumanoidPoser.cut_time(i) - SwingClip.LEAD)
 			lib.remove_animation(slot)
 			lib.add_animation(slot, trimmed)
+	_hold_torso_at_rest(lib)
 	_library_cache[dir] = lib
 	return lib
+
+
+## Torso and head bones every humanoid rig rests at no rotation (the
+## retargeted and VRM-normalised skeletons all do).
+const REST_TORSO: Array[StringName] = [&"Hips", &"Spine", &"Chest", &"UpperChest", &"Neck", &"Head"]
+
+
+## A clip that leaves a torso bone alone would leave it wherever the last clip
+## put it: the library's idle has no Spine track, so after a Mixamo jump or
+## cut (which bend the Spine) a character stood hunched over for good. Each
+## clip without a track for a torso bone another clip moves gets one holding
+## it at rest, so the blend back brings it upright.
+static func _hold_torso_at_rest(lib: AnimationLibrary) -> void:
+	var moved := {}
+	for clip in lib.get_animation_list():
+		var anim := lib.get_animation(clip)
+		for t in anim.get_track_count():
+			if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D:
+				var bone := StringName(String(anim.track_get_path(t)).trim_prefix("%GeneralSkeleton:"))
+				if REST_TORSO.has(bone):
+					moved[bone] = true
+	for clip in lib.get_animation_list():
+		var anim := lib.get_animation(clip)
+		for bone: StringName in moved:
+			var path := NodePath("%GeneralSkeleton:" + String(bone))
+			if anim.find_track(path, Animation.TYPE_ROTATION_3D) >= 0:
+				continue
+			var t := anim.add_track(Animation.TYPE_ROTATION_3D)
+			anim.track_set_path(t, path)
+			anim.rotation_track_insert_key(t, 0.0, Quaternion.IDENTITY)
 
 
 static func _add_ual(lib: AnimationLibrary) -> void:

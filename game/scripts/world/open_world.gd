@@ -755,6 +755,11 @@ func _start_fight(q: Dictionary, spot: Vector3) -> void:
 	_fight.announce = true
 	_fight.center = spot
 	_fight.arena_radius = 16.0
+	if str(q["id"]).begins_with(WorldEncounters.PREFIX) and encounters != null:
+		# A fight on the road: it comes where you are once the film is over
+		# (a sprint carries you well past where it began), on the ground there.
+		_fight.follow = true
+		_fight.ground_at = _road_ground
 	var waves: Array = []
 	for w: Array in q["waves"]:
 		var ranks: Array = []
@@ -792,6 +797,17 @@ func _film(steps: Array, extra := {}) -> void:
 		player.input_enabled = true
 	if is_instance_valid(hud):
 		hud.visible = true
+
+
+## The ground's height at (x, z) for a fight on the road: whatever is solid
+## just above the land there (a river's surface, a low rock), or the land
+## itself where its collision isn't built yet, so no one is put under it.
+func _road_ground(x: float, z: float) -> float:
+	var land := encounters.ground(Vector3(x, 0.0, z)).y
+	var query := PhysicsRayQueryParameters3D.create(Vector3(x, land + 3.0, z), Vector3(x, land - 1.0, z),
+		Combat.LAYER_WORLD)
+	var hit := player.get_world_3d().direct_space_state.intersect_ray(query)
+	return (hit["position"] as Vector3).y if not hit.is_empty() else land
 
 
 ## A fight begun by something other than a quest of the log (a camp).

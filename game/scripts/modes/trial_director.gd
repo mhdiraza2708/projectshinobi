@@ -53,6 +53,9 @@ var waves_cleared := 0
 ## ARENA_RADIUS of it, standing on the ground there.
 var center := Vector3.ZERO
 var arena_radius := ARENA_RADIUS
+## The arena moves with the player: each wave comes where they are when it
+## comes (a fight on the road), not where the fight began.
+var follow := false
 
 
 func start(p: Player) -> void:
@@ -87,6 +90,8 @@ func _next_wave() -> void:
 	await get_tree().create_timer(ANNOUNCE_TIME, false).timeout
 	if not running or not is_inside_tree():
 		return
+	if follow and is_instance_valid(player):
+		center = player.global_position
 	var ranks: Array = w["enemies"]
 	# A wave may mix natures (quest fights): one per enemy.
 	var natures: Array = w.get("elements", [])
