@@ -148,8 +148,9 @@ controls can be remapped.
   more chakra).
 - **Jutsu loadouts:** up to eight named presets of those slots, edited in
   Pause → Jutsu Scroll (or while creating your character), saved with your
-  character and swapped in battle with Z / X. Three starters are included:
-  Balanced, Assault and Guardian.
+  character and swapped in battle with Z / X. Three starters are included,
+  Balanced, Assault and Guardian, each built round your chakra nature. Shade
+  Clones is locked into slot 4 of every loadout.
 - Three **training dummies** (Neutral, Earth, Wind) show **WEAK!/RESIST**
   damage numbers, so you learn the element cycle by playing.
 - **Ink-and-scroll UI:** washi-paper panels, brush-stroke health/chakra

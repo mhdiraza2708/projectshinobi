@@ -182,13 +182,16 @@ func _slot_cell(preset: Dictionary, i: int) -> Control:
 	row.add_theme_constant_override(&"separation", 6)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	var pick := _button("%d  %s" % [i + 1, jutsu.display_name if jutsu else "empty"], _pick_slot.bind(i), "slot%d" % i)
+	var lock := Loadouts.locked(i)
+	var label := "%d  %s" % [i + 1, jutsu.display_name if jutsu else "empty"]
+	var pick := _button(label + ("  ·  locked" if lock else ""), _pick_slot.bind(i), "slot%d" % i)
 	pick.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	pick.add_theme_font_size_override(&"font_size", 20)
 	pick.clip_text = true
 	pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pick.custom_minimum_size = Vector2(120, 44)
-	pick.tooltip_text = "Fill quick-cast slot %d" % (i + 1)
+	pick.tooltip_text = "Shade Clones is always in slot %d" % (i + 1) if lock else "Fill quick-cast slot %d" % (i + 1)
+	pick.disabled = lock
 	if i == _slot:
 		pick.add_theme_stylebox_override(&"normal", _selected_box())
 	if jutsu == null:
@@ -205,13 +208,15 @@ func _slot_cell(preset: Dictionary, i: int) -> Control:
 
 	var clear := _button("×", _clear_slot.bind(i), "clear%d" % i)
 	clear.custom_minimum_size = Vector2(40, 44)
-	clear.disabled = jutsu == null
-	clear.tooltip_text = "Empty this slot"
+	clear.disabled = jutsu == null or lock
+	clear.tooltip_text = "Shade Clones stays on every loadout" if lock else "Empty this slot"
 	row.add_child(clear)
 	return row
 
 
 func _pick_slot(i: int) -> void:
+	if Loadouts.locked(i):
+		return
 	_slot = i
 	_message = ""
 	refresh()
@@ -269,8 +274,9 @@ func _catalog_row(j: JutsuDefinition, preset: Dictionary) -> Control:
 	var equip := _button("Equip" if held < 0 else "Slot %d" % (held + 1), _equip_to_slot.bind(j), "equip_%s" % j.id)
 	equip.custom_minimum_size = Vector2(104, 44)
 	equip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	equip.disabled = held == _slot
-	equip.tooltip_text = "Put %s on quick-cast slot %d" % [j.display_name, _slot + 1]
+	equip.disabled = held == _slot or String(j.id) == Loadouts.LOCKED
+	equip.tooltip_text = "Shade Clones is always on quick-cast slot %d" % (Loadouts.CLONES_SLOT + 1) \
+		if String(j.id) == Loadouts.LOCKED else "Put %s on quick-cast slot %d" % [j.display_name, _slot + 1]
 	if held >= 0:
 		equip.add_theme_stylebox_override(&"normal", _selected_box())
 	row.add_child(equip)
@@ -323,6 +329,10 @@ func _equip_ultimate(id: String) -> void:
 
 
 func _equip_to_slot(j: JutsuDefinition) -> void:
+	if String(j.id) == Loadouts.LOCKED or Loadouts.locked(_slot):
+		_message = "Shade Clones is always on quick-cast slot %d." % (Loadouts.CLONES_SLOT + 1)
+		refresh()
+		return
 	_message = "%s is on quick-cast slot %d." % [j.display_name, _slot + 1]
 	_busy = true
 	Loadouts.assign(_slot, j.id)
