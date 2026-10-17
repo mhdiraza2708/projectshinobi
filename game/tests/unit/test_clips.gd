@@ -98,6 +98,262 @@ func test_hand_seals_layer_over_clips() -> void:
 	assert_eq(model.animator.clips.current_animation, &"idle", "legs still from the clip")
 
 
+# --- A Mixamo jump, split into phases (JumpClip) -----------------------------------
+# The fixture is a standing leap built like Mixamo's "Jumping": its hips carry the
+# whole jump's height. art/blender/make_mixamo_fixtures.py says when each part
+# happens (JUMP_FRAMES, 30 fps).
+
+## A folder with the same jump and a land.fbx of its own, and one that is not there.
+const FIXTURES_LAND := "res://tests/fixtures/mixamo_land"
+const NO_CLIPS := "res://tests/fixtures/no_clips_here"
+const JUMP_PHASES := {"crouch": 18, "toes_off": 27, "peak": 35, "touchdown": 43, "bottom": 51}
+
+
+## Seconds into the jump clip for a frame of its timeline.
+func _at(frame: int) -> float:
+	return (frame - 1) / 30.0
+
+
+## A model on the clips in `dir`, settled.
+func _model_with(dir: String) -> CharacterModel:
+	model.queue_free()
+	model = CharacterModel.new()
+	model.model_path = CharacterModel.DEFAULT_MODEL
+	model.clip_dir = dir
+	root.add_child(model)
+	await _frames(3)
+	return model
+
+
+func test_the_phases_of_a_jump_are_found_in_order_and_where_they_happen() -> void:
+	var found := JumpClip.phases_of(FIXTURES + "/jump.fbx")
+	assert_false(found.is_empty(), "a jump was found")
+	for phase: String in JUMP_PHASES:
+		assert_near(found[phase], _at(JUMP_PHASES[phase]), 0.08, "%s (frame %d)" % [phase, JUMP_PHASES[phase]])
+	var takeoff: Vector2 = found["takeoff"]
+	var air: Vector2 = found["air"]
+	var land: Vector2 = found["land"]
+	assert_true(found["crouch"] < takeoff.x, "the push-off starts after the deepest crouch")
+	assert_true(takeoff.x < found["toes_off"] and found["toes_off"] < takeoff.y, "the push-off spans the toes leaving")
+	assert_near(takeoff.y, air.x, 0.001, "the air takes over where the push-off ends")
+	assert_true(air.x < found["peak"] and found["peak"] < air.y, "the peak is in the air")
+	assert_near(air.y, land.x, 0.001, "the landing starts at touchdown")
+	assert_true(land.x < found["bottom"] and found["bottom"] < land.y, "the landing runs through the deepest crouch")
+	assert_true(takeoff.y - takeoff.x < 0.4, "the push-off is short")
+
+
+func test_a_clip_with_no_leap_in_it_is_left_alone() -> void:
+	# The fixture's run keeps both feet down.
+	var run := JumpClip.find_phases(CharacterAnimator.load_library(FIXTURES).get_animation(&"run"),
+		JumpClip.phases_of(FIXTURES + "/jump.fbx")["rig"])
+	assert_true(run.is_empty(), "no air in a run")
+
+
+func test_the_air_clip_has_no_hip_movement_but_keeps_the_hips_turning() -> void:
+	var lib := CharacterAnimator.load_library(FIXTURES)
+	var source := JumpClip.phases_of(FIXTURES + "/jump.fbx")["anim"] as Animation
+	var hips := NodePath("%GeneralSkeleton:Hips")
+	var source_pos := source.find_track(hips, Animation.TYPE_POSITION_3D)
+	var rise := 0.0
+	for k in source.track_get_key_count(source_pos):
+		rise = maxf(rise, (source.track_get_key_value(source_pos, k) as Vector3).y - (source.track_get_key_value(source_pos, 0) as Vector3).y)
+	assert_true(rise > 0.3, "the whole jump's hips rise (%.2f)" % rise)
+	for clip: StringName in [&"jump", &"jump_takeoff"]:
+		var anim := lib.get_animation(clip)
+		var pos := anim.find_track(hips, Animation.TYPE_POSITION_3D)
+		assert_true(pos >= 0, "%s still sets the hips' position, to a fixed one" % clip)
+		var first := anim.position_track_interpolate(pos, 0.0)
+		for at in [anim.length * 0.3, anim.length * 0.7, anim.length - 0.01]:
+			assert_true(anim.position_track_interpolate(pos, at).is_equal_approx(first), "%s: hips stay put at %.2f s" % [clip, at])
+		var rot := anim.find_track(hips, Animation.TYPE_ROTATION_3D)
+		assert_true(rot >= 0 and anim.track_get_key_count(rot) >= 2, "%s keeps the hips' rotation" % clip)
+	# The push-off's hips lean in out of the crouch; the rest is straight.
+	var takeoff := lib.get_animation(&"jump_takeoff")
+	var lean := takeoff.find_track(hips, Animation.TYPE_ROTATION_3D)
+	assert_true(takeoff.rotation_track_interpolate(lean, 0.0).angle_to(takeoff.rotation_track_interpolate(lean, takeoff.length)) > 0.05,
+		"the hips' own turn is the clip's")
+	# Landing is on the ground: its hips drop into the crouch.
+	var land := lib.get_animation(&"land")
+	var land_pos := land.find_track(hips, Animation.TYPE_POSITION_3D)
+	var top := (land.track_get_key_value(land_pos, 0) as Vector3).y
+	var bottom := top
+	for k in land.track_get_key_count(land_pos):
+		bottom = minf(bottom, (land.track_get_key_value(land_pos, k) as Vector3).y)
+	assert_true(top - bottom > 0.3, "the landing crouches (%.2f)" % (top - bottom))
+
+
+func test_the_split_clips_are_what_the_library_holds() -> void:
+	var lib := CharacterAnimator.load_library(FIXTURES)
+	for clip: StringName in [&"jump_takeoff", &"jump", &"land"]:
+		assert_true(lib.has_animation(clip), "%s is there" % clip)
+		assert_true(String(lib.get_animation(clip).track_get_path(0)).begins_with("%GeneralSkeleton:"), "%s is retargeted" % clip)
+	assert_eq(lib.get_animation(&"jump").get_meta(JumpClip.PHASE), &"air")
+	assert_eq(lib.get_animation(&"jump_takeoff").get_meta(JumpClip.PHASE), &"takeoff")
+	assert_eq(lib.get_animation(&"land").get_meta(JumpClip.PHASE), &"land")
+	assert_eq(lib.get_animation(&"jump_takeoff").loop_mode, Animation.LOOP_NONE)
+	assert_eq(lib.get_animation(&"land").loop_mode, Animation.LOOP_NONE)
+	assert_true(lib.get_animation(&"jump_takeoff").length < 0.4, "a short push-off")
+	assert_true(lib.get_animation(&"land").length > 0.3, "the whole landing crouch")
+
+
+func test_a_land_clip_of_its_own_wins_over_the_jumps_landing() -> void:
+	var lib := CharacterAnimator.load_library(FIXTURES_LAND)
+	assert_true(lib.has_animation(&"jump_takeoff") and JumpClip.is_air(lib.get_animation(&"jump")), "the jump is still split")
+	assert_false(lib.get_animation(&"land").has_meta(JumpClip.PHASE), "the land.fbx is the landing")
+	assert_near(lib.get_animation(&"land").length, 23.0 / 30.0, 0.05, "the file's own length")
+
+
+func test_the_air_pose_follows_the_climb_and_the_fall() -> void:
+	var air := CharacterAnimator.load_library(FIXTURES).get_animation(&"jump")
+	var peak: float = air.get_meta(JumpClip.PEAK)
+	var down: float = air.get_meta(JumpClip.TOUCHDOWN)
+	assert_true(peak > 0.05 and peak < down and down < air.length, "start < peak < touchdown < end (%.2f %.2f %.2f)" % [peak, down, air.length])
+	assert_near(JumpClip.air_time(air, JumpClip.RISE_SPEED), 0.0, 0.0001, "leaving the ground")
+	assert_near(JumpClip.air_time(air, 20.0), 0.0, 0.0001, "no earlier than the start")
+	assert_near(JumpClip.air_time(air, 0.0), peak, 0.0001, "at the top")
+	assert_near(JumpClip.air_time(air, -JumpClip.FALL_SPEED), down, 0.0001, "coming down")
+	assert_near(JumpClip.air_time(air, -30.0), down, 0.0001, "a long fall stays reaching for the ground")
+	assert_true(JumpClip.air_time(air, 4.0) < peak and JumpClip.air_time(air, -3.0) > peak, "climbing before the peak, falling after")
+
+
+func test_in_the_air_the_clip_flies_the_body_and_the_poser_leaves_the_legs_to_it() -> void:
+	var anim := model.animator
+	await _frames(3)
+	assert_true(anim.has_jump_phases() and model.poser.clip_air, "the poser knows the clip covers the air")
+	anim.follows_body = false
+	anim.vertical_speed = 8.0
+	anim.airborne = true
+	await _frames(3)
+	assert_eq(anim.current_clip(), &"jump", "the air phase plays")
+	var rising := anim.clips.current_animation_position
+	var p := model.poser._target_params()
+	assert_false(p["use_legs"], "the legs are the clip's")
+	assert_false(p["use_spine"], "so is the spine")
+	assert_false(p["use_arms"], "and the arms")
+	anim.vertical_speed = 0.0
+	await _frames(3)
+	var top := anim.clips.current_animation_position
+	anim.vertical_speed = -8.0
+	await _frames(3)
+	var falling := anim.clips.current_animation_position
+	assert_true(rising < top - 0.05 and top < falling - 0.05, "the pose moves on from rising to the top to falling (%.2f %.2f %.2f)" % [rising, top, falling])
+	await seconds(1.0)
+	assert_near(anim.clips.current_animation_position, falling, 0.1, "held while the body stays up, however long")
+	assert_eq(anim.current_clip(), &"jump")
+
+
+func test_a_sword_arm_and_a_throw_still_belong_to_the_poser_in_the_air() -> void:
+	model.queue_free()
+	model = CharacterModel.new()
+	model.model_path = CharacterModel.DEFAULT_MODEL
+	model.use_profile = false
+	model.style = {"back": "ninjato"}
+	model.clip_dir = FIXTURES
+	root.add_child(model)
+	await _frames(3)
+	var anim := model.animator
+	anim.follows_body = false
+	anim.airborne = true
+	anim.strike()
+	await seconds(HumanoidPoser.DRAW_TIME + 0.1)
+	var p := model.poser._target_params()
+	assert_true(p["use_arm_R"], "the sword arm is posed")
+	assert_false(p["use_legs"], "the legs are still the clip's")
+	anim.throw()
+	p = model.poser._target_params()
+	assert_true(p["use_arms"], "a throw has its arms")
+	assert_false(p["use_legs"])
+
+
+func test_the_push_off_plays_fast_the_moment_a_jump_leaves_the_ground() -> void:
+	var anim := model.animator
+	await _frames(3)
+	assert_eq(anim.current_clip(), &"idle")
+	# The body goes up and the feet are off the ground, the same frame (a jump).
+	model.position.y = 0.5
+	anim.airborne = true
+	await _frames(2)
+	assert_eq(anim.current_clip(), &"jump_takeoff", "the push-off starts at once")
+	assert_near(anim.clips.speed_scale, CharacterAnimator.TAKEOFF_SPEED, 0.001, "and plays fast")
+	anim.follows_body = false
+	await seconds(0.5)
+	assert_eq(anim.current_clip(), &"jump", "then the air")
+
+
+func test_stepping_off_a_ledge_is_not_a_jump_but_a_second_jump_in_the_air_is() -> void:
+	var anim := model.animator
+	await _frames(3)
+	model.position.y = 0.0
+	anim.airborne = true
+	await _frames(2)
+	assert_eq(anim.current_clip(), &"jump", "a fall without the push-off")
+	anim.follows_body = false
+	anim.vertical_speed = -3.0
+	anim.follows_body = true
+	await _frames(2)
+	model.position.y += 0.6
+	await _frames(2)
+	assert_eq(anim.current_clip(), &"jump_takeoff", "kicking off again in mid-air")
+
+
+func test_landing_plays_the_landing_crouch() -> void:
+	var anim := model.animator
+	await _frames(3)
+	anim.follows_body = false
+	anim.airborne = true
+	await _frames(3)
+	anim.vertical_speed = -8.0
+	anim.airborne = false
+	assert_eq(anim.current_clip(), &"land", "the landing phase")
+	assert_eq(anim.clips.get_animation(&"land").get_meta(JumpClip.PHASE), &"land", "from the jump")
+	await _frames(2)
+	assert_eq(anim.current_clip(), &"land")
+	await seconds(0.5)
+	assert_eq(anim.current_clip(), &"idle", "standing up again is the idle's job")
+
+
+func test_a_running_jump_keeps_the_clip_in_the_air_and_runs_on_landing() -> void:
+	var anim := model.animator
+	await _frames(3)
+	anim.follows_body = false
+	for gait: Array in [[0.5, &"run"], [1.0, &"sprint"]]:
+		anim.speed_ratio = gait[0]
+		await _frames(3)
+		assert_eq(anim.current_clip(), gait[1])
+		anim.vertical_speed = 3.0
+		anim.airborne = true
+		await _frames(3)
+		assert_eq(anim.current_clip(), &"jump", "the jump clip off a %s" % gait[1])
+		var p := model.poser._target_params()
+		assert_false(p["use_legs"] or p["use_spine"] or p["use_arms"], "the clip, not the poser, off a %s" % gait[1])
+		anim.airborne = false
+		await _frames(3)
+		assert_eq(anim.current_clip(), gait[1], "no landing crouch: back to the %s" % gait[1])
+
+
+func test_without_a_mixamo_jump_the_air_is_posed_as_before() -> void:
+	await _model_with(NO_CLIPS)
+	var anim := model.animator
+	assert_false(anim.has_jump_phases(), "no phases")
+	assert_false(model.poser.clip_air)
+	assert_false(anim.has_clip(&"jump_takeoff"), "no push-off clip")
+	var jump := anim.library.get_animation(&"jump")
+	assert_false(jump.has_meta(JumpClip.PHASE), "the library's own jump")
+	assert_eq(jump.loop_mode, Animation.LOOP_LINEAR)
+	anim.airborne = true
+	await _frames(3)
+	assert_eq(anim.current_clip(), &"jump")
+	var p := model.poser._target_params()
+	assert_true(p["use_legs"] and p["use_spine"] and p["use_arms"], "tucked by the poser, as before")
+	# A rise the same frame the feet leave the ground starts nothing.
+	anim.airborne = false
+	await seconds(0.5)
+	model.position.y = 0.6
+	anim.airborne = true
+	await _frames(2)
+	assert_eq(anim.current_clip(), &"jump")
+
+
 # --- Sword clips (cut_1 ... cut_4) -------------------------------------------------
 # The fixtures hold one: cut_1.fbx, a synthetic swing (a slow wind-up to frame 36,
 # the cut in frames 36-42, a slow recovery), the combo's first cut.

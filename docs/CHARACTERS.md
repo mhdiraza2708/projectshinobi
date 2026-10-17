@@ -222,13 +222,15 @@ top** (no animation library has seals).
    *fighting idle*, *running*, *fast run*/*sprint*, *jump* or *falling*,
    *block*, *power up*, *dash*/*roll*. For anything that travels (run,
    sprint, dash), tick **In Place**: the game moves the character itself.
+   A jump is the exception: leave **In Place** off (see below).
 3. Download each clip with **Format: FBX**, **Skin: Without Skin**, **30 fps**.
 4. Rename the files to the slots you want. Every slot is optional:
 
    | File | Used for | Without it |
    |---|---|---|
    | `idle.fbx`, `walk.fbx`, `run.fbx`, `sprint.fbx` | standing, walking, running, sprinting | the library's |
-   | `jump.fbx`, `land.fbx` | in the air, landing | the library's |
+   | `jump.fbx` | take-off, in the air and landing, all from the one clip (see *A Mixamo jump*) | the library's jump and landing |
+   | `land.fbx` | landing, in place of the jump's | the jump's own landing (or the library's) |
    | `strike_1.fbx`, `strike_2.fbx` | alternating standing strikes (unarmed; with a katana the cuts below are used) | the library's jab and cross |
    | `cut_1.fbx` ... `cut_4.fbx` | the katana's four cuts, in combo order: down across, a rising backhand, a level sweep, the X finisher (see *Sword clips* below) | the procedural cut |
    | `cast.fbx` | a jutsu leaving the hands | the library's spell cast |
@@ -245,6 +247,48 @@ top** (no animation library has seals).
    `assets/animations/mixamo_bone_map.tres`, turn on rename bones and unique
    node `GeneralSkeleton`, and set rest fixer to **Overwrite Axis**.
 6. Run the game.
+
+#### A Mixamo jump
+
+Mixamo's *Jumping* is a standing leap: a crouch, a push-off, a tuck in the
+air and a deep crouch on landing, with the height of the hips baked in. One
+`jump.fbx` fills three parts of the game's jump, and the game cuts it up
+itself when the clips load (`scripts/character/jump_clip.gd`), so any
+similar jump works. It finds the parts from the clip, not from frame
+numbers: it follows each ankle and toe through the legs, takes the clip to
+be in the air while both feet are above where they stand, and reads the
+crouches from the hips' height. On Mixamo's *Jumping* (98 frames at 30 fps)
+that comes to:
+
+| Part | Where in the clip | Used |
+|---|---|---|
+| push-off, `jump_takeoff` | the last of the crouch to just after the toes leave the ground, frames 34-42 | the moment a jump leaves the ground, 1.8 times faster than captured |
+| air, `jump` | from there to the toes coming back down, frames 42-58, the legs tucked most at 49 | the whole time the character is in the air |
+| landing, `land` | touchdown through the deepest crouch, until the hips are a third of the way up, frames 58-74 | landing while standing still |
+
+- **No input delay.** The jump leaves the ground the frame the button is
+  pressed, as it always did. The push-off is only the first thing the body
+  does as it goes up, never a crouch before it.
+- **The game, not the clip, does the rise.** The clip's hips lift the
+  character a metre, and the game's jump does too, so in the push-off and the
+  air the hips are held still, at the height they have as the feet touch down
+  (so the legs reach the ground where the body does). Their rotation stays.
+  The landing crouch keeps its hips: it happens on the ground. This is why
+  **In Place** doesn't apply to a jump: the game removes the hips' motion
+  itself, along the ground as well as up, whichever way it was downloaded.
+- **The air pose follows the jump.** It is posed by how fast the body is
+  moving up or down, not by a clock: the leaving-the-ground pose as the jump
+  starts, the tuck at the top, the legs reaching for the ground as it falls
+  (and kept that way however far it falls). So a short hop, a double jump
+  and a long drop all read right, and a leap in a cutscene does too.
+- A separate `land.fbx` still wins over the jump's landing. A jump with no
+  air in it (a falling loop, say) isn't cut up; it is played as it was, and
+  the procedural tuck keeps the air, as it does without any `jump.fbx`.
+- The library's own jump keeps the procedural tuck in the air as well: it
+  is a standing leap that reads as standing still in mid-air when played
+  over a game's jump.
+- The poser still owns what it owns on the ground: a drawn sword's arm, a
+  throw, a cast and the seals.
 
 #### Sword clips (`cut_1` ... `cut_4`)
 
@@ -317,7 +361,12 @@ by default. Check Adobe's current terms yourself.
 - `scripts/character/character_animator.gd` picks clips by state and speed
   (walk, jog, sprint), plays one-shots (strikes, casts, flinches, the fall)
   over them, matches gait playback to the measured strides, and tells the
-  poser which states the clips cover.
+  poser which states the clips cover. With a Mixamo jump it also measures the
+  body's vertical speed, plays the push-off as a jump starts and poses the
+  air clip by that speed.
+- `scripts/character/jump_clip.gd` cuts a Mixamo jump into the push-off, the
+  air and the landing when the clips load (`CharacterAnimator.load_library`),
+  and holds the hips still in the air.
 - `tools/setup_ual.gd` and `tools/setup_mixamo.gd` write the retarget
   settings (bone map, rest fixer) into each library's or clip's `.import`
   file.
@@ -327,7 +376,8 @@ by default. Check Adobe's current terms yourself.
   plays it for a standing cut and calls `HumanoidPoser.clip_cut`, which
   leaves the arm and spine to the clip (and blends the keyed pose back in
   as it ends). The fixtures include a synthetic swing, `cut_1.fbx`. `tests/unit/test_animation.gd` checks the clips on every roster rig. `tests/unit/test_clips.gd` runs the whole path on
-  Mixamo-format fixtures made by `art/blender/make_mixamo_fixtures.py`.
+  Mixamo-format fixtures made by `art/blender/make_mixamo_fixtures.py`, a
+  synthetic standing jump among them.
 - `tests/unit/test_character.gd` checks, on a real VRM, that the model faces
   forward, arms hang at idle, palms meet for seals, guard raises the
   forearms, and the run cycle alternates feet.

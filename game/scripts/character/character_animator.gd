@@ -9,7 +9,8 @@ extends Node
 ##   jog, sprint, jumps, punches, a spell cast, hit reactions, a death and a
 ##   talking idle. CLIP_SOURCES maps the game's clip names to its animations.
 ## - Your own Mixamo downloads in CLIP_DIR, one clip per file named after the
-##   clip ("run.fbx"); they replace the library's clip of the same name.
+##   clip ("run.fbx"); they replace the library's clip of the same name. A
+##   Mixamo jump is split into a push-off, the air and a landing (JumpClip).
 ##
 ## The procedural layer stays on top: hand seals, guard, charge, the dash
 ## lean, the kunai throw, the sprinting arms swept back, and a strike or cast
@@ -50,6 +51,13 @@ const CAST_SPEED := 1.3
 const HIT_SPEED := 1.2
 ## Above this speed ratio a strike or cast is done by the arms alone.
 const MOVING := 0.25
+## A Mixamo jump's push-off (JumpClip) plays this much faster than it was
+## captured: it only covers the last of the crouch, as the body already leaves
+## the ground.
+const TAKEOFF_SPEED := 1.8
+## Rising faster than this (m/s) as the feet leave the ground, or after a fall
+## or the top of a jump, is a jump.
+const LAUNCH_RISE := 4.0
 ## Seconds a cut clip blends in over (a cut is quick, and so is the lean
 ## into it).
 const CUT_BLEND := 0.08
@@ -91,6 +99,12 @@ const SHEATHE_AFTER := 4.0
 var poser: HumanoidPoser
 var clips: AnimationPlayer
 var library: AnimationLibrary
+## How fast the body is rising (m/s), worked out from how far it moves. The
+## pose in the air follows it (JumpClip.air_time).
+var vertical_speed := 0.0
+## Whether vertical_speed is worked out from the body's movement (turn it off
+## to set it by hand).
+var follows_body := true
 var _skeleton: Skeleton3D
 
 var _action := &""
@@ -102,6 +116,10 @@ var _combo := -1
 ## and which way (true: into the hand).
 var _swap_left := -1.0
 var _swap_to := false
+## The air phase of a Mixamo jump (null without one).
+var _air_clip: Animation
+var _last_height := 0.0
+var _height_known := false
 
 static var _library_cache: Dictionary = {}
 
@@ -123,10 +141,18 @@ func setup(model_root: Node, humanoid_poser: HumanoidPoser, clip_dir := CLIP_DIR
 	clips.root_node = clips.get_path_to(model_root)
 	clips.add_animation_library(&"", library)
 	poser.clip_states = covered_states()
+	_air_clip = library.get_animation(&"jump") if has_clip(&"jump") else null
+	poser.clip_air = JumpClip.is_air(_air_clip)
 
 
 func has_clip(clip: StringName) -> bool:
 	return library != null and library.has_animation(clip)
+
+
+## A Mixamo jump was split into phases (JumpClip), and flies the body in the
+## air in place of the poser.
+func has_jump_phases() -> bool:
+	return JumpClip.is_air(_air_clip)
 
 
 ## Which HumanoidPoser states the clips take over.
@@ -323,11 +349,31 @@ func _landed() -> void:
 		_action_left = 0.35
 
 
+## Works out the body's vertical speed from how far it moved, and starts the
+## push-off of a Mixamo jump the frame the body leaves the ground (or kicks off
+## again in mid-air) rising fast.
+func _follow_height(delta: float) -> void:
+	var body := get_parent() as Node3D
+	if body == null or delta <= 0.0 or not follows_body:
+		_height_known = false
+		return
+	var height := body.global_position.y
+	if _height_known:
+		var rise := clampf((height - _last_height) / delta, -40.0, 40.0)
+		if airborne and rise > LAUNCH_RISE and vertical_speed < 1.0 and (_action == &"" or _action == &"land") \
+				and pose == HumanoidPoser.Pose.LOCOMOTION and has_clip(&"jump_takeoff"):
+			_play_action(&"jump_takeoff", TAKEOFF_SPEED, 0.05)
+		vertical_speed = lerpf(vertical_speed, rise, 1.0 - exp(-delta / 0.05))
+	_last_height = height
+	_height_known = true
+
+
 func _process(delta: float) -> void:
 	if has_sword():
 		_update_sword(delta)
 	if clips == null:
 		return
+	_follow_height(delta)
 	if _action != &"":
 		_action_left -= delta
 		if _action_left > 0.0:
@@ -341,6 +387,8 @@ func _process(delta: float) -> void:
 		# The first clip snaps in: blending from no clip is blending out of the
 		# rest pose, a T-pose held for a fifth of a second as anyone appears.
 		clips.play(want, BLEND_TIME if clips.current_animation != &"" else 0.0)
+	if want == &"jump" and poser.clip_air:
+		clips.seek(JumpClip.air_time(_air_clip, vertical_speed), true)
 
 
 func _update_sword(delta: float) -> void:
@@ -441,6 +489,7 @@ static func load_library(dir: String) -> AnimationLibrary:
 			if lib.has_animation(clip):
 				lib.remove_animation(clip)
 			lib.add_animation(clip, anim)
+		JumpClip.split_library(lib, dir)
 	# A sword clip is its swing, not the seconds of wind-up around it.
 	for i in HumanoidPoser.CUTS.size():
 		var slot := cut_clip_name(i)
